@@ -49,29 +49,12 @@ export function InterestCard({
         role="article"
       >
         <CardHeader className="gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <Badge className={metadata.accentClassName} variant="outline">
-              {metadata.label}
-            </Badge>
-
-            <Badge variant={item.status === 'completed' ? 'default' : item.status === 'in_progress' ? 'secondary' : 'outline'}>
-              {metadata.statusLabels[item.status]}
-            </Badge>
-          </div>
-
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1 space-y-2">
-              <h2 className="text-balance break-words text-2xl font-semibold tracking-tight text-foreground">
-                {item.title}
-              </h2>
-              <CardDescription>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
-            </div>
-
+          <div className="flex items-start gap-4">
             {showsCompletionControl ? (
               <Button
                 aria-haspopup="dialog"
                 aria-label={completionControlLabel}
-                className={cn('shrink-0 rounded-full border-2 bg-background/80', metadata.controlClassName)}
+                className={cn('mt-1 shrink-0 self-start rounded-full border-2 bg-background/80', metadata.controlClassName)}
                 onClick={() => setIsCompletionDialogOpen(true)}
                 size="icon"
                 type="button"
@@ -79,15 +62,29 @@ export function InterestCard({
               >
                 <span
                   aria-hidden="true"
-                  className={cn(
-                    'flex size-5 items-center justify-center rounded-full border-2 border-current text-current transition-transform',
-                    metadata.textClassName,
-                  )}
-                >
-                  <span aria-hidden="true" className="size-2.5 rounded-full bg-current opacity-60" />
-                </span>
+                  className={cn('block size-5 rounded-full border-2 border-current bg-transparent text-current', metadata.textClassName)}
+                />
               </Button>
             ) : null}
+
+            <div className="min-w-0 flex-1 space-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <Badge className={metadata.accentClassName} variant="outline">
+                  {metadata.label}
+                </Badge>
+
+                <Badge variant={item.status === 'completed' ? 'default' : item.status === 'in_progress' ? 'secondary' : 'outline'}>
+                  {metadata.statusLabels[item.status]}
+                </Badge>
+              </div>
+
+              <div className="min-w-0 space-y-2">
+                <h2 className="text-balance break-words text-2xl font-semibold tracking-tight text-foreground">
+                  {item.title}
+                </h2>
+                <CardDescription>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
+              </div>
+            </div>
           </div>
         </CardHeader>
 

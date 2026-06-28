@@ -104,7 +104,7 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('button', { name: 'Mark as watched: Arrival' })).toBeInTheDocument()
   })
 
-  it('hides dashboard card dates and removes the old completion button label from cards', async () => {
+  it('keeps the completion trigger in the card header, without the old footer action label or card date', async () => {
     render(
       <LocaleProvider>
         <DashboardScreen repository={createMockInterestRepository()} />
@@ -115,7 +115,12 @@ describe('DashboardScreen', () => {
 
     expect(within(atomicHabitsCard).queryByText(formatCardDate(defaultMockItems[3].createdAt, 'en'))).not.toBeInTheDocument()
     expect(within(atomicHabitsCard).queryByRole('button', { name: 'Mark as read' })).not.toBeInTheDocument()
-    expect(within(atomicHabitsCard).getByRole('button', { name: 'Mark as read: Atomic Habits' })).toHaveAttribute('aria-haspopup', 'dialog')
+
+    const completionTrigger = within(atomicHabitsCard).getByRole('button', { name: 'Mark as read: Atomic Habits' })
+    const cardHeading = within(atomicHabitsCard).getByRole('heading', { level: 2, name: 'Atomic Habits' })
+
+    expect(completionTrigger).toHaveAttribute('aria-haspopup', 'dialog')
+    expect(completionTrigger.compareDocumentPosition(cardHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('opens a completion confirmation modal from the radio-style control', async () => {
