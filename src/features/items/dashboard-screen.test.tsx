@@ -11,6 +11,13 @@ import {
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
+function formatCardDate(createdAt: string, locale: 'en' | 'es') {
+  return new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(createdAt))
+}
+
 beforeEach(() => {
   installMockLocalStorage()
   window.localStorage.clear()
@@ -93,10 +100,61 @@ describe('DashboardScreen', () => {
       expect(screen.getByText('In progress')).toBeInTheDocument()
     })
 
-    expect(screen.getByRole('button', { name: 'Mark as watched' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mark as watched' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mark as watched: Arrival' })).toBeInTheDocument()
   })
 
-  it('removes an item from the dashboard as soon as it reaches completed', async () => {
+  it('hides dashboard card dates and removes the old completion button label from cards', async () => {
+    render(
+      <LocaleProvider>
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    const atomicHabitsCard = (await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })).closest('[role="article"]') as HTMLElement
+
+    expect(within(atomicHabitsCard).queryByText(formatCardDate(defaultMockItems[3].createdAt, 'en'))).not.toBeInTheDocument()
+    expect(within(atomicHabitsCard).queryByRole('button', { name: 'Mark as read' })).not.toBeInTheDocument()
+    expect(within(atomicHabitsCard).getByRole('button', { name: 'Mark as read: Atomic Habits' })).toHaveAttribute('aria-haspopup', 'dialog')
+  })
+
+  it('opens a completion confirmation modal from the radio-style control', async () => {
+    render(
+      <LocaleProvider>
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    const atomicHabitsCard = (await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })).closest('[role="article"]') as HTMLElement
+
+    fireEvent.click(within(atomicHabitsCard).getByRole('button', { name: 'Mark as read: Atomic Habits' }))
+
+    expect(await screen.findByRole('heading', { name: 'Mark as read' })).toBeInTheDocument()
+    expect(screen.getByText('This will remove the item from your dashboard and move it to the archive.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+  })
+
+  it('keeps an item active when the completion confirmation is canceled', async () => {
+    render(
+      <LocaleProvider>
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    const atomicHabitsCard = (await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })).closest('[role="article"]') as HTMLElement
+
+    fireEvent.click(within(atomicHabitsCard).getByRole('button', { name: 'Mark as read: Atomic Habits' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Mark as read' })).not.toBeInTheDocument()
+    })
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Atomic Habits' })).toBeInTheDocument()
+    expect(screen.getAllByRole('article')).toHaveLength(4)
+  })
+
+  it('removes an item from the dashboard after confirming completion', async () => {
     const repository = createMockInterestRepository()
 
     render(
@@ -110,7 +168,8 @@ describe('DashboardScreen', () => {
     const atomicHabitsCard = await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })
     expect(atomicHabitsCard).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mark as read' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as read: Atomic Habits' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark as read' }))
 
     await waitFor(() => {
       expect(screen.queryByRole('heading', { level: 2, name: 'Atomic Habits' })).not.toBeInTheDocument()
@@ -271,7 +330,7 @@ describe('DashboardScreen', () => {
     })
 
     expect(screen.getByText('In progress')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Mark as watched' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mark as watched: Arrival' })).toBeInTheDocument()
   })
 
   it('exposes accessible filters, navigation actions, and usable status controls', async () => {
@@ -301,7 +360,7 @@ describe('DashboardScreen', () => {
       expect(within(getArrivalCard()).getByText('In progress')).toBeInTheDocument()
     })
 
-    expect(within(getArrivalCard()).getByRole('button', { name: 'Mark as watched' })).toBeEnabled()
+    expect(within(getArrivalCard()).getByRole('button', { name: 'Mark as watched: Arrival' })).toHaveAttribute('aria-haspopup', 'dialog')
   })
 
   it('renders long card content in a readable article and preserves the visible action', async () => {
@@ -341,6 +400,6 @@ describe('DashboardScreen', () => {
       expect(within(screen.getByRole('article')).getByText('In progress')).toBeInTheDocument()
     })
 
-    expect(within(screen.getByRole('article')).getByRole('button', { name: 'Mark as watched' })).toBeEnabled()
+    expect(within(screen.getByRole('article')).getByRole('button', { name: `Mark as watched: ${longTitle}` })).toHaveAttribute('aria-haspopup', 'dialog')
   })
 })

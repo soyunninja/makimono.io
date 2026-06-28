@@ -146,10 +146,12 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
               <InterestCard
                 item={item}
                 key={item.id}
-                locale={locale}
                 metadata={getCategoryMetadata(item.category, locale)}
                 onAdvance={handleAdvanceStatus}
                 onDelete={handleDeleteItem}
+                cancelLabel={t('addFlow.cancel')}
+                closeLabel={t('app.closeLabel')}
+                completeWarningLabel={t('dashboard.completeWarning')}
                 deleteLabel={t('dashboard.deleteAction')}
                 editHref={`/dashboard/edit/${item.id}`}
                 editLabel={t('dashboard.editAction')}

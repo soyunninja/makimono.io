@@ -55,6 +55,7 @@ export type Dictionary = {
     editTitle: string
     editDescription: string
     saveAction: string
+    completeWarning: string
   }
   archive: {
     eyebrow: string
@@ -166,6 +167,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editTitle: 'Edit interest',
       editDescription: 'Update the saved details and keep the item on your dashboard.',
       saveAction: 'Save changes',
+      completeWarning: 'This will remove the item from your dashboard and move it to the archive.',
     },
     archive: {
       eyebrow: 'Archive',
@@ -355,6 +357,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editTitle: 'Editar interés',
       editDescription: 'Actualiza los detalles guardados y mantén el elemento en tu dashboard.',
       saveAction: 'Guardar cambios',
+      completeWarning: 'Esto quitará el elemento de tu dashboard y lo moverá al archivo.',
     },
     archive: {
       eyebrow: 'Archivo',
