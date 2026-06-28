@@ -25,7 +25,8 @@ describe('ArchiveScreen', () => {
       </LocaleProvider>,
     )
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Completed items' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Archive' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
 
     const [gamesSummary, categoryBadge] = screen.getAllByText('Games')
     const completedArticle = await screen.findByRole('article')
@@ -53,8 +54,39 @@ describe('ArchiveScreen', () => {
       </LocaleProvider>,
     )
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Completed items' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Archive' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
     expect(screen.getByText('Hades II')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument()
+  })
+
+  it('shows deleted items in a separate section with deleted-specific badges', async () => {
+    const repository = createMockInterestRepository([])
+    const deletedItem = await repository.createItem({
+      category: 'webs',
+      title: 'Web Components Guide',
+      tags: ['reference'],
+    })
+    const completedItem = await repository.createItem({
+      category: 'books',
+      title: 'Domain-Driven Design',
+      tags: ['architecture'],
+    })
+
+    await repository.deleteItem(deletedItem.id)
+    await repository.updateStatus(completedItem.id, 'completed')
+
+    render(
+      <LocaleProvider>
+        <ArchiveScreen repository={repository} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Deleted items' })).toBeInTheDocument()
+    expect(screen.getByText('Domain-Driven Design')).toBeInTheDocument()
+    expect(screen.getByText('Web Components Guide')).toBeInTheDocument()
+    expect(screen.getByText('Deleted')).toBeInTheDocument()
+    expect(screen.getAllByText('Planned')).not.toHaveLength(0)
   })
 })

@@ -122,10 +122,35 @@ describe('dashboard nested routes', () => {
     await renderRoute('/dashboard/archive')
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Completed items' }),
+      await screen.findByRole('heading', { level: 1, name: 'Archive' }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Back to dashboard' })).toBeInTheDocument()
+  })
+
+  it('restores a deleted item from the archive back to the dashboard list', async () => {
+    const repository = resetAppInterestRepository([])
+    const created = await repository.createItem({
+      category: 'games',
+      title: 'Portal 2',
+      tags: ['co-op'],
+    })
+
+    await repository.deleteItem(created.id)
+
+    const router = await renderRoute('/dashboard/archive')
+
+    expect(await screen.findByText('Portal 2')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+
+    await waitFor(() => {
+      expect(screen.queryByText('Portal 2')).not.toBeInTheDocument()
+    })
+
+    await router.navigate({ to: '/dashboard' })
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Portal 2' })).toBeInTheDocument()
   })
 
   it('shows a created item on the dashboard after the add flow closes back to /dashboard', async () => {

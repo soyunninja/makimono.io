@@ -33,7 +33,7 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
     let isMounted = true
 
     async function loadItems() {
-      const nextItems = await repositoryRef.current.listItems()
+      const nextItems = await repositoryRef.current.listItems({ includeDeleted: true })
 
       if (isMounted) {
         setItems(nextItems)
@@ -49,7 +49,12 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
   }, [])
 
   const completedItems = useMemo(
-    () => items.filter((item) => item.status === 'completed'),
+    () => items.filter((item) => item.deletedAt === undefined && item.status === 'completed'),
+    [items],
+  )
+
+  const deletedItems = useMemo(
+    () => items.filter((item) => item.deletedAt !== undefined),
     [items],
   )
 
@@ -62,8 +67,12 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
     [completedItems, locale],
   )
 
+  const hasArchivedItems = completedItems.length > 0 || deletedItems.length > 0
+
   async function handleRestore(item: InterestItem) {
-    const updatedItem = await repositoryRef.current.updateStatus(item.id, 'pending')
+    const updatedItem = item.deletedAt !== undefined
+      ? await repositoryRef.current.restoreItem(item.id)
+      : await repositoryRef.current.updateStatus(item.id, 'pending')
 
     if (!updatedItem) {
       return
@@ -89,16 +98,18 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
       title={t('archive.title')}
     >
       <div className={'space-y-6'}>
-        <div className={'grid gap-4 sm:grid-cols-2 xl:grid-cols-5'}>
-          {categorySummaries.map(({ category, count }) => (
-            <Card className={cn('bg-background/40', category.surfaceClassName)} key={category.key}>
-              <CardHeader>
-                <CardDescription className={category.textClassName}>{category.label}</CardDescription>
-                <CardTitle className={'text-3xl'}>{count}</CardTitle>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
+        {completedItems.length > 0 ? (
+          <div className={'grid gap-4 sm:grid-cols-2 xl:grid-cols-5'}>
+            {categorySummaries.map(({ category, count }) => (
+              <Card className={cn('bg-background/40', category.surfaceClassName)} key={category.key}>
+                <CardHeader>
+                  <CardDescription className={category.textClassName}>{category.label}</CardDescription>
+                  <CardTitle className={'text-3xl'}>{count}</CardTitle>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        ) : null}
 
         {isLoading ? (
           <Card>
@@ -108,7 +119,7 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
           </Card>
         ) : null}
 
-        {!isLoading && completedItems.length === 0 ? (
+        {!isLoading && !hasArchivedItems ? (
           <Card>
             <CardHeader>
               <CardTitle>{t('archive.emptyTitle')}</CardTitle>
@@ -118,50 +129,116 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
         ) : null}
 
         {!isLoading && completedItems.length > 0 ? (
-          <div className={'grid gap-4 xl:grid-cols-2'}>
-            {completedItems.map((item) => {
-              const metadata = getCategoryMetadata(item.category, locale)
+          <section className={'space-y-4'}>
+            <div className={'space-y-1'}>
+              <h2 className={'text-2xl font-semibold tracking-tight text-foreground'}>{t('archive.completedSectionTitle')}</h2>
+              <p className={'text-sm text-muted-foreground'}>{t('archive.completedSectionDescription')}</p>
+            </div>
 
-              return (
-                <Card className={cn('border-l-4 bg-background/40', metadata.cardBorderClassName, metadata.surfaceClassName)} key={item.id} role={'article'}>
-                  <CardHeader className={'gap-4'}>
-                    <div className={'flex flex-wrap items-start justify-between gap-3'}>
-                      <div className={'space-y-2'}>
-                        <Badge className={metadata.accentClassName} variant={'outline'}>
-                          {metadata.label}
-                        </Badge>
-                        <CardTitle>{item.title}</CardTitle>
-                        <CardDescription>{item.notes ?? metadata.statusLabels.completed}</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className={'space-y-4'}>
-                    {item.tags.length > 0 ? (
-                      <div className={'flex flex-wrap gap-2'}>
-                        {item.tags.map((tag) => (
-                          <span
-                            className={'rounded-full border border-border/70 px-2.5 py-0.5 font-mono text-xs font-medium text-muted-foreground'}
-                            key={tag}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
+            <div className={'grid gap-4 xl:grid-cols-2'}>
+              {completedItems.map((item) => {
+                const metadata = getCategoryMetadata(item.category, locale)
 
-                    <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
-                      <p className={'text-xs uppercase tracking-[0.18em] text-muted-foreground'}>
-                        {formatCreatedAt(item.createdAt, locale)}
-                      </p>
-                      <Button onClick={() => void handleRestore(item)} type={'button'} variant={'secondary'}>
-                        {t('archive.restoreAction')}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+                return (
+                  <Card className={cn('border-l-4 bg-background/40', metadata.cardBorderClassName, metadata.surfaceClassName)} key={item.id} role={'article'}>
+                    <CardHeader className={'gap-4'}>
+                      <div className={'flex flex-wrap items-start justify-between gap-3'}>
+                        <div className={'space-y-2'}>
+                          <Badge className={metadata.accentClassName} variant={'outline'}>
+                            {metadata.label}
+                          </Badge>
+                          <CardTitle>{item.title}</CardTitle>
+                          <CardDescription>{item.notes ?? metadata.statusLabels.completed}</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className={'space-y-4'}>
+                      {item.tags.length > 0 ? (
+                        <div className={'flex flex-wrap gap-2'}>
+                          {item.tags.map((tag) => (
+                            <span
+                              className={'rounded-full border border-border/70 px-2.5 py-0.5 font-mono text-xs font-medium text-muted-foreground'}
+                              key={tag}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
+                        <p className={'text-xs uppercase tracking-[0.18em] text-muted-foreground'}>
+                          {formatCreatedAt(item.createdAt, locale)}
+                        </p>
+                        <Button onClick={() => void handleRestore(item)} type={'button'} variant={'secondary'}>
+                          {t('archive.restoreAction')}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </section>
+        ) : null}
+
+        {!isLoading && deletedItems.length > 0 ? (
+          <section className={'space-y-4'}>
+            <div className={'space-y-1'}>
+              <h2 className={'text-2xl font-semibold tracking-tight text-foreground'}>{t('archive.deletedSectionTitle')}</h2>
+              <p className={'text-sm text-muted-foreground'}>{t('archive.deletedSectionDescription')}</p>
+            </div>
+
+            <div className={'grid gap-4 xl:grid-cols-2'}>
+              {deletedItems.map((item) => {
+                const metadata = getCategoryMetadata(item.category, locale)
+
+                return (
+                  <Card className={cn('border-l-4 bg-background/40', metadata.cardBorderClassName, metadata.surfaceClassName)} key={item.id} role={'article'}>
+                    <CardHeader className={'gap-4'}>
+                      <div className={'flex flex-wrap items-start justify-between gap-3'}>
+                        <div className={'space-y-2'}>
+                          <div className={'flex flex-wrap gap-2'}>
+                            <Badge className={metadata.accentClassName} variant={'outline'}>
+                              {metadata.label}
+                            </Badge>
+                            <Badge variant={'destructive'}>{t('archive.deletedBadge')}</Badge>
+                            <Badge variant={'secondary'}>{metadata.statusLabels[item.status]}</Badge>
+                          </div>
+                          <CardTitle>{item.title}</CardTitle>
+                          <CardDescription>{item.notes ?? metadata.statusLabels[item.status]}</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className={'space-y-4'}>
+                      {item.tags.length > 0 ? (
+                        <div className={'flex flex-wrap gap-2'}>
+                          {item.tags.map((tag) => (
+                            <span
+                              className={'rounded-full border border-border/70 px-2.5 py-0.5 font-mono text-xs font-medium text-muted-foreground'}
+                              key={tag}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
+                        <div className={'space-y-1 text-xs uppercase tracking-[0.18em] text-muted-foreground'}>
+                          <p>{formatCreatedAt(item.createdAt, locale)}</p>
+                          <p>{t('archive.deletedOnLabel')} {formatCreatedAt(item.deletedAt ?? item.createdAt, locale)}</p>
+                        </div>
+                        <Button onClick={() => void handleRestore(item)} type={'button'} variant={'secondary'}>
+                          {t('archive.restoreAction')}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          </section>
         ) : null}
       </div>
     </AppShell>

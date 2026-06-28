@@ -65,6 +65,12 @@ export type Dictionary = {
     loading: string
     emptyTitle: string
     emptyDescription: string
+    completedSectionTitle: string
+    completedSectionDescription: string
+    deletedSectionTitle: string
+    deletedSectionDescription: string
+    deletedBadge: string
+    deletedOnLabel: string
     restoreAction: string
     backAction: string
   }
@@ -163,13 +169,19 @@ export const dictionaries: Record<Locale, Dictionary> = {
     },
     archive: {
       eyebrow: 'Archive',
-      title: 'Completed items',
-      subtitle: 'Review completed mock items and restore any of them to the backlog.',
+      title: 'Archive',
+      subtitle: 'Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.',
       localDataBadge: 'Local history only',
       localDataNote: 'Restore actions only update the in-memory mock repository for the current runtime session.',
-      loading: 'Loading your completed mock items…',
-      emptyTitle: 'Nothing has reached the archive yet',
-      emptyDescription: 'Complete an item on the dashboard to see it here.',
+      loading: 'Loading your archived mock items…',
+      emptyTitle: 'Nothing is archived yet',
+      emptyDescription: 'Complete or delete an item on the dashboard to see it here.',
+      completedSectionTitle: 'Completed items',
+      completedSectionDescription: 'Restore a completed item to move it back to the pending backlog.',
+      deletedSectionTitle: 'Deleted items',
+      deletedSectionDescription: 'Restore a deleted item to make it active on the dashboard again.',
+      deletedBadge: 'Deleted',
+      deletedOnLabel: 'Deleted',
       restoreAction: 'Restore',
       backAction: 'Back to dashboard',
     },
@@ -346,13 +358,19 @@ export const dictionaries: Record<Locale, Dictionary> = {
     },
     archive: {
       eyebrow: 'Archivo',
-      title: 'Elementos completados',
-      subtitle: 'Revisa los elementos completados y devuelve cualquiera al backlog.',
+      title: 'Archivo',
+      subtitle: 'Revisa los elementos completados, inspecciona los eliminados y restaura lo que deba volver al dashboard.',
       localDataBadge: 'Historial solo local',
       localDataNote: 'Las acciones de restauración solo actualizan el repositorio mock en memoria durante la sesión actual.',
-      loading: 'Cargando tus elementos mock completados…',
-      emptyTitle: 'Nada ha llegado todavía al archivo',
-      emptyDescription: 'Completa un elemento en el dashboard para verlo aquí.',
+      loading: 'Cargando tus elementos archivados…',
+      emptyTitle: 'Todavía no hay elementos archivados',
+      emptyDescription: 'Completa o elimina un elemento en el dashboard para verlo aquí.',
+      completedSectionTitle: 'Elementos completados',
+      completedSectionDescription: 'Restaura un elemento completado para devolverlo al backlog pendiente.',
+      deletedSectionTitle: 'Elementos eliminados',
+      deletedSectionDescription: 'Restaura un elemento eliminado para que vuelva a estar activo en el dashboard.',
+      deletedBadge: 'Eliminado',
+      deletedOnLabel: 'Eliminado',
       restoreAction: 'Restaurar',
       backAction: 'Volver al dashboard',
     },
