@@ -178,6 +178,9 @@ describe('dashboard nested routes', () => {
     })
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Edit interest' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Delete interest' })).toBeInTheDocument()
   })
 
   it('updates a dashboard item from the edit flow and closes back to /dashboard', async () => {

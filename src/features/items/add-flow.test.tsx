@@ -146,7 +146,7 @@ describe('AdaptiveAddFlow', () => {
     })
   })
 
-  it('shows a destructive delete action in the edit flow footer', async () => {
+  it('shows icon-only save and delete actions in the edit flow footer without a cancel button', async () => {
     render(
       <LocaleProvider>
         <AdaptiveEditFlow isDesktop itemId="movie-arrival" repository={createMockInterestRepository()} />
@@ -158,7 +158,9 @@ describe('AdaptiveAddFlow', () => {
     const deleteButton = screen.getByRole('button', { name: 'Delete interest' })
     const saveButton = screen.getByRole('button', { name: 'Save changes' })
 
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
     expect(deleteButton).toBeEnabled()
+    expect(saveButton).toBeEnabled()
     expect(deleteButton.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Save, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -452,19 +453,21 @@ export function AdaptiveEditFlow({
           title={title}
         />
 
-        <div className="flex flex-col gap-4 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <Button className="w-full sm:w-auto" disabled={isSubmitting || isDeleting} onClick={handleDelete} type="button" variant="destructive">
-            {t('dashboard.deleteEditAction')}
+        <div className="flex items-center justify-between border-t border-border/70 pt-4">
+          <Button
+            aria-label={t('dashboard.deleteEditAction')}
+            disabled={isSubmitting || isDeleting}
+            onClick={handleDelete}
+            size="icon"
+            type="button"
+            variant="destructive"
+          >
+            <Trash2 />
           </Button>
 
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <Button disabled={isSubmitting || isDeleting} onClick={onRequestClose} type="button" variant="outline">
-              {t('addFlow.cancel')}
-            </Button>
-            <Button disabled={isSubmitDisabled} type="submit">
-              {t('dashboard.saveAction')}
-            </Button>
-          </div>
+          <Button aria-label={t('dashboard.saveAction')} disabled={isSubmitDisabled} size="icon" type="submit">
+            <Save />
+          </Button>
         </div>
       </form>
     </div>
