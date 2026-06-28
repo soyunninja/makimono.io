@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CategoryFilters } from '@/features/items/category-filters'
 import { InterestCard } from '@/features/items/interest-card'
@@ -75,6 +76,9 @@ export function DashboardScreen({ repository = getAppInterestRepository() }: Das
     <AppShell
       actions={(
         <div className={'flex flex-wrap items-center gap-3'}>
+          <Button asChild>
+            <a href="/dashboard/add">{t('dashboard.addAction')}</a>
+          </Button>
           <Badge variant={'outline'}>{t('dashboard.localDataBadge')}</Badge>
         </div>
       )}
