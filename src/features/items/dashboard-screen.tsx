@@ -77,7 +77,10 @@ export function DashboardScreen({ repository = getAppInterestRepository() }: Das
       actions={(
         <div className={'flex flex-wrap items-center gap-3'}>
           <Button asChild>
-            <a href="/dashboard/add">{t('dashboard.addAction')}</a>
+            <a href={'/dashboard/add'}>{t('dashboard.addAction')}</a>
+          </Button>
+          <Button asChild variant={'secondary'}>
+            <a href={'/dashboard/suggest'}>{t('dashboard.suggestAction')}</a>
           </Button>
           <Badge variant={'outline'}>{t('dashboard.localDataBadge')}</Badge>
         </div>

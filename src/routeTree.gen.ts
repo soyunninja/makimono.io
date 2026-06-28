@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardSuggestRouteImport } from './routes/dashboard.suggest'
 import { Route as DashboardAddRouteImport } from './routes/dashboard.add'
 
 const DashboardRoute = DashboardRouteImport.update({
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardSuggestRoute = DashboardSuggestRouteImport.update({
+  id: '/suggest',
+  path: '/suggest',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAddRoute = DashboardAddRouteImport.update({
   id: '/add',
   path: '/add',
@@ -33,24 +39,27 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/add': typeof DashboardAddRoute
+  '/dashboard/suggest': typeof DashboardSuggestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/add': typeof DashboardAddRoute
+  '/dashboard/suggest': typeof DashboardSuggestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/add': typeof DashboardAddRoute
+  '/dashboard/suggest': typeof DashboardSuggestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/dashboard/add'
+  fullPaths: '/' | '/dashboard' | '/dashboard/add' | '/dashboard/suggest'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/dashboard/add'
-  id: '__root__' | '/' | '/dashboard' | '/dashboard/add'
+  to: '/' | '/dashboard' | '/dashboard/add' | '/dashboard/suggest'
+  id: '__root__' | '/' | '/dashboard' | '/dashboard/add' | '/dashboard/suggest'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -74,6 +83,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/suggest': {
+      id: '/dashboard/suggest'
+      path: '/suggest'
+      fullPath: '/dashboard/suggest'
+      preLoaderRoute: typeof DashboardSuggestRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/add': {
       id: '/dashboard/add'
       path: '/add'
@@ -86,10 +102,12 @@ declare module '@tanstack/react-router' {
 
 interface DashboardRouteChildren {
   DashboardAddRoute: typeof DashboardAddRoute
+  DashboardSuggestRoute: typeof DashboardSuggestRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAddRoute: DashboardAddRoute,
+  DashboardSuggestRoute: DashboardSuggestRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
