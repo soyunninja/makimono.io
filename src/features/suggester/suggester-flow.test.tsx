@@ -25,4 +25,30 @@ describe('SmartSuggesterFlow', () => {
       expect(within(article).getByRole('link', { name: 'Track this next' })).toHaveAttribute('href', '/dashboard/add')
     }
   })
+
+  it('keeps suggester controls fixed-height and wrap-friendly across selection and results', async () => {
+    render(
+      <LocaleProvider>
+        <SmartSuggesterFlow isDesktop={false} />
+      </LocaleProvider>,
+    )
+
+    const focusedOption = screen.getByRole('radio', { name: 'Focused evening' })
+    const curiousOption = screen.getByRole('radio', { name: 'Curious' })
+    const generateButton = screen.getByRole('button', { name: 'Get 3 suggestions' })
+
+    expect(focusedOption).toHaveClass('h-11')
+    expect(curiousOption).toHaveClass('h-11')
+    expect(generateButton).toHaveClass('h-11')
+    expect(generateButton.parentElement).toHaveClass('flex-col-reverse', 'sm:flex-row', 'sm:justify-end')
+
+    fireEvent.click(focusedOption)
+    fireEvent.click(curiousOption)
+    fireEvent.click(generateButton)
+
+    const [article] = await screen.findAllByRole('article')
+    const cta = within(article).getByRole('link', { name: 'Track this next' })
+
+    expect(cta).toHaveClass('h-11', 'w-full', 'sm:w-auto')
+  })
 })

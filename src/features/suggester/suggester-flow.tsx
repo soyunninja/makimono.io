@@ -112,7 +112,7 @@ export function SmartSuggesterFlow({ isDesktop, onRequestClose }: SmartSuggester
               value={selectedTime ?? ''}
             >
               {suggestionTimeOptions.map((timeOption) => (
-                <ToggleGroupItem key={timeOption} size="sm" value={timeOption} variant="outline">
+                <ToggleGroupItem key={timeOption} value={timeOption} variant="outline">
                   {t(`suggester.timeOptions.${timeOption}`)}
                 </ToggleGroupItem>
               ))}
@@ -134,7 +134,7 @@ export function SmartSuggesterFlow({ isDesktop, onRequestClose }: SmartSuggester
               value={selectedMood ?? ''}
             >
               {suggestionMoodOptions.map((moodOption) => (
-                <ToggleGroupItem key={moodOption} size="sm" value={moodOption} variant="outline">
+                <ToggleGroupItem key={moodOption} value={moodOption} variant="outline">
                   {t(`suggester.moodOptions.${moodOption}`)}
                 </ToggleGroupItem>
               ))}

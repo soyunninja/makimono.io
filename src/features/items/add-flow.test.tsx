@@ -67,4 +67,23 @@ describe('AdaptiveAddFlow', () => {
     expect(items[0].notes).toContain('Link: https://example.com/rules')
     expect(items[0].notes).toContain('Why it stands out: Great MCP onboarding summary.')
   })
+
+  it('keeps adaptive add controls fixed-height and wrap-friendly for touch use', async () => {
+    render(
+      <LocaleProvider>
+        <AdaptiveAddFlow isDesktop={false} repository={createMockInterestRepository([])} />
+      </LocaleProvider>,
+    )
+
+    const seriesOption = screen.getByRole('radio', { name: 'Series' })
+    const titleInput = screen.getByLabelText('Title')
+    const cancelButton = screen.getByRole('button', { name: 'Cancel' })
+    const submitButton = screen.getByRole('button', { name: 'Add interest' })
+
+    expect(seriesOption).toHaveClass('h-11')
+    expect(titleInput).toHaveClass('h-11')
+    expect(cancelButton).toHaveClass('h-11')
+    expect(submitButton).toHaveClass('h-11')
+    expect(submitButton.parentElement).toHaveClass('flex-col-reverse', 'sm:flex-row', 'sm:justify-end')
+  })
 })

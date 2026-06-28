@@ -51,31 +51,40 @@
 | Adaptive add flow | 3.2 | `/dashboard/add`, mobile Sheet / desktop Dialog form | `npx pnpm test`, `npx pnpm typecheck`, `npx pnpm build` |
 | Suggester | 3.3 | `/dashboard/suggest`, exactly 3 mock recommendations with reason + CTA | `npx pnpm test`, `npx pnpm typecheck`, `npx pnpm build` |
 | Language and archive | 3.4, 4.2 | ES/EN toggle, `/dashboard/archive`, visible behavior tests | `npx pnpm test`, `npx pnpm typecheck`, `npx pnpm build` |
-| Verification pass | 4.3 | Command verification plus documented static desktop/mobile inspection | `npx pnpm typecheck`, `npx pnpm test`, `npx pnpm build` |
+| Verification pass | 4.3 | Command verification plus runtime scenario coverage for reload reset, responsive layout contracts, locale round-trip, long-content cards, and touch-friendly controls | `npx pnpm typecheck`, `npx pnpm test`, `npx pnpm build` |
 
 ## Verification Evidence
 
 - ✅ `npx pnpm typecheck`
-- ✅ `npx pnpm test` — 9 test files / 17 tests
+- ✅ `npx pnpm test` — 9 test files / 23 tests
 - ✅ `npx pnpm build`
 - ✅ `git diff --cached --check`
 - ✅ `git log --oneline --reverse --no-merges`
 - ✅ `git status --short --branch`
 - ✅ `git remote -v`
-- ✅ Static desktop/mobile inspection documented for the MVP scenarios.
+- ✅ Runtime scenario coverage added for reload reset, responsive dashboard layout contracts, ES→EN locale switching, long-content cards, and fixed-height/touch-friendly controls.
+
+## Scenario Coverage Backfill
+
+- ✅ Reload remains mock-only: a local status change resets after the app repository is recreated, so reload does not imply persistence.
+- ✅ Dashboard responsive contract: card grids, filters, and action areas assert runtime desktop/mobile class contracts (`md:grid-cols-2`, `2xl:grid-cols-3`, wrapping controls, stacked mobile footers).
+- ✅ Locale round-trip: dashboard tests now cover both English → Spanish and Spanish → English visible text changes.
+- ✅ Long-content cards: runtime tests seed oversized copy and assert wrapped headings, visible notes, and growable card/flex layout.
+- ✅ Touch-friendly controls: dashboard, add-flow, and suggester tests assert fixed-height (`h-11`) action/toggle controls and wrap-friendly footers/CTAs.
 
 ## Manual Inspection Limitation
 
-The mobile/desktop pass was a static source-and-test inspection, not live browser or physical-device QA. Do not claim live responsive QA until a browser/device pass is performed.
+The mobile/desktop assertions are runtime DOM/class contract checks in jsdom, not live browser or physical-device QA. Do not claim live responsive QA until a browser/device pass is performed.
 
 ## Issues and Decisions
 
 - The MVP remains mock-only: no persistence, authentication, backend calls, or real Gemini integration.
 - `src/routeTree.gen.ts` must be regenerated after adding TanStack route files.
 - Dialog and Sheet primitives require localized `closeLabel` values from their consumers.
+- Touch-critical toggle controls now use the default `h-11` size in dashboard, add-flow, suggester, and locale switch surfaces so the runtime contract matches the touch-friendly spec language.
 - GGA/local review should include tests and OpenSpec evidence when evaluating visible behavior.
 - Local history now mirrors the documented work-unit slices, but remote-backed stacked PR proof is still impossible without configuring a remote/base branch.
 
 ## Status
 
-14/14 tasks complete. Local work-unit alignment is done; only remote-backed PR boundary proof remains unavailable because no remote/base branch is configured.
+14/14 tasks complete. Runtime coverage gaps called out by final verify are now backfilled; re-run verify before archive. Remote-backed PR boundary proof still remains unavailable because no remote/base branch is configured.

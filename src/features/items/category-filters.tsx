@@ -33,7 +33,7 @@ export function CategoryFilters({
         type="single"
         value={value}
       >
-        <ToggleGroupItem size="sm" value="all" variant="outline">
+        <ToggleGroupItem value="all" variant="outline">
           {allLabel}
         </ToggleGroupItem>
 
@@ -44,7 +44,6 @@ export function CategoryFilters({
               category.key === value ? category.accentClassName : undefined,
             )}
             key={category.key}
-            size="sm"
             value={category.key}
             variant="outline"
           >

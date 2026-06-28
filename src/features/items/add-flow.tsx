@@ -175,7 +175,7 @@ export function AdaptiveAddFlow({
               value={selectedCategory ?? ''}
             >
               {categories.map((category) => (
-                <ToggleGroupItem key={category.key} size="sm" value={category.key} variant="outline">
+                <ToggleGroupItem key={category.key} value={category.key} variant="outline">
                   {category.label}
                 </ToggleGroupItem>
               ))}

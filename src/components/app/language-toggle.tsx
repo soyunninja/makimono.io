@@ -20,7 +20,6 @@ export function LanguageToggle() {
           aria-pressed={locale === nextLocale}
           key={nextLocale}
           onClick={() => setLocale(nextLocale)}
-          size="sm"
           type="button"
           variant={locale === nextLocale ? 'default' : 'ghost'}
         >
