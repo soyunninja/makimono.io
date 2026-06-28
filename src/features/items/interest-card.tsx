@@ -54,15 +54,18 @@ export function InterestCard({
               <Button
                 aria-haspopup="dialog"
                 aria-label={completionControlLabel}
-                className={cn('mt-1 shrink-0 self-start rounded-full border-2 bg-background/80', metadata.controlClassName)}
+                className={cn(
+                  'mt-0.5 shrink-0 self-start rounded-full border-transparent bg-transparent p-0 hover:bg-background/35',
+                  metadata.textClassName,
+                )}
                 onClick={() => setIsCompletionDialogOpen(true)}
                 size="icon"
                 type="button"
-                variant="outline"
+                variant="ghost"
               >
                 <span
                   aria-hidden="true"
-                  className={cn('block size-5 rounded-full border-2 border-current bg-transparent text-current', metadata.textClassName)}
+                  className={cn('block size-4 rounded-full border-2 border-current bg-transparent text-current', metadata.textClassName)}
                 />
               </Button>
             ) : null}
