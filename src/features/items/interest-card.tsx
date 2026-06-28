@@ -1,3 +1,4 @@
+import { Play } from 'lucide-react'
 import { useState, type MouseEvent } from 'react'
 
 import type { CategoryMetadata } from '@/features/items/metadata'
@@ -39,6 +40,7 @@ export function InterestCard({
   const showsStartAction = item.status === 'pending'
   const completionActionLabel = metadata.statusActions.completed
   const completionControlLabel = `${completionActionLabel}: ${item.title}`
+  const startControlLabel = `${startLabel}: ${item.title}`
   const editLinkLabel = `${editLabel}: ${item.title}`
 
   function handleEditClick(event: MouseEvent<HTMLAnchorElement>) {
@@ -68,24 +70,42 @@ export function InterestCard({
         role="article"
       >
         <CardContent className="flex flex-1 items-start !gap-0 p-6">
-          {showsCompletionControl ? (
-            <Button
-              aria-haspopup="dialog"
-              aria-label={completionControlLabel}
-              className={cn(
-                '!-translate-x-4 !-translate-y-4 cursor-pointer shrink-0 self-start rounded-full border-transparent bg-transparent p-0',
-                metadata.textClassName,
+          {showsCompletionControl || showsStartAction ? (
+            <div className="shrink-0 self-start">
+              {showsCompletionControl ? (
+                <Button
+                  aria-haspopup="dialog"
+                  aria-label={completionControlLabel}
+                  className={cn(
+                    '!-translate-x-4 !-translate-y-4 rounded-full border-transparent bg-transparent p-0',
+                    metadata.textClassName,
+                  )}
+                  onClick={() => setIsCompletionDialogOpen(true)}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn('block size-4 rounded-full border-2 border-current bg-transparent text-current', metadata.textClassName)}
+                  />
+                </Button>
+              ) : (
+                <Button
+                  aria-label={startControlLabel}
+                  className={cn(
+                    '!-translate-x-4 !-translate-y-4 rounded-full border-transparent bg-transparent p-0',
+                    metadata.textClassName,
+                  )}
+                  onClick={() => onAdvance(item)}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <Play aria-hidden="true" className={metadata.textClassName} fill="currentColor" />
+                </Button>
               )}
-              onClick={() => setIsCompletionDialogOpen(true)}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <span
-                aria-hidden="true"
-                className={cn('block size-4 rounded-full border-2 border-current bg-transparent text-current', metadata.textClassName)}
-              />
-            </Button>
+            </div>
           ) : null}
 
           <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -94,15 +114,9 @@ export function InterestCard({
                 {metadata.label}
               </Badge>
 
-              {showsStartAction ? (
-                <Button onClick={() => onAdvance(item)} type="button" variant="outline">
-                  {startLabel}
-                </Button>
-              ) : (
-                <Badge variant={item.status === 'completed' ? 'default' : item.status === 'in_progress' ? 'secondary' : 'outline'}>
-                  {metadata.statusLabels[item.status]}
-                </Badge>
-              )}
+              <Badge variant={item.status === 'completed' ? 'default' : item.status === 'in_progress' ? 'secondary' : 'outline'}>
+                {metadata.statusLabels[item.status]}
+              </Badge>
             </div>
 
             <a

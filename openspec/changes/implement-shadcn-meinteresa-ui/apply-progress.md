@@ -92,6 +92,8 @@ The mobile/desktop assertions are runtime DOM/class contract checks in jsdom, no
 - ✅ Preserved `/dashboard/archive` as a full replacement by letting the dashboard route delegate directly to the child route for that pathname.
 - ✅ Added `src/test/routes/dashboard-nested-routes.test.tsx` to prove `/dashboard/add` and `/dashboard/suggest` compose as dashboard + overlay while `/dashboard/archive` replaces the dashboard shell.
 - ✅ Re-verified with `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build` after the routing fix.
+- ✅ Moved the pending dashboard start action into the shared top-left card action-control slot, using an icon-only Play button with the accessible label pattern `Start now: {title}` while restoring the pending status badge on the right.
+- ✅ Updated dashboard tests to assert the pending Play control uses the shared action slot, no duplicate text start button remains, and in-progress completion modal behavior still works.
 
 ## Status
 

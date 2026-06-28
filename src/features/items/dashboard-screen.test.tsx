@@ -94,10 +94,13 @@ describe('DashboardScreen', () => {
     })
 
     const arrivalCard = screen.getByRole('heading', { level: 2, name: 'Arrival' }).closest('[role="article"]') as HTMLElement
-    const startButton = within(arrivalCard).getByRole('button', { name: 'Start now' })
+    const startButton = within(arrivalCard).getByRole('button', { name: 'Start now: Arrival' })
     const cardHeading = within(arrivalCard).getByRole('heading', { level: 2, name: 'Arrival' })
 
-    expect(within(arrivalCard).queryByText('Planned')).not.toBeInTheDocument()
+    expect(within(arrivalCard).getByText('Planned')).toBeInTheDocument()
+    expect(within(arrivalCard).queryByRole('button', { name: 'Start now' })).not.toBeInTheDocument()
+    expect(within(arrivalCard).queryByText('Start now')).not.toBeInTheDocument()
+    expect(startButton).not.toHaveTextContent('Start now')
     expect(startButton.compareDocumentPosition(cardHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     fireEvent.click(startButton)
@@ -280,7 +283,7 @@ describe('DashboardScreen', () => {
       expect(screen.getAllByRole('article')).toHaveLength(1)
     })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Start now' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Start now: Arrival' }))
 
     await waitFor(() => {
       expect(screen.getByText('In progress')).toBeInTheDocument()
@@ -324,8 +327,9 @@ describe('DashboardScreen', () => {
     expect(screen.queryByRole('button', { name: 'EN' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 2, name: 'Celeste' })).not.toBeInTheDocument()
 
-    const arrivalAction = within(getArrivalCard()).getByRole('button', { name: 'Start now' })
+    const arrivalAction = within(getArrivalCard()).getByRole('button', { name: 'Start now: Arrival' })
     expect(arrivalAction).toBeEnabled()
+    expect(within(getArrivalCard()).queryByRole('button', { name: 'Start now' })).not.toBeInTheDocument()
 
     fireEvent.click(arrivalAction)
 
@@ -361,7 +365,7 @@ describe('DashboardScreen', () => {
 
     const article = await screen.findByRole('article')
     const title = within(article).getByRole('heading', { level: 2, name: longTitle })
-    const actionButton = within(article).getByRole('button', { name: 'Start now' })
+    const actionButton = within(article).getByRole('button', { name: `Start now: ${longTitle}` })
     const heading = within(article).getByRole('heading', { level: 2, name: longTitle })
 
     expect(title).toBeVisible()
