@@ -174,6 +174,27 @@ describe('DashboardScreen', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Deep Work' })).toBeInTheDocument()
   })
 
+  it('soft-deletes a dashboard item and removes it from active cards immediately', async () => {
+    const repository = createMockInterestRepository()
+
+    render(
+      <LocaleProvider>
+        <DashboardScreen repository={repository} />
+      </LocaleProvider>,
+    )
+
+    const arrivalCard = (await screen.findByRole('heading', { level: 2, name: 'Arrival' })).closest('[role="article"]') as HTMLElement
+
+    fireEvent.click(within(arrivalCard).getByRole('button', { name: 'Delete' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { level: 2, name: 'Arrival' })).not.toBeInTheDocument()
+    })
+
+    expect(screen.getAllByRole('article')).toHaveLength(4)
+    expect((await repository.listItems()).map((item) => item.id)).not.toContain('movie-arrival')
+  })
+
   it('preserves app-level status changes after repository recreation', async () => {
     const firstRender = render(
       <LocaleProvider>
@@ -234,7 +255,6 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('button', { name: 'EN' })).toHaveAttribute('aria-pressed', 'true')
 
     const arrivalAction = within(getArrivalCard()).getByRole('button', { name: 'Start now' })
-
     expect(arrivalAction).toBeEnabled()
     expect(within(completedCard).getByRole('button', { name: 'Completed' })).toBeDisabled()
 

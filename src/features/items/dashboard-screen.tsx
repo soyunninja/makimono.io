@@ -78,6 +78,16 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
     )
   }
 
+  async function handleDeleteItem(item: InterestItem) {
+    const deletedItem = await repositoryRef.current.deleteItem(item.id)
+
+    if (!deletedItem) {
+      return
+    }
+
+    setItems((currentItems) => currentItems.filter((currentItem) => currentItem.id !== deletedItem.id))
+  }
+
   return (
     <AppShell
       actions={(
@@ -135,6 +145,10 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
                 locale={locale}
                 metadata={getCategoryMetadata(item.category, locale)}
                 onAdvance={handleAdvanceStatus}
+                onDelete={handleDeleteItem}
+                deleteLabel={t('dashboard.deleteAction')}
+                editHref={`/dashboard/edit/${item.id}`}
+                editLabel={t('dashboard.editAction')}
                 startLabel={t('dashboard.startAction')}
               />
             ))}

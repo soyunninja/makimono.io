@@ -13,6 +13,7 @@ import { resetAppInterestRepository } from '@/features/items/mock-repository'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { DashboardAddRoutePage } from '@/routes/dashboard.add'
 import { DashboardArchiveRoutePage } from '@/routes/dashboard.archive'
+import { DashboardEditRoutePage } from '@/routes/dashboard.edit.$itemId'
 import { DashboardSuggestRoutePage } from '@/routes/dashboard.suggest'
 import { DashboardRoutePage } from '@/routes/dashboard'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
@@ -53,15 +54,22 @@ const dashboardArchiveRoute = createRoute({
   component: DashboardArchiveRoutePage,
 })
 
+const dashboardEditRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: '/edit/$itemId',
+  component: DashboardEditRoutePage,
+})
+
 const routeTree = rootRoute.addChildren([
   dashboardRoute.addChildren([
     dashboardAddRoute,
     dashboardSuggestRoute,
     dashboardArchiveRoute,
+    dashboardEditRoute,
   ]),
 ])
 
-async function renderRoute(pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive') {
+async function renderRoute(pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive' | '/dashboard/edit/movie-arrival') {
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({
@@ -133,5 +141,24 @@ describe('dashboard nested routes', () => {
     })
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Refactoring' })).toBeInTheDocument()
+  })
+
+  it('updates a dashboard item from the edit flow and closes back to /dashboard', async () => {
+    const router = await renderRoute('/dashboard/edit/movie-arrival')
+
+    await screen.findByRole('heading', { level: 1, name: 'Your interests', hidden: true })
+    expect(screen.getByRole('heading', { level: 1, name: 'Edit interest' })).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Arrival (Director Cut)' } })
+    fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'drama, revisit' } })
+    fireEvent.change(screen.getByLabelText('Notes'), { target: { value: 'Updated for the next rewatch.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/dashboard')
+    })
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Arrival (Director Cut)' })).toBeInTheDocument()
+    expect(screen.getByText('Updated for the next rewatch.')).toBeInTheDocument()
   })
 })

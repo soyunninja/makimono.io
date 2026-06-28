@@ -2,6 +2,7 @@ import type { CategoryMetadata } from '@/features/items/metadata'
 import type { InterestItem } from '@/features/items/types'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
@@ -12,7 +13,11 @@ type InterestCardProps = {
   metadata: CategoryMetadata
   locale: 'en' | 'es'
   startLabel: string
+  editHref: string
+  editLabel: string
+  deleteLabel: string
   onAdvance: (item: InterestItem) => void
+  onDelete: (item: InterestItem) => void
 }
 
 function formatCreatedAt(createdAt: string, locale: 'en' | 'es') {
@@ -22,7 +27,7 @@ function formatCreatedAt(createdAt: string, locale: 'en' | 'es') {
   }).format(new Date(createdAt))
 }
 
-export function InterestCard({ item, metadata, locale, startLabel, onAdvance }: InterestCardProps) {
+export function InterestCard({ item, metadata, locale, startLabel, editHref, editLabel, deleteLabel, onAdvance, onDelete }: InterestCardProps) {
   return (
     <Card
       className={cn('flex h-full flex-col border-l-4', metadata.cardBorderClassName, metadata.surfaceClassName)}
@@ -62,7 +67,20 @@ export function InterestCard({ item, metadata, locale, startLabel, onAdvance }: 
         </p>
       </CardContent>
 
-      <CardFooter className="mt-auto justify-end flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+      <CardFooter className="mt-auto flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Button asChild className={cn('w-full sm:w-auto', metadata.textClassName)} type="button" variant="ghost">
+            <a href={editHref}>{editLabel}</a>
+          </Button>
+          <Button
+            className="w-full sm:w-auto border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => onDelete(item)}
+            type="button"
+            variant="outline"
+          >
+            {deleteLabel}
+          </Button>
+        </div>
         <StatusAction item={item} metadata={metadata} onAdvance={onAdvance} startLabel={startLabel} />
       </CardFooter>
     </Card>

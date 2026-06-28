@@ -50,6 +50,11 @@ export type Dictionary = {
     addAction: string
     suggestAction: string
     archiveAction: string
+    editAction: string
+    deleteAction: string
+    editTitle: string
+    editDescription: string
+    saveAction: string
   }
   archive: {
     eyebrow: string
@@ -150,6 +155,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addAction: 'Add interest',
       suggestAction: 'Get suggestions',
       archiveAction: 'Archive',
+      editAction: 'Edit',
+      deleteAction: 'Delete',
+      editTitle: 'Edit interest',
+      editDescription: 'Update the saved details and keep the item on your dashboard.',
+      saveAction: 'Save changes',
     },
     archive: {
       eyebrow: 'Archive',
@@ -328,6 +338,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addAction: 'Añadir interés',
       suggestAction: 'Pedir sugerencias',
       archiveAction: 'Archivo',
+      editAction: 'Editar',
+      deleteAction: 'Eliminar',
+      editTitle: 'Editar interés',
+      editDescription: 'Actualiza los detalles guardados y mantén el elemento en tu dashboard.',
+      saveAction: 'Guardar cambios',
     },
     archive: {
       eyebrow: 'Archivo',

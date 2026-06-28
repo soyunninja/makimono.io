@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -14,7 +15,7 @@ import {
   createInitialCategoryFieldValues,
   type CategoryFieldValueKey,
 } from '@/features/items/add-category-fields'
-import { listCategoryMetadata } from '@/features/items/metadata'
+import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import type { Category, InterestItem, InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
@@ -28,11 +29,23 @@ type AdaptiveAddFlowProps = {
   onRequestClose?: () => void
 }
 
+type AdaptiveEditFlowProps = {
+  itemId: string
+  repository?: InterestRepository
+  isDesktop?: boolean
+  onUpdated?: (item: InterestItem) => Promise<void> | void
+  onRequestClose?: () => void
+}
+
 function parseTags(tags: string) {
   return tags
     .split(',')
     .map((tag) => tag.trim())
     .filter(Boolean)
+}
+
+function formatTags(tags: string[]) {
+  return tags.join(', ')
 }
 
 function mergeNotes(notes: string, categoryNotes?: string) {
@@ -82,6 +95,59 @@ function useDesktopBreakpoint(forcedValue?: boolean) {
   }, [forcedValue])
 
   return isDesktop
+}
+
+type InterestDetailsFieldsProps = {
+  title: string
+  tags: string
+  notes: string
+  onTitleChange: (value: string) => void
+  onTagsChange: (value: string) => void
+  onNotesChange: (value: string) => void
+}
+
+function InterestDetailsFields({ title, tags, notes, onTitleChange, onTagsChange, onNotesChange }: InterestDetailsFieldsProps) {
+  const { t } = useLocale()
+
+  return (
+    <Card className="bg-background/40">
+      <CardHeader>
+        <CardTitle>{t('addFlow.commonDetailsHeading')}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="add-interest-title">{t('addFlow.titleLabel')}</Label>
+          <Input
+            id="add-interest-title"
+            onChange={(event) => onTitleChange(event.target.value)}
+            placeholder={t('addFlow.titlePlaceholder')}
+            required
+            value={title}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="add-interest-tags">{t('addFlow.tagsLabel')}</Label>
+          <Input
+            id="add-interest-tags"
+            onChange={(event) => onTagsChange(event.target.value)}
+            placeholder={t('addFlow.tagsPlaceholder')}
+            value={tags}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="add-interest-notes">{t('addFlow.notesLabel')}</Label>
+          <Textarea
+            id="add-interest-notes"
+            onChange={(event) => onNotesChange(event.target.value)}
+            placeholder={t('addFlow.notesPlaceholder')}
+            value={notes}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 export function AdaptiveAddFlow({
@@ -184,43 +250,14 @@ export function AdaptiveAddFlow({
           </CardContent>
         </Card>
 
-        <Card className="bg-background/40">
-          <CardHeader>
-            <CardTitle>{t('addFlow.commonDetailsHeading')}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="add-interest-title">{t('addFlow.titleLabel')}</Label>
-              <Input
-                id="add-interest-title"
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder={t('addFlow.titlePlaceholder')}
-                required
-                value={title}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="add-interest-tags">{t('addFlow.tagsLabel')}</Label>
-              <Input
-                id="add-interest-tags"
-                onChange={(event) => setTags(event.target.value)}
-                placeholder={t('addFlow.tagsPlaceholder')}
-                value={tags}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="add-interest-notes">{t('addFlow.notesLabel')}</Label>
-              <Textarea
-                id="add-interest-notes"
-                onChange={(event) => setNotes(event.target.value)}
-                placeholder={t('addFlow.notesPlaceholder')}
-                value={notes}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <InterestDetailsFields
+          notes={notes}
+          onNotesChange={setNotes}
+          onTagsChange={setTags}
+          onTitleChange={setTitle}
+          tags={tags}
+          title={title}
+        />
 
         {selectedCategory && selectedCategoryMetadata ? (
           <AddCategoryFields
@@ -238,6 +275,156 @@ export function AdaptiveAddFlow({
           </Button>
           <Button disabled={isSubmitDisabled} type="submit">
             {t('addFlow.submit')}
+          </Button>
+        </div>
+      </form>
+    </div>
+  )
+
+  if (resolvedIsDesktop) {
+    return (
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            onRequestClose?.()
+          }
+        }}
+        open
+      >
+        <DialogContent className="max-h-[90vh] overflow-hidden" closeLabel={t('app.closeLabel')}>
+          {formContent}
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  return (
+    <Sheet
+      onOpenChange={(open) => {
+        if (!open) {
+          onRequestClose?.()
+        }
+      }}
+      open
+    >
+      <SheetContent className="rounded-t-3xl border-x border-t border-border/70" closeLabel={t('app.closeLabel')} side="bottom">
+        {formContent}
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+export function AdaptiveEditFlow({
+  itemId,
+  repository = getAppInterestRepository(),
+  isDesktop,
+  onUpdated,
+  onRequestClose,
+}: AdaptiveEditFlowProps) {
+  const { locale, t } = useLocale()
+  const resolvedIsDesktop = useDesktopBreakpoint(isDesktop)
+  const [item, setItem] = useState<InterestItem | null>(null)
+  const [title, setTitle] = useState('')
+  const [tags, setTags] = useState('')
+  const [notes, setNotes] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadItem() {
+      const nextItem = (await repository.listItems()).find((entry) => entry.id === itemId) ?? null
+
+      if (!isMounted) {
+        return
+      }
+
+      if (!nextItem) {
+        onRequestClose?.()
+        return
+      }
+
+      setItem(nextItem)
+      setTitle(nextItem.title)
+      setTags(formatTags(nextItem.tags))
+      setNotes(nextItem.notes ?? '')
+    }
+
+    void loadItem()
+
+    return () => {
+      isMounted = false
+    }
+  }, [itemId, onRequestClose, repository])
+
+  if (!item) {
+    return null
+  }
+
+  const metadata = getCategoryMetadata(item.category, locale)
+  const isSubmitDisabled = isSubmitting || title.trim().length === 0
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!item || title.trim().length === 0 || isSubmitting) {
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const updatedItem = await repository.updateItem(item.id, {
+        title: title.trim(),
+        notes: notes.trim() ? notes.trim() : undefined,
+        tags: parseTags(tags),
+      })
+
+      setIsSubmitting(false)
+
+      if (!updatedItem) {
+        onRequestClose?.()
+        return
+      }
+
+      setItem(updatedItem)
+      await onUpdated?.(updatedItem)
+    }
+    catch (error) {
+      setIsSubmitting(false)
+      throw error
+    }
+  }
+
+  const formContent = (
+    <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('dashboard.editTitle')}</h1>
+        <p className="text-sm leading-6 text-muted-foreground">{t('dashboard.editDescription')}</p>
+      </div>
+
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge className={metadata.accentClassName} variant="outline">
+            {metadata.label}
+          </Badge>
+        </div>
+
+        <InterestDetailsFields
+          notes={notes}
+          onNotesChange={setNotes}
+          onTagsChange={setTags}
+          onTitleChange={setTitle}
+          tags={tags}
+          title={title}
+        />
+
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button onClick={onRequestClose} type="button" variant="outline">
+            {t('addFlow.cancel')}
+          </Button>
+          <Button disabled={isSubmitDisabled} type="submit">
+            {t('dashboard.saveAction')}
           </Button>
         </div>
       </form>
