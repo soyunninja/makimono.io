@@ -5,21 +5,7 @@ import {
   INTEREST_ITEMS_STORAGE_KEY,
 } from '@/features/items/local-storage-repository'
 import { defaultMockItems } from '@/features/items/mock-repository'
-
-function installMockLocalStorage() {
-  const values = new Map<string, string>()
-  Object.defineProperty(window, 'localStorage', {
-    configurable: true,
-    value: {
-      clear: () => void values.clear(),
-      getItem: (key: string) => values.get(key) ?? null,
-      key: (index: number) => Array.from(values.keys())[index] ?? null,
-      get length() { return values.size },
-      removeItem: (key: string) => void values.delete(key),
-      setItem: (key: string, value: string) => void values.set(key, value),
-    } satisfies Storage,
-  })
-}
+import { installMockLocalStorage } from '@/test/mock-local-storage'
 
 async function expectSeedFallback(storedValue: string) {
   window.localStorage.setItem(INTEREST_ITEMS_STORAGE_KEY, storedValue)

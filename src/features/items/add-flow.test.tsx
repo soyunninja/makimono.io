@@ -1,9 +1,21 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AdaptiveAddFlow } from '@/features/items/add-flow'
-import { createMockInterestRepository } from '@/features/items/mock-repository'
+import { createMockInterestRepository, getAppInterestRepository, resetAppInterestRepository } from '@/features/items/mock-repository'
 import { LocaleProvider } from '@/i18n/locale-provider'
+import { installMockLocalStorage } from '@/test/mock-local-storage'
+
+beforeEach(() => {
+  installMockLocalStorage()
+  window.localStorage.clear()
+  resetAppInterestRepository()
+})
+
+afterEach(() => {
+  window.localStorage.clear()
+  resetAppInterestRepository()
+})
 
 describe('AdaptiveAddFlow', () => {
   it('switches the category-specific fields when the selected category changes on desktop', async () => {
@@ -106,5 +118,37 @@ describe('AdaptiveAddFlow', () => {
     fireEvent.change(titleInput, { target: { value: 'A Short Hike' } })
 
     expect(submitButton).toBeEnabled()
+  })
+
+  it('persists created items across app repository recreation', async () => {
+    const onCreated = vi.fn()
+
+    resetAppInterestRepository([])
+
+    render(
+      <LocaleProvider>
+        <AdaptiveAddFlow isDesktop={false} onCreated={onCreated} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Books' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Clean Architecture' } })
+    fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'architecture, boundaries' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
+
+    await waitFor(() => {
+      expect(onCreated).toHaveBeenCalledTimes(1)
+    })
+
+    resetAppInterestRepository([])
+
+    const recreatedItems = await getAppInterestRepository([]).listItems()
+
+    expect(recreatedItems).toHaveLength(1)
+    expect(recreatedItems[0]).toMatchObject({
+      category: 'books',
+      tags: ['architecture', 'boundaries'],
+      title: 'Clean Architecture',
+    })
   })
 })

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import {
   Outlet,
   RouterProvider,
@@ -7,13 +7,15 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { resetAppInterestRepository } from '@/features/items/mock-repository'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { DashboardAddRoutePage } from '@/routes/dashboard.add'
 import { DashboardArchiveRoutePage } from '@/routes/dashboard.archive'
 import { DashboardSuggestRoutePage } from '@/routes/dashboard.suggest'
 import { DashboardRoutePage } from '@/routes/dashboard'
+import { installMockLocalStorage } from '@/test/mock-local-storage'
 
 function TestRoot() {
   return (
@@ -59,7 +61,7 @@ const routeTree = rootRoute.addChildren([
   ]),
 ])
 
-async function renderRoute(pathname: '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive') {
+async function renderRoute(pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive') {
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({
@@ -70,7 +72,20 @@ async function renderRoute(pathname: '/dashboard/add' | '/dashboard/suggest' | '
   await router.load()
 
   render(<RouterProvider router={router} />)
+
+  return router
 }
+
+beforeEach(() => {
+  installMockLocalStorage()
+  window.localStorage.clear()
+  resetAppInterestRepository()
+})
+
+afterEach(() => {
+  window.localStorage.clear()
+  resetAppInterestRepository()
+})
 
 describe('dashboard nested routes', () => {
   it('renders the adaptive add flow on top of the dashboard without duplicating the dashboard shell', async () => {
@@ -103,5 +118,20 @@ describe('dashboard nested routes', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Back to dashboard' })).toBeInTheDocument()
+  })
+
+  it('shows a created item on the dashboard after the add flow closes back to /dashboard', async () => {
+    const router = await renderRoute('/dashboard/add')
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Books' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Refactoring' } })
+    fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'martin, legacy' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/dashboard')
+    })
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Refactoring' })).toBeInTheDocument()
   })
 })

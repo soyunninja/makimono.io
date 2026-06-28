@@ -15,10 +15,11 @@ import { useLocale } from '@/i18n/locale-provider'
 type CategoryFilterValue = Category | 'all'
 
 type DashboardScreenProps = {
+  reloadKey?: string
   repository?: InterestRepository
 }
 
-export function DashboardScreen({ repository = getAppInterestRepository() }: DashboardScreenProps) {
+export function DashboardScreen({ reloadKey, repository = getAppInterestRepository() }: DashboardScreenProps) {
   const { locale, t } = useLocale()
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
@@ -26,7 +27,12 @@ export function DashboardScreen({ repository = getAppInterestRepository() }: Das
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    repositoryRef.current = repository
+  }, [repository])
+
+  useEffect(() => {
     let isMounted = true
+    setIsLoading(true)
 
     async function loadItems() {
       const nextItems = await repositoryRef.current.listItems()
@@ -42,7 +48,7 @@ export function DashboardScreen({ repository = getAppInterestRepository() }: Das
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [reloadKey, repository])
 
   const categories = useMemo(() => listCategoryMetadata(locale), [locale])
 

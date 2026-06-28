@@ -1,13 +1,26 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { DashboardScreen } from '@/features/items/dashboard-screen'
 import {
   createMockInterestRepository,
   defaultMockItems,
+  getAppInterestRepository,
   resetAppInterestRepository,
 } from '@/features/items/mock-repository'
 import { LocaleProvider } from '@/i18n/locale-provider'
+import { installMockLocalStorage } from '@/test/mock-local-storage'
+
+beforeEach(() => {
+  installMockLocalStorage()
+  window.localStorage.clear()
+  resetAppInterestRepository()
+})
+
+afterEach(() => {
+  window.localStorage.clear()
+  resetAppInterestRepository()
+})
 
 describe('DashboardScreen', () => {
   it('renders the five first-class category cards behind the local mock repository', async () => {
@@ -134,9 +147,34 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
   })
 
-  it('resets local mock changes after a reload instead of treating them as persisted', async () => {
-    resetAppInterestRepository()
+  it('reloads repository items when the dashboard returns from the add flow', async () => {
+    const repository = resetAppInterestRepository([])
 
+    const dashboard = render(
+      <LocaleProvider>
+        <DashboardScreen reloadKey={'/dashboard/add'} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 2, name: 'Deep Work' })).not.toBeInTheDocument()
+
+    await repository.createItem({
+      category: 'books',
+      title: 'Deep Work',
+      tags: ['focus'],
+    })
+
+    dashboard.rerender(
+      <LocaleProvider>
+        <DashboardScreen reloadKey={'/dashboard'} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Deep Work' })).toBeInTheDocument()
+  })
+
+  it('preserves app-level status changes after repository recreation', async () => {
     const firstRender = render(
       <LocaleProvider>
         <DashboardScreen />
@@ -144,7 +182,6 @@ describe('DashboardScreen', () => {
     )
 
     await screen.findByRole('heading', { level: 2, name: 'Arrival' })
-
     fireEvent.click(screen.getByRole('radio', { name: 'Movies' }))
 
     await waitFor(() => {
@@ -162,7 +199,7 @@ describe('DashboardScreen', () => {
 
     render(
       <LocaleProvider>
-        <DashboardScreen />
+        <DashboardScreen repository={getAppInterestRepository()} />
       </LocaleProvider>,
     )
 
@@ -173,10 +210,8 @@ describe('DashboardScreen', () => {
       expect(screen.getAllByRole('article')).toHaveLength(1)
     })
 
-    expect(screen.getByText('Planned')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Start now' })).toBeInTheDocument()
-
-    resetAppInterestRepository()
+    expect(screen.getByText('In progress')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mark as watched' })).toBeInTheDocument()
   })
 
   it('exposes accessible filters, navigation actions, and usable status controls', async () => {

@@ -113,7 +113,7 @@ export function getAppInterestRepository(seedItems: InterestItem[] = defaultMock
 }
 
 export function resetAppInterestRepository(seedItems: InterestItem[] = defaultMockItems): InterestRepository {
-  appInterestRepository = createMockInterestRepository(seedItems)
+  appInterestRepository = null
 
-  return appInterestRepository
+  return getAppInterestRepository(seedItems)
 }

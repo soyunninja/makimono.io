@@ -19,7 +19,7 @@ export function DashboardRoutePage() {
 
   return (
     <>
-      <DashboardScreen />
+      <DashboardScreen reloadKey={pathname} />
       <Outlet />
     </>
   )
