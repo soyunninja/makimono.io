@@ -1,0 +1,58 @@
+schema: spec-driven
+
+context: |
+  Project: meinteresa
+  Stack: none detected (empty repository; no package manifests or source files found)
+  Architecture: not established yet
+  Testing: no test runner, linter, type checker, or formatter detected
+  Style: no project conventions detected
+  Persistence: hybrid (OpenSpec + Engram)
+
+strict_tdd: false
+
+testing:
+  detected: "2026-06-27"
+  runner:
+    command: null
+    framework: null
+  layers:
+    unit:
+      available: false
+      tool: null
+    integration:
+      available: false
+      tool: null
+    e2e:
+      available: false
+      tool: null
+  coverage:
+    available: false
+    command: null
+  quality_tools:
+    linter:
+      available: false
+      command: null
+    type_checker:
+      available: false
+      command: null
+    formatter:
+      available: false
+      command: null
+
+rules:
+  proposal:
+    - Include rollback notes for risky changes.
+  specs:
+    - Use Given/When/Then scenarios.
+    - Use RFC 2119 keywords where behavior matters.
+  design:
+    - Document rationale for architecture decisions.
+  tasks:
+    - Keep tasks small and session-sized.
+  apply:
+    - Follow existing code patterns.
+    - Strict TDD remains disabled until a test runner is introduced.
+  verify:
+    - No test runner is available yet.
+  archive:
+    - Warn before merging destructive deltas.
