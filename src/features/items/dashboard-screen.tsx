@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
+import { LanguageToggle } from '@/components/app/language-toggle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -82,7 +83,11 @@ export function DashboardScreen({ repository = getAppInterestRepository() }: Das
           <Button asChild variant={'secondary'}>
             <a href={'/dashboard/suggest'}>{t('dashboard.suggestAction')}</a>
           </Button>
+          <Button asChild variant={'outline'}>
+            <a href={'/dashboard/archive'}>{t('dashboard.archiveAction')}</a>
+          </Button>
           <Badge variant={'outline'}>{t('dashboard.localDataBadge')}</Badge>
+          <LanguageToggle />
         </div>
       )}
       description={t('dashboard.subtitle')}

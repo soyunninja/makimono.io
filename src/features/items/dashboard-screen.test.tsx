@@ -72,4 +72,30 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('button', { name: 'Mark as watched' })).toBeInTheDocument()
   })
 
+  it('switches the visible dashboard copy when the language toggle changes locale', async () => {
+    render(
+      <LocaleProvider>
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Your interests backlog' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Get suggestions' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Archive' })).toBeInTheDocument()
+    expect(screen.getByText('Language')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'ES' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'Tu lista de intereses' })).toBeInTheDocument()
+    })
+
+    expect(screen.getByRole('link', { name: 'Añadir interés' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Pedir sugerencias' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Archivo' })).toBeInTheDocument()
+    expect(screen.getByText('Idioma')).toBeInTheDocument()
+  })
 })

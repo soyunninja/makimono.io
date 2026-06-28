@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardSuggestRouteImport } from './routes/dashboard.suggest'
+import { Route as DashboardArchiveRouteImport } from './routes/dashboard.archive'
 import { Route as DashboardAddRouteImport } from './routes/dashboard.add'
 
 const DashboardRoute = DashboardRouteImport.update({
@@ -29,6 +30,11 @@ const DashboardSuggestRoute = DashboardSuggestRouteImport.update({
   path: '/suggest',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardArchiveRoute = DashboardArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAddRoute = DashboardAddRouteImport.update({
   id: '/add',
   path: '/add',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/add': typeof DashboardAddRoute
+  '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/add': typeof DashboardAddRoute
+  '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
 }
 export interface FileRoutesById {
@@ -52,14 +60,31 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/add': typeof DashboardAddRoute
+  '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/dashboard/add' | '/dashboard/suggest'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/dashboard/add'
+    | '/dashboard/archive'
+    | '/dashboard/suggest'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/dashboard/add' | '/dashboard/suggest'
-  id: '__root__' | '/' | '/dashboard' | '/dashboard/add' | '/dashboard/suggest'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/dashboard/add'
+    | '/dashboard/archive'
+    | '/dashboard/suggest'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/dashboard/add'
+    | '/dashboard/archive'
+    | '/dashboard/suggest'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -90,6 +115,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSuggestRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/archive': {
+      id: '/dashboard/archive'
+      path: '/archive'
+      fullPath: '/dashboard/archive'
+      preLoaderRoute: typeof DashboardArchiveRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/add': {
       id: '/dashboard/add'
       path: '/add'
@@ -102,11 +134,13 @@ declare module '@tanstack/react-router' {
 
 interface DashboardRouteChildren {
   DashboardAddRoute: typeof DashboardAddRoute
+  DashboardArchiveRoute: typeof DashboardArchiveRoute
   DashboardSuggestRoute: typeof DashboardSuggestRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAddRoute: DashboardAddRoute,
+  DashboardArchiveRoute: DashboardArchiveRoute,
   DashboardSuggestRoute: DashboardSuggestRoute,
 }
 
