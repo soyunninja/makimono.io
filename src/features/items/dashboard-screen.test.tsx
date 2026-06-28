@@ -195,6 +195,19 @@ describe('DashboardScreen', () => {
     expect((await repository.listItems()).map((item) => item.id)).not.toContain('movie-arrival')
   })
 
+  it('exposes a dashboard edit link with the item-specific route href', async () => {
+    render(
+      <LocaleProvider>
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    const arrivalCard = (await screen.findByRole('heading', { level: 2, name: 'Arrival' })).closest('[role="article"]') as HTMLElement
+    const editLink = within(arrivalCard).getByRole('link', { name: 'Edit' })
+
+    expect(editLink).toHaveAttribute('href', '/dashboard/edit/movie-arrival')
+  })
+
   it('preserves app-level status changes after repository recreation', async () => {
     const firstRender = render(
       <LocaleProvider>
