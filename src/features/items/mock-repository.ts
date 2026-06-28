@@ -5,7 +5,16 @@ import {
 } from '@/features/items/types'
 
 import { createLocalStorageInterestRepository } from '@/features/items/local-storage-repository'
-import { buildInterestItem, cloneInterestItem, cloneInterestItems } from '@/features/items/repository-helpers'
+import {
+  buildInterestItem,
+  cloneInterestItem,
+  cloneInterestItems,
+  deleteInterestItem,
+  filterInterestItems,
+  restoreInterestItem,
+  updateInterestItem,
+  updateInterestItems,
+} from '@/features/items/repository-helpers'
 
 let appInterestRepository: InterestRepository | null = null
 
@@ -65,8 +74,8 @@ export function createMockInterestRepository(seedItems: InterestItem[] = default
   let items = cloneInterestItems(seedItems)
 
   return {
-    async listItems() {
-      return cloneInterestItems(items)
+    async listItems(options) {
+      return cloneInterestItems(filterInterestItems(items, options))
     },
     async createItem(input) {
       const item = buildInterestItem(input)
@@ -75,23 +84,36 @@ export function createMockInterestRepository(seedItems: InterestItem[] = default
 
       return cloneItem(item)
     },
+    async updateItem(id, input) {
+      const updatedItems = updateInterestItems(items, id, (item) => updateInterestItem(item, input))
+
+      items = updatedItems.nextItems
+
+      return updatedItems.updatedItem
+    },
     async updateStatus(id: string, status: ItemStatus) {
-      let updatedItem: InterestItem | null = null
+      const updatedItems = updateInterestItems(items, id, (item) => ({
+        ...item,
+        status,
+      }))
 
-      items = items.map((item) => {
-        if (item.id !== id) {
-          return item
-        }
+      items = updatedItems.nextItems
 
-        updatedItem = {
-          ...item,
-          status,
-        }
+      return updatedItems.updatedItem
+    },
+    async deleteItem(id) {
+      const updatedItems = updateInterestItems(items, id, (item) => deleteInterestItem(item))
 
-        return updatedItem
-      })
+      items = updatedItems.nextItems
 
-      return updatedItem ? cloneItem(updatedItem) : null
+      return updatedItems.updatedItem
+    },
+    async restoreItem(id) {
+      const updatedItems = updateInterestItems(items, id, (item) => restoreInterestItem(item))
+
+      items = updatedItems.nextItems
+
+      return updatedItems.updatedItem
     },
   }
 }

@@ -5,7 +5,12 @@ import {
   buildInterestItem,
   cloneInterestItem,
   cloneInterestItems,
+  deleteInterestItem,
+  filterInterestItems,
   isInterestItem,
+  restoreInterestItem,
+  updateInterestItem,
+  updateInterestItems,
 } from '@/features/items/repository-helpers'
 export const INTEREST_ITEMS_STORAGE_KEY = 'meinteresa:interest-items:v1'
 const INTEREST_ITEMS_STORAGE_VERSION = 1 as const
@@ -113,8 +118,8 @@ export function createLocalStorageInterestRepository(seedItems: InterestItem[] =
     }
   }
   return {
-    async listItems() {
-      return readItems()
+    async listItems(options) {
+      return cloneInterestItems(filterInterestItems(readItems(), options))
     },
     async createItem(input) {
       const item = buildInterestItem(input)
@@ -124,29 +129,52 @@ export function createLocalStorageInterestRepository(seedItems: InterestItem[] =
 
       return cloneInterestItem(item)
     },
-    async updateStatus(id: string, status: ItemStatus) {
-      let updatedItem: InterestItem | null = null
+    async updateItem(id, input) {
+      const updatedItems = updateInterestItems(readItems(), id, (item) => updateInterestItem(item, input))
 
-      const nextItems = readItems().map((item) => {
-        if (item.id !== id) {
-          return item
-        }
-
-        updatedItem = {
-          ...item,
-          status,
-        }
-
-        return updatedItem
-      })
-
-      if (!updatedItem) {
+      if (!updatedItems.updatedItem) {
         return null
       }
 
-      persistItems(nextItems)
+      persistItems(updatedItems.nextItems)
 
-      return cloneInterestItem(updatedItem)
+      return updatedItems.updatedItem
+    },
+    async updateStatus(id: string, status: ItemStatus) {
+      const updatedItems = updateInterestItems(readItems(), id, (item) => ({
+        ...item,
+        status,
+      }))
+
+      if (!updatedItems.updatedItem) {
+        return null
+      }
+
+      persistItems(updatedItems.nextItems)
+
+      return updatedItems.updatedItem
+    },
+    async deleteItem(id) {
+      const updatedItems = updateInterestItems(readItems(), id, (item) => deleteInterestItem(item))
+
+      if (!updatedItems.updatedItem) {
+        return null
+      }
+
+      persistItems(updatedItems.nextItems)
+
+      return updatedItems.updatedItem
+    },
+    async restoreItem(id) {
+      const updatedItems = updateInterestItems(readItems(), id, (item) => restoreInterestItem(item))
+
+      if (!updatedItems.updatedItem) {
+        return null
+      }
+
+      persistItems(updatedItems.nextItems)
+
+      return updatedItems.updatedItem
     },
   }
 }

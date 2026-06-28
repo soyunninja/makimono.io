@@ -24,7 +24,7 @@ Use this file as the project-level review contract for automated and human check
 
 ## Architecture
 
-- Keep the MVP mock-only: no persistence, authentication, backend calls, or Gemini integration unless a later spec explicitly adds them.
+- Keep the MVP mock-only beyond the approved browser-local item persistence slices: no authentication, backend calls, databases, sync, or real Gemini integration unless a later spec explicitly adds them.
 - Keep item-domain logic under `src/features/items/` and localization under `src/i18n/`.
 - Preserve small review slices; do not mix dashboard, add-flow, suggester, and verification work in one change without explicit approval.
 - The initial repository baseline may contain multiple previously approved SDD slices when `openspec/changes/*/tasks.md` and `apply-progress.md` document the slice boundaries, verification, and remaining work.

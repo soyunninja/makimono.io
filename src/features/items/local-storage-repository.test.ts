@@ -26,7 +26,7 @@ afterEach(() => {
 })
 
 describe('createLocalStorageInterestRepository', () => {
-  it('initializes from seed items and persists creates and status updates across repository recreation', async () => {
+  it('persists edit, soft-delete, and restore operations across repository recreation', async () => {
     const repository = createLocalStorageInterestRepository([])
     expect(await repository.listItems()).toEqual([])
     const created = await repository.createItem({
@@ -36,17 +36,50 @@ describe('createLocalStorageInterestRepository', () => {
       tags: [' patterns ', 'ddd', ''],
     })
     expect(created.tags).toEqual(['patterns', 'ddd'])
+
+    const edited = await repository.updateItem(created.id, {
+      title: 'Domain-Driven Design Distilled',
+      notes: undefined,
+      tags: [' tactical ', 'ddd', ''],
+    })
+    expect(edited).toMatchObject({
+      id: created.id,
+      title: 'Domain-Driven Design Distilled',
+      tags: ['tactical', 'ddd'],
+    })
+    expect(edited?.notes).toBeUndefined()
+
     const updated = await repository.updateStatus(created.id, 'completed')
     expect(updated?.status).toBe('completed')
+
+    const deleted = await repository.deleteItem(created.id)
+    expect(deleted?.deletedAt).toEqual(expect.any(String))
+    expect(await repository.listItems()).toEqual([])
+    expect(await repository.listItems({ includeDeleted: true })).toHaveLength(1)
+
     const recreatedRepository = createLocalStorageInterestRepository([])
-    const persistedItems = await recreatedRepository.listItems()
-    expect(persistedItems).toHaveLength(1)
-    expect(persistedItems[0]).toMatchObject({
+    const persistedDeletedItems = await recreatedRepository.listItems({ includeDeleted: true })
+    expect(persistedDeletedItems).toHaveLength(1)
+    expect(persistedDeletedItems[0]).toMatchObject({
       id: created.id,
       status: 'completed',
-      title: 'Domain-Driven Design',
-      tags: ['patterns', 'ddd'],
+      title: 'Domain-Driven Design Distilled',
+      tags: ['tactical', 'ddd'],
     })
+
+    const restored = await recreatedRepository.restoreItem(created.id)
+    expect(restored?.deletedAt).toBeUndefined()
+
+    const restoredRepository = createLocalStorageInterestRepository([])
+    const persistedActiveItems = await restoredRepository.listItems()
+    expect(persistedActiveItems).toHaveLength(1)
+    expect(persistedActiveItems[0]).toMatchObject({
+      id: created.id,
+      status: 'completed',
+      title: 'Domain-Driven Design Distilled',
+      tags: ['tactical', 'ddd'],
+    })
+    expect(persistedActiveItems[0]?.deletedAt).toBeUndefined()
   })
 
   it('returns clone-safe reads so callers cannot mutate stored data', async () => {
@@ -72,8 +105,52 @@ describe('createLocalStorageInterestRepository', () => {
       version: 0,
       items: [{ id: 'legacy-item', category: 'podcasts', title: 'Legacy', status: 'queued', tags: 'bad', createdAt: 123 }],
     }),
+    JSON.stringify({
+      version: 1,
+      items: [{
+        id: 'legacy-item',
+        category: 'books',
+        title: 'Legacy',
+        status: 'pending',
+        tags: [],
+        createdAt: '2026-06-01T08:00:00.000Z',
+        deletedAt: 123,
+      }],
+    }),
   ])('restores seed items for invalid persisted data', async (storedValue) => {
     await expectSeedFallback(storedValue)
+  })
+
+  it('keeps backward compatibility with version 1 items that omit deletedAt', async () => {
+    const legacyItems = [{
+      id: 'book-refactoring',
+      category: 'books',
+      title: 'Refactoring',
+      status: 'pending',
+      notes: 'Legacy payload.',
+      tags: ['code'],
+      createdAt: '2026-06-01T08:00:00.000Z',
+    }]
+
+    window.localStorage.setItem(INTEREST_ITEMS_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      items: legacyItems,
+    }))
+
+    const repository = createLocalStorageInterestRepository([])
+
+    await expect(repository.listItems()).resolves.toEqual(legacyItems)
+  })
+
+  it('returns null for missing edit, delete, and restore operations without mutating stored items', async () => {
+    const repository = createLocalStorageInterestRepository(defaultMockItems)
+    const beforeItems = await repository.listItems({ includeDeleted: true })
+
+    await expect(repository.updateItem('missing-item', { title: 'Nope' })).resolves.toBeNull()
+    await expect(repository.deleteItem('missing-item')).resolves.toBeNull()
+    await expect(repository.restoreItem('missing-item')).resolves.toBeNull()
+
+    await expect(repository.listItems({ includeDeleted: true })).resolves.toEqual(beforeItems)
   })
 
   it('falls back to in-memory items when localStorage access is blocked', async () => {
@@ -90,10 +167,20 @@ describe('createLocalStorageInterestRepository', () => {
       title: 'Andor',
       tags: ['star wars'],
     })
+    const edited = await repository.updateItem(created.id, {
+      title: 'Andor Season 1',
+    })
+    const deleted = await repository.deleteItem(created.id)
+    const hiddenItems = await repository.listItems()
+    const restored = await repository.restoreItem(created.id)
     const items = await repository.listItems()
     expect(created.title).toBe('Andor')
+    expect(edited?.title).toBe('Andor Season 1')
+    expect(deleted?.deletedAt).toEqual(expect.any(String))
+    expect(hiddenItems).toEqual([])
+    expect(restored?.deletedAt).toBeUndefined()
     expect(items).toHaveLength(1)
-    expect(items[0]?.title).toBe('Andor')
+    expect(items[0]?.title).toBe('Andor Season 1')
     expect(getItemSpy).toHaveBeenCalled()
     expect(setItemSpy).not.toHaveBeenCalled()
   })
