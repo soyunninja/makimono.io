@@ -264,28 +264,7 @@ describe('DashboardScreen', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Deep Work' })).toBeInTheDocument()
   })
 
-  it('soft-deletes a dashboard item and removes it from active cards immediately', async () => {
-    const repository = createMockInterestRepository()
-
-    render(
-      <LocaleProvider>
-        <DashboardScreen repository={repository} />
-      </LocaleProvider>,
-    )
-
-    const arrivalCard = (await screen.findByRole('heading', { level: 2, name: 'Arrival' })).closest('[role="article"]') as HTMLElement
-
-    fireEvent.click(within(arrivalCard).getByRole('button', { name: 'Delete' }))
-
-    await waitFor(() => {
-      expect(screen.queryByRole('heading', { level: 2, name: 'Arrival' })).not.toBeInTheDocument()
-    })
-
-    expect(screen.getAllByRole('article')).toHaveLength(3)
-    expect((await repository.listItems()).map((item) => item.id)).not.toContain('movie-arrival')
-  })
-
-  it('exposes a dashboard edit link with the item-specific route href', async () => {
+  it('exposes the text content area as the edit link without separate dashboard edit or delete buttons', async () => {
     render(
       <LocaleProvider>
         <DashboardScreen repository={createMockInterestRepository()} />
@@ -293,9 +272,12 @@ describe('DashboardScreen', () => {
     )
 
     const arrivalCard = (await screen.findByRole('heading', { level: 2, name: 'Arrival' })).closest('[role="article"]') as HTMLElement
-    const editLink = within(arrivalCard).getByRole('link', { name: 'Edit' })
+    const editLink = within(arrivalCard).getByRole('link', { name: 'Edit: Arrival' })
 
     expect(editLink).toHaveAttribute('href', '/dashboard/edit/movie-arrival')
+    expect(editLink).toContainElement(within(arrivalCard).getByRole('heading', { level: 2, name: 'Arrival' }))
+    expect(within(arrivalCard).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+    expect(within(arrivalCard).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
   })
 
   it('preserves app-level status changes after repository recreation', async () => {

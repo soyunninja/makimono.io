@@ -10,5 +10,5 @@ export function DashboardEditRoutePage() {
   const handleClose = () => {
     void navigate({ to: '/dashboard' })
   }
-  return <AdaptiveEditFlow itemId={itemId} onRequestClose={handleClose} onUpdated={handleClose} />
+  return <AdaptiveEditFlow itemId={itemId} onDeleted={handleClose} onRequestClose={handleClose} onUpdated={handleClose} />
 }

@@ -34,6 +34,7 @@ type AdaptiveEditFlowProps = {
   repository?: InterestRepository
   isDesktop?: boolean
   onUpdated?: (item: InterestItem) => Promise<void> | void
+  onDeleted?: (item: InterestItem) => Promise<void> | void
   onRequestClose?: () => void
 }
 
@@ -319,6 +320,7 @@ export function AdaptiveEditFlow({
   repository = getAppInterestRepository(),
   isDesktop,
   onUpdated,
+  onDeleted,
   onRequestClose,
 }: AdaptiveEditFlowProps) {
   const { locale, t } = useLocale()
@@ -328,6 +330,7 @@ export function AdaptiveEditFlow({
   const [tags, setTags] = useState('')
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -362,12 +365,12 @@ export function AdaptiveEditFlow({
   }
 
   const metadata = getCategoryMetadata(item.category, locale)
-  const isSubmitDisabled = isSubmitting || title.trim().length === 0
+  const isSubmitDisabled = isSubmitting || isDeleting || title.trim().length === 0
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!item || title.trim().length === 0 || isSubmitting) {
+    if (!item || title.trim().length === 0 || isSubmitting || isDeleting) {
       return
     }
 
@@ -396,6 +399,36 @@ export function AdaptiveEditFlow({
     }
   }
 
+  async function handleDelete() {
+    if (!item || isSubmitting || isDeleting) {
+      return
+    }
+
+    setIsDeleting(true)
+
+    try {
+      const deletedItem = await repository.deleteItem(item.id)
+
+      setIsDeleting(false)
+
+      if (!deletedItem) {
+        onRequestClose?.()
+        return
+      }
+
+      if (onDeleted) {
+        await onDeleted(deletedItem)
+        return
+      }
+
+      onRequestClose?.()
+    }
+    catch (error) {
+      setIsDeleting(false)
+      throw error
+    }
+  }
+
   const formContent = (
     <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
       <div className="space-y-2">
@@ -419,13 +452,19 @@ export function AdaptiveEditFlow({
           title={title}
         />
 
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button onClick={onRequestClose} type="button" variant="outline">
-            {t('addFlow.cancel')}
+        <div className="flex flex-col gap-4 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <Button className="w-full sm:w-auto" disabled={isSubmitting || isDeleting} onClick={handleDelete} type="button" variant="destructive">
+            {t('dashboard.deleteEditAction')}
           </Button>
-          <Button disabled={isSubmitDisabled} type="submit">
-            {t('dashboard.saveAction')}
-          </Button>
+
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <Button disabled={isSubmitting || isDeleting} onClick={onRequestClose} type="button" variant="outline">
+              {t('addFlow.cancel')}
+            </Button>
+            <Button disabled={isSubmitDisabled} type="submit">
+              {t('dashboard.saveAction')}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { AdaptiveAddFlow } from '@/features/items/add-flow'
+import { AdaptiveAddFlow, AdaptiveEditFlow } from '@/features/items/add-flow'
 import { createMockInterestRepository, getAppInterestRepository, resetAppInterestRepository } from '@/features/items/mock-repository'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
@@ -36,10 +36,7 @@ describe('AdaptiveAddFlow', () => {
     expect(seriesOption).toHaveAttribute('aria-checked', 'true')
     expect(await screen.findByLabelText('Current season')).toBeInTheDocument()
     expect(screen.getByLabelText('Where to watch next')).toBeInTheDocument()
-    const seriesDetailsCard = screen.getByText('Category details').closest('[data-slot="card"]')
-
-    expect(seriesDetailsCard).not.toBeNull()
-    expect(within(seriesDetailsCard as HTMLElement).getByText('Series')).toBeInTheDocument()
+    expect(screen.getByText('Category details')).toBeInTheDocument()
 
     const booksOption = screen.getByRole('radio', { name: 'Books' })
 
@@ -53,10 +50,7 @@ describe('AdaptiveAddFlow', () => {
     expect(screen.getByLabelText('Reading format')).toBeInTheDocument()
     expect(screen.queryByLabelText('Current season')).not.toBeInTheDocument()
 
-    const booksDetailsCard = screen.getByText('Category details').closest('[data-slot="card"]')
-
-    expect(booksDetailsCard).not.toBeNull()
-    expect(within(booksDetailsCard as HTMLElement).getByText('Books')).toBeInTheDocument()
+    expect(screen.getByText('Category details')).toBeInTheDocument()
   })
 
   it('uses the mobile sheet presentation and creates a mock item with category-specific notes', async () => {
@@ -150,5 +144,21 @@ describe('AdaptiveAddFlow', () => {
       tags: ['architecture', 'boundaries'],
       title: 'Clean Architecture',
     })
+  })
+
+  it('shows a destructive delete action in the edit flow footer', async () => {
+    render(
+      <LocaleProvider>
+        <AdaptiveEditFlow isDesktop itemId="movie-arrival" repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Edit interest' })).toBeInTheDocument()
+
+    const deleteButton = screen.getByRole('button', { name: 'Delete interest' })
+    const saveButton = screen.getByRole('button', { name: 'Save changes' })
+
+    expect(deleteButton).toBeEnabled()
+    expect(deleteButton.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

@@ -19,9 +19,10 @@ const activeDashboardStatuses = new Set<ItemStatus>(['pending', 'in_progress'])
 type DashboardScreenProps = {
   reloadKey?: string
   repository?: InterestRepository
+  onEditItem?: (itemId: string) => void
 }
 
-export function DashboardScreen({ reloadKey, repository = getAppInterestRepository() }: DashboardScreenProps) {
+export function DashboardScreen({ reloadKey, repository = getAppInterestRepository(), onEditItem }: DashboardScreenProps) {
   const { locale, t } = useLocale()
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
@@ -82,16 +83,6 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
     ))
   }
 
-  async function handleDeleteItem(item: InterestItem) {
-    const deletedItem = await repositoryRef.current.deleteItem(item.id)
-
-    if (!deletedItem) {
-      return
-    }
-
-    setItems((currentItems) => currentItems.filter((currentItem) => currentItem.id !== deletedItem.id))
-  }
-
   return (
     <AppShell
       actions={(
@@ -148,11 +139,10 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
                 key={item.id}
                 metadata={getCategoryMetadata(item.category, locale)}
                 onAdvance={handleAdvanceStatus}
-                onDelete={handleDeleteItem}
+                onEdit={onEditItem ? () => onEditItem(item.id) : undefined}
                 cancelLabel={t('addFlow.cancel')}
                 closeLabel={t('app.closeLabel')}
                 completeWarningLabel={t('dashboard.completeWarning')}
-                deleteLabel={t('dashboard.deleteAction')}
                 editHref={`/dashboard/edit/${item.id}`}
                 editLabel={t('dashboard.editAction')}
                 startLabel={t('dashboard.startAction')}

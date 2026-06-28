@@ -52,6 +52,7 @@ export type Dictionary = {
     archiveAction: string
     editAction: string
     deleteAction: string
+    deleteEditAction: string
     editTitle: string
     editDescription: string
     saveAction: string
@@ -164,6 +165,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       archiveAction: 'Archive',
       editAction: 'Edit',
       deleteAction: 'Delete',
+      deleteEditAction: 'Delete interest',
       editTitle: 'Edit interest',
       editDescription: 'Update the saved details and keep the item on your dashboard.',
       saveAction: 'Save changes',
@@ -354,6 +356,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       archiveAction: 'Archivo',
       editAction: 'Editar',
       deleteAction: 'Eliminar',
+      deleteEditAction: 'Eliminar interés',
       editTitle: 'Editar interés',
       editDescription: 'Actualiza los detalles guardados y mantén el elemento en tu dashboard.',
       saveAction: 'Guardar cambios',

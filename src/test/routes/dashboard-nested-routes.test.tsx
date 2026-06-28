@@ -168,6 +168,18 @@ describe('dashboard nested routes', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Refactoring' })).toBeInTheDocument()
   })
 
+  it('opens the edit route when the dashboard card content link is activated', async () => {
+    const router = await renderRoute('/dashboard')
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Edit: Arrival' }))
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/dashboard/edit/movie-arrival')
+    })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Edit interest' })).toBeInTheDocument()
+  })
+
   it('updates a dashboard item from the edit flow and closes back to /dashboard', async () => {
     const router = await renderRoute('/dashboard/edit/movie-arrival')
 
@@ -185,5 +197,21 @@ describe('dashboard nested routes', () => {
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Arrival (Director Cut)' })).toBeInTheDocument()
     expect(screen.getByText('Updated for the next rewatch.')).toBeInTheDocument()
+  })
+
+  it('soft-deletes an item from the edit flow and returns to the dashboard without the card', async () => {
+    const router = await renderRoute('/dashboard/edit/movie-arrival')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Edit interest' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete interest' }))
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/dashboard')
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { level: 2, name: 'Arrival' })).not.toBeInTheDocument()
+    })
   })
 })
