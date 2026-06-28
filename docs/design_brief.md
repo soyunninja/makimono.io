@@ -17,8 +17,8 @@ To capture a premium, developer-centric, and cozy nocturnal vibe, we adopt the p
 | **bg-terminal** | `#24283b` | Hover states, active dropdowns, inner panels |
 | **text-primary** | `#c0caf5` | Primary text and labels |
 | **text-muted** | `#565f89` | Secondary text, placeholders, dates |
-| **accent-cyan** | `#7dcfff` | Web / Links category accent |
-| **accent-blue** | `#7aa2f7` | Movies & Series category accent |
+| **accent-cyan** | `#7dcfff` | Smart suggester and secondary highlights |
+| **accent-blue** | `#7aa2f7` | Music category accent |
 | **accent-purple** | `#bb9af7` | Books category accent |
 | **accent-red** | `#f7768e` | Video Games category accent |
 | **accent-green** | `#9ece6a` | Completed state, success indicators |
@@ -31,22 +31,18 @@ To capture a premium, developer-centric, and cozy nocturnal vibe, we adopt the p
 The app uses a dual layout structure optimized for both desktop and mobile screens.
 
 ### A. Sidebar / Bottom Navigation
-- **Desktop (Sidebar):** Left navigation panel featuring the "MeInteresa" brand, filter views (All, Webs, Movies, Books, Games, Archive), and user profile.
+- **Desktop (Sidebar):** Left navigation panel featuring the "MeInteresa" brand, filter views (All, Music, Movies, Books, Games, Archive), and user profile.
 - **Mobile (Bottom Navigation Bar):** Fills the bottom viewport with custom-styled tabs (Backlog, Suggester, Archive) and a **large, glowing central "+" button** that floats above the bar.
 
 ### B. The Quick Add Action & Adaptive Bottom Sheet
 - **Floating "+" Trigger:** Styled with a neon bloom gradient (`#bb9af7` to `#7dcfff`). Pressing it slides a **Bottom Sheet (Mobile)** or opens a **Modal (Desktop)**.
-- **Adaptive Form Fields:** The modal begins with a Category selector. Changing the category dynamically replaces the input fields:
-  - **Webs/Links:** URL, Title, and Custom Tags.
-  - **Movies/Series:** Title, Streaming Platform (dropdown), and Genre.
-  - **Books:** Title, Author, Pages (optional).
-  - **Video Games:** Title, Platform (console/PC), and Estimated Length (hours).
-  - **All Categories:** Optional notes block.
+- **Adaptive Form Fields:** The modal begins with a Category selector plus the shared fields used by every item: Title, Tags, and optional Notes.
+- **Tags as Source Context:** Platform or source hints such as Netflix, Spotify, Bandcamp, or Kindle belong in Tags instead of category-specific fields.
 - **Save Action:** Clicking "Añadir" stores the item in the local mock repository in a `pending` state. No database persistence is part of the MVP.
 
 ### C. The Grid: Reminder Cards
 Each item is rendered as a stylized card with:
-- **Left Border Accent:** 4px solid border colored by category (e.g., Purple for books, Cyan for webs).
+- **Left Border Accent:** 4px solid border colored by category (e.g., Purple for books, Blue for music).
 - **Glassmorphism:** A subtle backdrop-filter blur over `bg-storm` with a thin border (`#24283b`).
 - **Semantic Action Button:** Adapts depending on the category. Instead of a generic checkbox, the button transitions:
   - Web/Book -> *"Marcar como leído / Leído"*

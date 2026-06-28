@@ -49,7 +49,7 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('radio', { name: 'Movies' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Games' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Books' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Websites' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Music' })).toBeInTheDocument()
   })
 
   it('filters the visible cards by category', async () => {

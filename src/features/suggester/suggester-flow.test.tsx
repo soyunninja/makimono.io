@@ -54,7 +54,7 @@ describe('SmartSuggesterFlow', () => {
     const cta = within(article).getByRole('link', { name: 'Track next' })
 
     expect(within(article).getByText('Why it fits')).toBeInTheDocument()
-    expect(within(article).getByText(/Series|Movies|Games|Books|Websites/)).toBeInTheDocument()
+    expect(within(article).getByText(/Series|Movies|Games|Books|Music/)).toBeInTheDocument()
     expect(cta).toHaveAttribute('href', '/dashboard/add')
   })
 })

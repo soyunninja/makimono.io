@@ -142,6 +142,42 @@ describe('createLocalStorageInterestRepository', () => {
     await expect(repository.listItems()).resolves.toEqual(legacyItems)
   })
 
+  it('drops legacy webs items while preserving other version 1 items', async () => {
+    const legacyItems = [
+      {
+        id: 'book-refactoring',
+        category: 'books',
+        title: 'Refactoring',
+        status: 'pending',
+        notes: 'Keep this one.',
+        tags: ['code'],
+        createdAt: '2026-06-01T08:00:00.000Z',
+      },
+      {
+        id: 'web-legacy-guide',
+        category: 'webs',
+        title: 'Legacy guide',
+        status: 'pending',
+        notes: 'This category no longer exists.',
+        tags: ['reference'],
+        createdAt: '2026-06-02T08:00:00.000Z',
+      },
+    ]
+
+    window.localStorage.setItem(INTEREST_ITEMS_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      items: legacyItems,
+    }))
+
+    const repository = createLocalStorageInterestRepository([])
+
+    await expect(repository.listItems()).resolves.toEqual([legacyItems[0]])
+    expect(JSON.parse(window.localStorage.getItem(INTEREST_ITEMS_STORAGE_KEY) as string)).toEqual({
+      version: 1,
+      items: [legacyItems[0]],
+    })
+  })
+
   it('returns null for missing edit, delete, and restore operations without mutating stored items', async () => {
     const repository = createLocalStorageInterestRepository(defaultMockItems)
     const beforeItems = await repository.listItems({ includeDeleted: true })

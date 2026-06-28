@@ -50,14 +50,14 @@ const categoryAppearance: Record<
     textClassName: 'text-accent-yellow',
     cardBorderClassName: 'border-l-accent-yellow',
   },
-  webs: {
-    accentToken: 'accent-cyan',
-    accentClassName: 'border-accent-cyan/30 bg-accent-cyan/10 text-accent-cyan',
+  music: {
+    accentToken: 'accent-blue',
+    accentClassName: 'border-accent-blue/30 bg-accent-blue/10 text-accent-blue',
     controlClassName:
-      'border-accent-cyan/40 text-accent-cyan hover:border-accent-cyan/60 hover:bg-accent-cyan/10 hover:text-accent-cyan',
-    surfaceClassName: 'border-accent-cyan/30 bg-accent-cyan/10',
-    textClassName: 'text-accent-cyan',
-    cardBorderClassName: 'border-l-accent-cyan',
+      'border-accent-blue/40 text-accent-blue hover:border-accent-blue/60 hover:bg-accent-blue/10 hover:text-accent-blue',
+    surfaceClassName: 'border-accent-blue/30 bg-accent-blue/10',
+    textClassName: 'text-accent-blue',
+    cardBorderClassName: 'border-l-accent-blue',
   },
 }
 

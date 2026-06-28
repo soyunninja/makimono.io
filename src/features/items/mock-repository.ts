@@ -56,12 +56,12 @@ export const defaultMockItems: InterestItem[] = [
     createdAt: '2026-06-04T08:00:00.000Z',
   },
   {
-    id: 'web-llms-txt',
-    category: 'webs',
-    title: 'llmstxt.org',
+    id: 'music-modal-soul',
+    category: 'music',
+    title: 'Nujabes — Modal Soul',
     status: 'pending',
-    notes: 'Reference for future content ingestion ideas.',
-    tags: ['ai', 'reference'],
+    notes: 'Queue this for the next focused afternoon.',
+    tags: ['spotify', 'jazz-hop'],
     createdAt: '2026-06-05T08:00:00.000Z',
   },
 ]

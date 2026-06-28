@@ -63,9 +63,9 @@ describe('ArchiveScreen', () => {
   it('shows deleted items in a separate section with deleted-specific badges', async () => {
     const repository = createMockInterestRepository([])
     const deletedItem = await repository.createItem({
-      category: 'webs',
-      title: 'Web Components Guide',
-      tags: ['reference'],
+      category: 'music',
+      title: 'Floating Points — Promises',
+      tags: ['bandcamp'],
     })
     const completedItem = await repository.createItem({
       category: 'books',
@@ -85,7 +85,7 @@ describe('ArchiveScreen', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Deleted items' })).toBeInTheDocument()
     expect(screen.getByText('Domain-Driven Design')).toBeInTheDocument()
-    expect(screen.getByText('Web Components Guide')).toBeInTheDocument()
+    expect(screen.getByText('Floating Points — Promises')).toBeInTheDocument()
     expect(screen.getByText('Deleted')).toBeInTheDocument()
     expect(screen.getAllByText('Planned')).not.toHaveLength(0)
   })

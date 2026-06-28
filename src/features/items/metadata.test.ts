@@ -9,7 +9,7 @@ describe('item category metadata', () => {
       ['movies', 'Movies'],
       ['games', 'Games'],
       ['books', 'Books'],
-      ['webs', 'Websites'],
+      ['music', 'Music'],
     ])
 
     expect(listCategoryMetadata('es').map(({ key, label }) => [key, label])).toEqual([
@@ -17,12 +17,13 @@ describe('item category metadata', () => {
       ['movies', 'Películas'],
       ['games', 'Juegos'],
       ['books', 'Libros'],
-      ['webs', 'Webs'],
+      ['music', 'Música'],
     ])
   })
 
   it('keeps category-specific completion verbs', () => {
     expect(getCategoryMetadata('books', 'en').statusActions.completed).toBe('Mark as read')
+    expect(getCategoryMetadata('music', 'en').statusActions.completed).toBe('Mark as listened')
     expect(getCategoryMetadata('movies', 'es').statusActions.completed).toBe('Marcar como vista')
   })
 
@@ -32,7 +33,7 @@ describe('item category metadata', () => {
       movies: 'red',
       games: 'green',
       books: 'yellow',
-      webs: 'cyan',
+      music: 'blue',
     } as const
 
     for (const [category, accent] of Object.entries(expectedAccents)) {

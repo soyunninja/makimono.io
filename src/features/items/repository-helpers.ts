@@ -16,6 +16,30 @@ const hasOwn = Object.prototype.hasOwnProperty
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 const isStringArray = (value: unknown): value is string[] => Array.isArray(value) && value.every((entry) => typeof entry === 'string')
 
+function isInterestItemShape(value: unknown): value is {
+  id: string
+  category: string
+  title: string
+  status: string
+  notes?: string
+  tags: string[]
+  createdAt: string
+  deletedAt?: string
+} {
+  return (
+    isRecord(value)
+    && typeof value.id === 'string'
+    && typeof value.category === 'string'
+    && typeof value.title === 'string'
+    && typeof value.status === 'string'
+    && itemStatusSet.has(value.status as ItemStatus)
+    && (value.notes === undefined || typeof value.notes === 'string')
+    && isStringArray(value.tags)
+    && typeof value.createdAt === 'string'
+    && (value.deletedAt === undefined || typeof value.deletedAt === 'string')
+  )
+}
+
 export const cloneInterestItem = (item: InterestItem): InterestItem => ({ ...item, tags: [...item.tags] })
 export const cloneInterestItems = (items: InterestItem[]): InterestItem[] => items.map(cloneInterestItem)
 
@@ -106,16 +130,11 @@ export function updateInterestItems(
 
 export function isInterestItem(value: unknown): value is InterestItem {
   return (
-    isRecord(value)
-    && typeof value.id === 'string'
-    && typeof value.category === 'string'
+    isInterestItemShape(value)
     && itemCategorySet.has(value.category as Category)
-    && typeof value.title === 'string'
-    && typeof value.status === 'string'
-    && itemStatusSet.has(value.status as ItemStatus)
-    && (value.notes === undefined || typeof value.notes === 'string')
-    && isStringArray(value.tags)
-    && typeof value.createdAt === 'string'
-    && (value.deletedAt === undefined || typeof value.deletedAt === 'string')
   )
+}
+
+export function isLegacyWebInterestItem(value: unknown): value is Omit<InterestItem, 'category'> & { category: 'webs' } {
+  return isInterestItemShape(value) && value.category === 'webs'
 }

@@ -8,6 +8,7 @@ import {
   deleteInterestItem,
   filterInterestItems,
   isInterestItem,
+  isLegacyWebInterestItem,
   restoreInterestItem,
   updateInterestItem,
   updateInterestItems,
@@ -31,6 +32,16 @@ function isStoredInterestItemsV1(value: unknown): value is StoredInterestItemsV1
   )
 }
 
+function isStoredInterestItemsV1Shape(value: unknown): value is { version: typeof INTEREST_ITEMS_STORAGE_VERSION; items: unknown[] } {
+  const storedValue = value as { version?: unknown; items?: unknown }
+  return (
+    typeof value === 'object'
+    && value !== null
+    && storedValue.version === INTEREST_ITEMS_STORAGE_VERSION
+    && Array.isArray(storedValue.items)
+  )
+}
+
 function getBrowserStorage(storageDisabled: boolean): Storage | null {
   if (storageDisabled || typeof window === 'undefined') {
     return null
@@ -42,31 +53,59 @@ function getBrowserStorage(storageDisabled: boolean): Storage | null {
   }
 }
 
-function readStoredInterestItems(storage: Storage): { items: InterestItem[] | null; storageAccessible: boolean } {
+function readStoredInterestItems(
+  storage: Storage,
+): { items: InterestItem[] | null; storageAccessible: boolean; shouldRewrite: boolean } {
   let rawValue: string | null
   try {
     rawValue = storage.getItem(INTEREST_ITEMS_STORAGE_KEY)
   } catch {
-    return { items: null, storageAccessible: false }
+    return { items: null, storageAccessible: false, shouldRewrite: false }
   }
 
   if (rawValue === null) {
-    return { items: null, storageAccessible: true }
+    return { items: null, storageAccessible: true, shouldRewrite: false }
   }
   let parsedValue: unknown
   try {
     parsedValue = JSON.parse(rawValue) as unknown
   } catch {
-    return { items: null, storageAccessible: true }
+    return { items: null, storageAccessible: true, shouldRewrite: false }
   }
 
   if (!isStoredInterestItemsV1(parsedValue)) {
-    return { items: null, storageAccessible: true }
+    if (!isStoredInterestItemsV1Shape(parsedValue)) {
+      return { items: null, storageAccessible: true, shouldRewrite: false }
+    }
+
+    const migratedItems: InterestItem[] = []
+    let droppedLegacyWebs = false
+
+    for (const item of parsedValue.items) {
+      if (isInterestItem(item)) {
+        migratedItems.push(cloneInterestItem(item))
+        continue
+      }
+
+      if (isLegacyWebInterestItem(item)) {
+        droppedLegacyWebs = true
+        continue
+      }
+
+      return { items: null, storageAccessible: true, shouldRewrite: false }
+    }
+
+    return {
+      items: migratedItems,
+      storageAccessible: true,
+      shouldRewrite: droppedLegacyWebs,
+    }
   }
 
   return {
     items: cloneInterestItems(parsedValue.items),
     storageAccessible: true,
+    shouldRewrite: false,
   }
 }
 
@@ -92,13 +131,16 @@ export function createLocalStorageInterestRepository(seedItems: InterestItem[] =
       storageDisabled = true
       return cloneInterestItems(fallbackItems)
     }
-    const { items, storageAccessible } = readStoredInterestItems(storage)
+    const { items, storageAccessible, shouldRewrite } = readStoredInterestItems(storage)
     if (!storageAccessible) {
       storageDisabled = true
       return cloneInterestItems(fallbackItems)
     }
     if (items) {
       fallbackItems = cloneInterestItems(items)
+      if (shouldRewrite) {
+        writeStoredInterestItems(storage, fallbackItems)
+      }
       return items
     }
     fallbackItems = cloneInterestItems(seedSnapshot)

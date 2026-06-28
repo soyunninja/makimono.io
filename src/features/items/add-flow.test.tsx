@@ -18,7 +18,7 @@ afterEach(() => {
 })
 
 describe('AdaptiveAddFlow', () => {
-  it('switches the category-specific fields when the selected category changes on desktop', async () => {
+  it('keeps only the common fields visible when the selected category changes on desktop', async () => {
     render(
       <LocaleProvider>
         <AdaptiveAddFlow isDesktop repository={createMockInterestRepository([])} />
@@ -34,26 +34,26 @@ describe('AdaptiveAddFlow', () => {
     fireEvent.click(seriesOption)
 
     expect(seriesOption).toHaveAttribute('aria-checked', 'true')
-    expect(await screen.findByLabelText('Current season')).toBeInTheDocument()
-    expect(screen.getByLabelText('Where to watch next')).toBeInTheDocument()
-    expect(screen.getByText('Category details')).toBeInTheDocument()
+    expect(screen.getByLabelText('Title')).toBeInTheDocument()
+    expect(screen.getByLabelText('Tags')).toBeInTheDocument()
+    expect(screen.getByLabelText('Notes')).toBeInTheDocument()
+    expect(screen.queryByText('Category details')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Current season')).not.toBeInTheDocument()
 
     const booksOption = screen.getByRole('radio', { name: 'Books' })
 
     fireEvent.click(booksOption)
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Author')).toBeInTheDocument()
+      expect(booksOption).toHaveAttribute('aria-checked', 'true')
     })
 
-    expect(booksOption).toHaveAttribute('aria-checked', 'true')
-    expect(screen.getByLabelText('Reading format')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Author')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Reading format')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Current season')).not.toBeInTheDocument()
-
-    expect(screen.getByText('Category details')).toBeInTheDocument()
   })
 
-  it('uses the mobile sheet presentation and creates a mock item with category-specific notes', async () => {
+  it('uses the mobile sheet presentation and creates a mock item with common notes and tags', async () => {
     const repository = createMockInterestRepository([])
     const onCreated = vi.fn()
 
@@ -65,12 +65,10 @@ describe('AdaptiveAddFlow', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Add interest' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Websites' }))
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Cursor rules reference' } })
-    fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'docs, workflow' } })
-    fireEvent.change(screen.getByLabelText('Notes'), { target: { value: 'Keep this handy for future setup.' } })
-    fireEvent.change(screen.getByLabelText('Link'), { target: { value: 'https://example.com/rules' } })
-    fireEvent.change(screen.getByLabelText('Why it stands out'), { target: { value: 'Great MCP onboarding summary.' } })
+    fireEvent.click(screen.getByRole('radio', { name: 'Music' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Nujabes — Modal Soul' } })
+    fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'spotify, chillhop' } })
+    fireEvent.change(screen.getByLabelText('Notes'), { target: { value: 'Keep this handy for the next focus block.' } })
 
     fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
 
@@ -82,13 +80,11 @@ describe('AdaptiveAddFlow', () => {
 
     expect(items).toHaveLength(1)
     expect(items[0]).toMatchObject({
-      category: 'webs',
-      title: 'Cursor rules reference',
-      tags: ['docs', 'workflow'],
+      category: 'music',
+      title: 'Nujabes — Modal Soul',
+      tags: ['spotify', 'chillhop'],
     })
-    expect(items[0].notes).toContain('Keep this handy for future setup.')
-    expect(items[0].notes).toContain('Link: https://example.com/rules')
-    expect(items[0].notes).toContain('Why it stands out: Great MCP onboarding summary.')
+    expect(items[0].notes).toBe('Keep this handy for the next focus block.')
   })
 
   it('keeps adaptive add controls accessible and only enables submit when required fields are ready', async () => {

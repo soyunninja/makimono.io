@@ -1,18 +1,8 @@
 import type { Locale } from '@/i18n/types'
 
-type CategoryDictionary = Record<'series' | 'movies' | 'games' | 'books' | 'webs', string>
+type CategoryDictionary = Record<'series' | 'movies' | 'games' | 'books' | 'music', string>
 type StatusDictionary = Record<'pending' | 'in_progress' | 'completed', string>
 type CategoryActionsDictionary = Record<keyof CategoryDictionary, StatusDictionary>
-type AddFlowCategoryFieldsDictionary = Record<
-  keyof CategoryDictionary,
-  {
-    heading: string
-    primaryLabel: string
-    primaryPlaceholder: string
-    secondaryLabel: string
-    secondaryPlaceholder: string
-  }
->
 type LandingMilestoneDictionary = Record<
   'scaffold' | 'theme' | 'baseline',
   {
@@ -85,7 +75,6 @@ export type Dictionary = {
     categoryLabel: string
     categoryHint: string
     commonDetailsHeading: string
-    categoryDetailsHeading: string
     titleLabel: string
     titlePlaceholder: string
     tagsLabel: string
@@ -94,7 +83,6 @@ export type Dictionary = {
     notesPlaceholder: string
     cancel: string
     submit: string
-    categoryFields: AddFlowCategoryFieldsDictionary
   }
   suggester: {
     title: string
@@ -191,59 +179,21 @@ export const dictionaries: Record<Locale, Dictionary> = {
     },
     addFlow: {
       title: 'Add interest',
-      description: 'Choose a category and fill the fields you need.',
+      description: 'Choose a category and save the basics.',
       localOnlyBadge: 'Mock add flow',
       desktopMode: 'Desktop dialog',
       mobileMode: 'Mobile sheet',
       categoryLabel: 'Category',
-      categoryHint: 'Choose a category to show the right fields.',
+      categoryHint: 'Choose a category for this item.',
       commonDetailsHeading: 'Details',
-      categoryDetailsHeading: 'Category details',
       titleLabel: 'Title',
       titlePlaceholder: 'What do you want to track?',
       tagsLabel: 'Tags',
-      tagsPlaceholder: 'focus, weekend, comfort',
+      tagsPlaceholder: 'Netflix, Spotify, sci-fi',
       notesLabel: 'Notes',
       notesPlaceholder: 'Optional context for the card',
       cancel: 'Cancel',
       submit: 'Add interest',
-      categoryFields: {
-        series: {
-          heading: 'Series details',
-          primaryLabel: 'Current season',
-          primaryPlaceholder: 'Season 1, Season 2, or miniseries',
-          secondaryLabel: 'Where to watch next',
-          secondaryPlaceholder: 'Apple TV+, Netflix, or your backlog list',
-        },
-        movies: {
-          heading: 'Movie details',
-          primaryLabel: 'Ideal runtime window',
-          primaryPlaceholder: '90 minutes, long weekend, or double feature',
-          secondaryLabel: 'Best viewing company',
-          secondaryPlaceholder: 'Solo, partner, or movie night friends',
-        },
-        games: {
-          heading: 'Game details',
-          primaryLabel: 'Platform',
-          primaryPlaceholder: 'PC, Switch, PlayStation, or cloud',
-          secondaryLabel: 'Play style',
-          secondaryPlaceholder: 'Story mode, co-op, ranked, or handheld session',
-        },
-        books: {
-          heading: 'Book details',
-          primaryLabel: 'Author',
-          primaryPlaceholder: 'Who wrote it?',
-          secondaryLabel: 'Reading format',
-          secondaryPlaceholder: 'Paperback, Kindle, or audiobook',
-        },
-        webs: {
-          heading: 'Website details',
-          primaryLabel: 'Link',
-          primaryPlaceholder: 'https://example.com',
-          secondaryLabel: 'Why it stands out',
-          secondaryPlaceholder: 'Reference, inspiration, tool, or rabbit hole',
-        },
-      },
     },
     suggester: {
       title: 'Suggestions',
@@ -277,7 +227,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       movies: 'Movies',
       games: 'Games',
       books: 'Books',
-      webs: 'Websites',
+      music: 'Music',
     },
     status: {
       pending: 'Planned',
@@ -305,10 +255,10 @@ export const dictionaries: Record<Locale, Dictionary> = {
         in_progress: 'Continue reading',
         completed: 'Mark as read',
       },
-      webs: {
-        pending: 'Plan website',
-        in_progress: 'Keep exploring',
-        completed: 'Mark as explored',
+      music: {
+        pending: 'Plan music',
+        in_progress: 'Keep listening',
+        completed: 'Mark as listened',
       },
     },
   },
@@ -382,59 +332,21 @@ export const dictionaries: Record<Locale, Dictionary> = {
     },
     addFlow: {
       title: 'Añadir interés',
-      description: 'Elige una categoría y completa solo los campos necesarios.',
+      description: 'Elige una categoría y guarda lo básico.',
       localOnlyBadge: 'Alta mock',
       desktopMode: 'Diálogo de escritorio',
       mobileMode: 'Sheet móvil',
       categoryLabel: 'Categoría',
-      categoryHint: 'Elige una categoría para mostrar los campos correctos.',
+      categoryHint: 'Elige una categoría para este elemento.',
       commonDetailsHeading: 'Detalles',
-      categoryDetailsHeading: 'Detalles de categoría',
       titleLabel: 'Título',
       titlePlaceholder: '¿Qué quieres seguir?',
       tagsLabel: 'Etiquetas',
-      tagsPlaceholder: 'foco, finde, confort',
+      tagsPlaceholder: 'Netflix, Spotify, ciencia ficción',
       notesLabel: 'Notas',
       notesPlaceholder: 'Contexto opcional para la tarjeta',
       cancel: 'Cancelar',
       submit: 'Añadir interés',
-      categoryFields: {
-        series: {
-          heading: 'Detalles de la serie',
-          primaryLabel: 'Temporada actual',
-          primaryPlaceholder: 'Temporada 1, Temporada 2 o miniserie',
-          secondaryLabel: 'Dónde seguir viéndola',
-          secondaryPlaceholder: 'Apple TV+, Netflix o tu lista pendiente',
-        },
-        movies: {
-          heading: 'Detalles de la película',
-          primaryLabel: 'Ventana ideal de duración',
-          primaryPlaceholder: '90 minutos, fin de semana largo o sesión doble',
-          secondaryLabel: 'Mejor compañía para verla',
-          secondaryPlaceholder: 'Solo, pareja o noche de cine con amigos',
-        },
-        games: {
-          heading: 'Detalles del juego',
-          primaryLabel: 'Plataforma',
-          primaryPlaceholder: 'PC, Switch, PlayStation o cloud',
-          secondaryLabel: 'Estilo de partida',
-          secondaryPlaceholder: 'Modo historia, cooperativo, ranked o portátil',
-        },
-        books: {
-          heading: 'Detalles del libro',
-          primaryLabel: 'Autor',
-          primaryPlaceholder: '¿Quién lo escribió?',
-          secondaryLabel: 'Formato de lectura',
-          secondaryPlaceholder: 'Papel, Kindle o audiolibro',
-        },
-        webs: {
-          heading: 'Detalles de la web',
-          primaryLabel: 'Enlace',
-          primaryPlaceholder: 'https://example.com',
-          secondaryLabel: 'Por qué destaca',
-          secondaryPlaceholder: 'Referencia, inspiración, herramienta o madriguera',
-        },
-      },
     },
     suggester: {
       title: 'Sugerencias',
@@ -468,7 +380,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       movies: 'Películas',
       games: 'Juegos',
       books: 'Libros',
-      webs: 'Webs',
+      music: 'Música',
     },
     status: {
       pending: 'Pendiente',
@@ -496,10 +408,10 @@ export const dictionaries: Record<Locale, Dictionary> = {
         in_progress: 'Seguir leyendo',
         completed: 'Marcar como leído',
       },
-      webs: {
-        pending: 'Planear web',
-        in_progress: 'Seguir explorando',
-        completed: 'Marcar como explorada',
+      music: {
+        pending: 'Planear música',
+        in_progress: 'Seguir escuchando',
+        completed: 'Marcar como escuchada',
       },
     },
   },

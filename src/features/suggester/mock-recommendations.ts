@@ -69,13 +69,13 @@ const recommendationCatalog = {
       es: 'Su ritmo de misterio funciona muy bien cuando quieres una sesión más profunda y mentalmente activa.',
     },
   },
-  kentaro: {
-    id: 'kentaro',
-    title: 'Kentaro Miura interview archive',
-    category: 'webs',
+  nilsFrahm: {
+    id: 'nils-frahm-spaces',
+    title: 'Nils Frahm — Spaces',
+    category: 'music',
     reason: {
-      en: 'A rabbit-hole style read that feeds curiosity without demanding you commit to a full project.',
-      es: 'Una lectura tipo madriguera que alimenta la curiosidad sin exigirte comprometerte con un proyecto completo.',
+      en: 'Its layered live textures reward curiosity fast without asking you for a huge block of time.',
+      es: 'Sus texturas en directo y por capas recompensan la curiosidad rápido sin pedirte un gran bloque de tiempo.',
     },
   },
   celeste: {
@@ -110,17 +110,17 @@ const recommendationCatalog = {
 const recommendationMatrix: Record<SuggestionTime, Record<SuggestionMood, Array<keyof typeof recommendationCatalog>>> = {
   quick: {
     comfort: ['shortHike', 'tedLasso', 'tinyExperiments'],
-    curious: ['kentaro', 'arrival', 'tinyExperiments'],
+    curious: ['nilsFrahm', 'arrival', 'tinyExperiments'],
     energetic: ['celeste', 'spiderVerse', 'shortHike'],
   },
   focused: {
     comfort: ['tedLasso', 'arrival', 'projectHailMary'],
-    curious: ['arrival', 'projectHailMary', 'kentaro'],
+    curious: ['arrival', 'projectHailMary', 'nilsFrahm'],
     energetic: ['celeste', 'spiderVerse', 'arrival'],
   },
   deep: {
     comfort: ['severance', 'projectHailMary', 'tedLasso'],
-    curious: ['severance', 'projectHailMary', 'kentaro'],
+    curious: ['severance', 'projectHailMary', 'nilsFrahm'],
     energetic: ['severance', 'celeste', 'spiderVerse'],
   },
 }

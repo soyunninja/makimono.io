@@ -10,12 +10,6 @@ import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import {
-  AddCategoryFields,
-  buildCategorySpecificNotes,
-  createInitialCategoryFieldValues,
-  type CategoryFieldValueKey,
-} from '@/features/items/add-category-fields'
 import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import type { Category, InterestItem, InterestRepository } from '@/features/items/types'
@@ -48,12 +42,6 @@ function parseTags(tags: string) {
 
 function formatTags(tags: string[]) {
   return tags.join(', ')
-}
-
-function mergeNotes(notes: string, categoryNotes?: string) {
-  const parts = [notes.trim(), categoryNotes].filter(Boolean)
-
-  return parts.length > 0 ? parts.join('\n\n') : undefined
 }
 
 function useDesktopBreakpoint(forcedValue?: boolean) {
@@ -166,26 +154,8 @@ export function AdaptiveAddFlow({
   const [tags, setTags] = useState('')
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [categoryFieldValues, setCategoryFieldValues] = useState(createInitialCategoryFieldValues)
-  const selectedCategoryMetadata = selectedCategory
-    ? categories.find((category) => category.key === selectedCategory) ?? null
-    : null
 
   const isSubmitDisabled = isSubmitting || !selectedCategory || title.trim().length === 0
-
-  function updateCategoryField(field: CategoryFieldValueKey, value: string) {
-    if (!selectedCategory) {
-      return
-    }
-
-    setCategoryFieldValues((currentValues) => ({
-      ...currentValues,
-      [selectedCategory]: {
-        ...currentValues[selectedCategory],
-        [field]: value,
-      },
-    }))
-  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -200,10 +170,7 @@ export function AdaptiveAddFlow({
       const createdItem = await repository.createItem({
         category: selectedCategory,
         title: title.trim(),
-        notes: mergeNotes(
-          notes,
-          buildCategorySpecificNotes(selectedCategory, categoryFieldValues[selectedCategory], t),
-        ),
+        notes: notes.trim() ? notes.trim() : undefined,
         tags: parseTags(tags),
       })
 
@@ -260,16 +227,6 @@ export function AdaptiveAddFlow({
           tags={tags}
           title={title}
         />
-
-        {selectedCategory && selectedCategoryMetadata ? (
-          <AddCategoryFields
-            category={selectedCategory}
-            metadata={selectedCategoryMetadata}
-            onChange={updateCategoryField}
-            t={t}
-            values={categoryFieldValues[selectedCategory]}
-          />
-        ) : null}
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button onClick={onRequestClose} type="button" variant="outline">
