@@ -85,6 +85,14 @@ The mobile/desktop assertions are runtime DOM/class contract checks in jsdom, no
 - GGA/local review should include tests and OpenSpec evidence when evaluating visible behavior.
 - Local history now mirrors the documented work-unit slices, but remote-backed stacked PR proof is still impossible without configuring a remote/base branch.
 
+## Post-completion Maintenance
+
+- ✅ Fixed the nested TanStack Router dashboard bug by rendering `<Outlet />` from `src/routes/dashboard.tsx`, letting `/dashboard/add` and `/dashboard/suggest` mount their routed overlay flows.
+- ✅ Removed duplicated dashboard rendering from `src/routes/dashboard.add.tsx` and `src/routes/dashboard.suggest.tsx`; the parent route now owns the shared dashboard shell.
+- ✅ Preserved `/dashboard/archive` as a full replacement by letting the dashboard route delegate directly to the child route for that pathname.
+- ✅ Added `src/test/routes/dashboard-nested-routes.test.tsx` to prove `/dashboard/add` and `/dashboard/suggest` compose as dashboard + overlay while `/dashboard/archive` replaces the dashboard shell.
+- ✅ Re-verified with `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build` after the routing fix.
+
 ## Status
 
 14/14 tasks complete. Runtime coverage gaps called out by final verify are now backfilled; re-run verify before archive. Remote-backed PR boundary proof still remains unavailable because no remote/base branch is configured.
