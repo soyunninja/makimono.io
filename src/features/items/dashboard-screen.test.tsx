@@ -18,9 +18,9 @@ describe('DashboardScreen', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Your interests backlog' }),
+      await screen.findByRole('heading', { level: 1, name: 'Your interests' }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Local data only')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
     expect(await screen.findAllByRole('article')).toHaveLength(5)
 
     expect(screen.getByRole('radio', { name: 'All' })).toBeInTheDocument()
@@ -48,6 +48,12 @@ describe('DashboardScreen', () => {
 
     expect(screen.getByRole('heading', { level: 2, name: 'Atomic Habits' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 2, name: 'Severance' })).not.toBeInTheDocument()
+
+    const booksFilter = screen.getByRole('radio', { name: 'Books' })
+    const article = screen.getByRole('article')
+
+    expect(booksFilter).toHaveAttribute('aria-checked', 'true')
+    expect(within(article).getByText('Books')).toBeInTheDocument()
   })
 
   it('keeps status changes local and advances a pending movie into progress', async () => {
@@ -84,23 +90,23 @@ describe('DashboardScreen', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Your interests backlog' }),
+      await screen.findByRole('heading', { level: 1, name: 'Your interests' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Get suggestions' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Archive' })).toBeInTheDocument()
-    expect(screen.getByText('Language')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'ES' }))
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 1, name: 'Tu lista de intereses' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 1, name: 'Tus intereses' })).toBeInTheDocument()
     })
 
     expect(screen.getByRole('link', { name: 'Añadir interés' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Pedir sugerencias' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Archivo' })).toBeInTheDocument()
-    expect(screen.getByText('Idioma')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Idioma' })).toBeInTheDocument()
   })
 
   it('switches visible UI text back to English when the app starts in Spanish', async () => {
@@ -111,21 +117,21 @@ describe('DashboardScreen', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Tu lista de intereses' }),
+      await screen.findByRole('heading', { level: 1, name: 'Tus intereses' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Añadir interés' })).toBeInTheDocument()
-    expect(screen.getByText('Idioma')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Idioma' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'EN' }))
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 1, name: 'Your interests backlog' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
     })
 
     expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Get suggestions' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Archive' })).toBeInTheDocument()
-    expect(screen.getByText('Language')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
   })
 
   it('resets local mock changes after a reload instead of treating them as persisted', async () => {
@@ -173,34 +179,40 @@ describe('DashboardScreen', () => {
     resetAppInterestRepository()
   })
 
-  it('applies responsive layout and touch-friendly action classes for desktop and mobile scanning', async () => {
+  it('exposes accessible filters, navigation actions, and usable status controls', async () => {
     render(
       <LocaleProvider>
         <DashboardScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
 
-    const articles = await screen.findAllByRole('article')
-    const cardsGrid = articles[0]?.parentElement
+    await screen.findAllByRole('article')
 
-    expect(cardsGrid).toHaveClass('grid', 'gap-4', 'md:grid-cols-2', '2xl:grid-cols-3')
-    expect(screen.getByRole('radiogroup', { name: 'Category filters' })).toHaveClass('flex-wrap')
-    expect(screen.getByRole('link', { name: 'Add interest' })).toHaveClass('h-11')
-    expect(screen.getByRole('button', { name: 'EN' })).toHaveClass('h-11')
+    const getArrivalCard = () => screen.getByRole('heading', { level: 2, name: 'Arrival' }).closest('[role="article"]') as HTMLElement
+    const completedCard = screen.getByRole('heading', { level: 2, name: 'Celeste' }).closest('[role="article"]') as HTMLElement
 
-    const statusButton = screen.getByRole('button', { name: 'Mark as watched' })
+    expect(screen.getByRole('radiogroup', { name: 'Category filters' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Add interest' })).toHaveAttribute('href', '/dashboard/add')
+    expect(screen.getByRole('link', { name: 'Get suggestions' })).toHaveAttribute('href', '/dashboard/suggest')
+    expect(screen.getByRole('link', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'EN' })).toHaveAttribute('aria-pressed', 'true')
 
-    expect(statusButton).toHaveClass('h-11', 'w-full', 'sm:w-auto')
-    expect(statusButton.parentElement).toHaveClass(
-      'mt-auto',
-      'flex-col',
-      'items-stretch',
-      'sm:flex-row',
-      'sm:items-center',
-    )
+    const arrivalAction = within(getArrivalCard()).getByRole('button', { name: 'Start now' })
+
+    expect(arrivalAction).toBeEnabled()
+    expect(within(completedCard).getByRole('button', { name: 'Completed' })).toBeDisabled()
+
+    fireEvent.click(arrivalAction)
+
+    await waitFor(() => {
+      expect(within(getArrivalCard()).getByText('In progress')).toBeInTheDocument()
+    })
+
+    expect(within(getArrivalCard()).getByRole('button', { name: 'Mark as watched' })).toBeEnabled()
   })
 
-  it('renders long card content without clipping and preserves usable controls', async () => {
+  it('renders long card content in a readable article and preserves the visible action', async () => {
     const longTitle =
       'The incredibly long mock title that should wrap across multiple lines without clipping the backlog card content or hiding the action controls'
     const longNotes =
@@ -226,10 +238,17 @@ describe('DashboardScreen', () => {
     const title = within(article).getByRole('heading', { level: 2, name: longTitle })
     const actionButton = within(article).getByRole('button', { name: 'Start now' })
 
-    expect(title).toHaveClass('text-balance', 'break-words')
+    expect(title).toBeVisible()
     expect(within(article).getByText(longNotes)).toBeInTheDocument()
-    expect(article).toHaveClass('flex', 'h-full', 'flex-col')
-    expect(actionButton).toHaveClass('h-11', 'w-full', 'sm:w-auto')
-    expect(actionButton.parentElement).toHaveClass('flex-col', 'items-stretch', 'sm:flex-row')
+    expect(article).toHaveAttribute('role', 'article')
+    expect(actionButton).toBeEnabled()
+
+    fireEvent.click(actionButton)
+
+    await waitFor(() => {
+      expect(within(screen.getByRole('article')).getByText('In progress')).toBeInTheDocument()
+    })
+
+    expect(within(screen.getByRole('article')).getByRole('button', { name: 'Mark as watched' })).toBeEnabled()
   })
 })

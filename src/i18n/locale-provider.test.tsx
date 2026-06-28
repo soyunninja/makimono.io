@@ -27,13 +27,13 @@ describe('LocaleProvider', () => {
     )
 
     expect(screen.getByText('en')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Your interests backlog' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('en')
 
     fireEvent.click(screen.getByRole('button', { name: 'toggle locale' }))
 
     expect(screen.getByText('es')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Tu lista de intereses' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Tus intereses' })).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('es')
   })
 })

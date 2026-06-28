@@ -13,8 +13,6 @@ export function LanguageToggle() {
       className="flex items-center gap-2 rounded-2xl border border-border/70 bg-background/70 p-1"
       role="group"
     >
-      <span className="px-2 text-xs font-medium text-muted-foreground">{t('app.languageLabel')}</span>
-
       {localeOptions.map((nextLocale) => (
         <Button
           aria-pressed={locale === nextLocale}

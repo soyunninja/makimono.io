@@ -25,7 +25,7 @@ function formatCreatedAt(createdAt: string, locale: 'en' | 'es') {
 export function InterestCard({ item, metadata, locale, startLabel, onAdvance }: InterestCardProps) {
   return (
     <Card
-      className={cn('flex h-full flex-col border-l-4', metadata.cardBorderClassName)}
+      className={cn('flex h-full flex-col border-l-4', metadata.cardBorderClassName, metadata.surfaceClassName)}
       role="article"
     >
       <CardHeader className="gap-4">
@@ -62,8 +62,7 @@ export function InterestCard({ item, metadata, locale, startLabel, onAdvance }: 
         </p>
       </CardContent>
 
-      <CardFooter className="mt-auto flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">{metadata.statusActions[item.status]}</p>
+      <CardFooter className="mt-auto justify-end flex-col items-stretch gap-3 sm:flex-row sm:items-center">
         <StatusAction item={item} metadata={metadata} onAdvance={onAdvance} startLabel={startLabel} />
       </CardFooter>
     </Card>

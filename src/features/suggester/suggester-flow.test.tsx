@@ -14,7 +14,7 @@ describe('SmartSuggesterFlow', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Focused evening' }))
     fireEvent.click(screen.getByRole('radio', { name: 'Curious' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Get 3 suggestions' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Get 3 picks' }))
 
     await waitFor(() => {
       expect(screen.getAllByRole('article')).toHaveLength(3)
@@ -22,11 +22,11 @@ describe('SmartSuggesterFlow', () => {
 
     for (const article of screen.getAllByRole('article')) {
       expect(within(article).getByText('Why it fits')).toBeInTheDocument()
-      expect(within(article).getByRole('link', { name: 'Track this next' })).toHaveAttribute('href', '/dashboard/add')
+      expect(within(article).getByRole('link', { name: 'Track next' })).toHaveAttribute('href', '/dashboard/add')
     }
   })
 
-  it('keeps suggester controls fixed-height and wrap-friendly across selection and results', async () => {
+  it('keeps suggester controls accessible and only enables generation after both choices', async () => {
     render(
       <LocaleProvider>
         <SmartSuggesterFlow isDesktop={false} />
@@ -35,20 +35,26 @@ describe('SmartSuggesterFlow', () => {
 
     const focusedOption = screen.getByRole('radio', { name: 'Focused evening' })
     const curiousOption = screen.getByRole('radio', { name: 'Curious' })
-    const generateButton = screen.getByRole('button', { name: 'Get 3 suggestions' })
+    const generateButton = screen.getByRole('button', { name: 'Get 3 picks' })
 
-    expect(focusedOption).toHaveClass('h-11')
-    expect(curiousOption).toHaveClass('h-11')
-    expect(generateButton).toHaveClass('h-11')
-    expect(generateButton.parentElement).toHaveClass('flex-col-reverse', 'sm:flex-row', 'sm:justify-end')
+    expect(screen.getByRole('radiogroup', { name: 'Available time' })).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: 'Desired mood' })).toBeInTheDocument()
+    expect(focusedOption).toBeEnabled()
+    expect(curiousOption).toBeEnabled()
+    expect(generateButton).toBeDisabled()
 
     fireEvent.click(focusedOption)
     fireEvent.click(curiousOption)
+
+    expect(generateButton).toBeEnabled()
+
     fireEvent.click(generateButton)
 
     const [article] = await screen.findAllByRole('article')
-    const cta = within(article).getByRole('link', { name: 'Track this next' })
+    const cta = within(article).getByRole('link', { name: 'Track next' })
 
-    expect(cta).toHaveClass('h-11', 'w-full', 'sm:w-auto')
+    expect(within(article).getByText('Why it fits')).toBeInTheDocument()
+    expect(within(article).getByText(/Series|Movies|Games|Books|Websites/)).toBeInTheDocument()
+    expect(cta).toHaveAttribute('href', '/dashboard/add')
   })
 })

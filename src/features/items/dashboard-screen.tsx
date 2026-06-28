@@ -2,9 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
 import { LanguageToggle } from '@/components/app/language-toggle'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CategoryFilters } from '@/features/items/category-filters'
 import { InterestCard } from '@/features/items/interest-card'
 import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
@@ -86,7 +85,6 @@ export function DashboardScreen({ repository = getAppInterestRepository() }: Das
           <Button asChild variant={'outline'}>
             <a href={'/dashboard/archive'}>{t('dashboard.archiveAction')}</a>
           </Button>
-          <Badge variant={'outline'}>{t('dashboard.localDataBadge')}</Badge>
           <LanguageToggle />
         </div>
       )}
@@ -103,15 +101,12 @@ export function DashboardScreen({ repository = getAppInterestRepository() }: Das
             onValueChange={setSelectedCategory}
             value={selectedCategory}
           />
-
-          <p className={'max-w-md text-sm leading-6 text-muted-foreground'}>{t('dashboard.localDataNote')}</p>
         </div>
 
         {isLoading ? (
           <Card>
             <CardHeader>
               <CardTitle>{t('dashboard.loading')}</CardTitle>
-              <CardDescription>{t('dashboard.localDataNote')}</CardDescription>
             </CardHeader>
           </Card>
         ) : null}
@@ -139,18 +134,6 @@ export function DashboardScreen({ repository = getAppInterestRepository() }: Das
             ))}
           </div>
         ) : null}
-
-        <Card className={'bg-background/40'}>
-          <CardContent className={'pt-6'}>
-            <div className={'flex flex-wrap gap-3'}>
-              {categories.map((category) => (
-                <Badge className={category.accentClassName} key={category.key} variant={'outline'}>
-                  {category.label}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </AppShell>
   )

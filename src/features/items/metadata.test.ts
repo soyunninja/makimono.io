@@ -25,4 +25,25 @@ describe('item category metadata', () => {
     expect(getCategoryMetadata('books', 'en').statusActions.completed).toBe('Mark as read')
     expect(getCategoryMetadata('movies', 'es').statusActions.completed).toBe('Marcar como vista')
   })
+
+  it('centralizes the category color contract for badges, controls, and surfaces', () => {
+    const expectedAccents = {
+      series: 'purple',
+      movies: 'red',
+      games: 'green',
+      books: 'yellow',
+      webs: 'cyan',
+    } as const
+
+    for (const [category, accent] of Object.entries(expectedAccents)) {
+      const metadata = getCategoryMetadata(category as keyof typeof expectedAccents, 'en')
+
+      expect(metadata.accentToken).toBe(`accent-${accent}`)
+      expect(metadata.accentClassName).toContain(`text-accent-${accent}`)
+      expect(metadata.controlClassName).toContain(`border-accent-${accent}/40`)
+      expect(metadata.surfaceClassName).toContain(`bg-accent-${accent}/10`)
+      expect(metadata.textClassName).toBe(`text-accent-${accent}`)
+      expect(metadata.cardBorderClassName).toBe(`border-l-accent-${accent}`)
+    }
+  })
 })

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { AdaptiveAddFlow } from '@/features/items/add-flow'
@@ -13,21 +13,38 @@ describe('AdaptiveAddFlow', () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByText('Desktop dialog')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Add interest' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Series' }))
+    const seriesOption = screen.getByRole('radio', { name: 'Series' })
 
+    expect(seriesOption).toHaveAttribute('aria-checked', 'false')
+
+    fireEvent.click(seriesOption)
+
+    expect(seriesOption).toHaveAttribute('aria-checked', 'true')
     expect(await screen.findByLabelText('Current season')).toBeInTheDocument()
     expect(screen.getByLabelText('Where to watch next')).toBeInTheDocument()
+    const seriesDetailsCard = screen.getByText('Category details').closest('[data-slot="card"]')
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Books' }))
+    expect(seriesDetailsCard).not.toBeNull()
+    expect(within(seriesDetailsCard as HTMLElement).getByText('Series')).toBeInTheDocument()
+
+    const booksOption = screen.getByRole('radio', { name: 'Books' })
+
+    fireEvent.click(booksOption)
 
     await waitFor(() => {
       expect(screen.getByLabelText('Author')).toBeInTheDocument()
     })
 
+    expect(booksOption).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByLabelText('Reading format')).toBeInTheDocument()
     expect(screen.queryByLabelText('Current season')).not.toBeInTheDocument()
+
+    const booksDetailsCard = screen.getByText('Category details').closest('[data-slot="card"]')
+
+    expect(booksDetailsCard).not.toBeNull()
+    expect(within(booksDetailsCard as HTMLElement).getByText('Books')).toBeInTheDocument()
   })
 
   it('uses the mobile sheet presentation and creates a mock item with category-specific notes', async () => {
@@ -40,7 +57,7 @@ describe('AdaptiveAddFlow', () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByText('Mobile sheet')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Add interest' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('radio', { name: 'Websites' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Cursor rules reference' } })
@@ -68,7 +85,7 @@ describe('AdaptiveAddFlow', () => {
     expect(items[0].notes).toContain('Why it stands out: Great MCP onboarding summary.')
   })
 
-  it('keeps adaptive add controls fixed-height and wrap-friendly for touch use', async () => {
+  it('keeps adaptive add controls accessible and only enables submit when required fields are ready', async () => {
     render(
       <LocaleProvider>
         <AdaptiveAddFlow isDesktop={false} repository={createMockInterestRepository([])} />
@@ -80,10 +97,14 @@ describe('AdaptiveAddFlow', () => {
     const cancelButton = screen.getByRole('button', { name: 'Cancel' })
     const submitButton = screen.getByRole('button', { name: 'Add interest' })
 
-    expect(seriesOption).toHaveClass('h-11')
-    expect(titleInput).toHaveClass('h-11')
-    expect(cancelButton).toHaveClass('h-11')
-    expect(submitButton).toHaveClass('h-11')
-    expect(submitButton.parentElement).toHaveClass('flex-col-reverse', 'sm:flex-row', 'sm:justify-end')
+    expect(seriesOption).toBeEnabled()
+    expect(titleInput).toBeEnabled()
+    expect(cancelButton).toBeEnabled()
+    expect(submitButton).toBeDisabled()
+
+    fireEvent.click(seriesOption)
+    fireEvent.change(titleInput, { target: { value: 'A Short Hike' } })
+
+    expect(submitButton).toBeEnabled()
   })
 })

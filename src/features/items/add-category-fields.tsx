@@ -1,7 +1,11 @@
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import type { CategoryMetadata } from '@/features/items/metadata'
 import type { Category } from '@/features/items/types'
+
+import { cn } from '@/lib/utils'
 
 const categoryFieldConfig = {
   series: {
@@ -107,18 +111,24 @@ export function createInitialCategoryFieldValues(): CategoryFieldValues {
 
 type AddCategoryFieldsProps = {
   category: Category
+  metadata: CategoryMetadata
   values: Record<CategoryFieldValueKey, string>
   t: (path: string) => string
   onChange: (field: CategoryFieldValueKey, value: string) => void
 }
 
-export function AddCategoryFields({ category, values, t, onChange }: AddCategoryFieldsProps) {
+export function AddCategoryFields({ category, metadata, values, t, onChange }: AddCategoryFieldsProps) {
   const config = categoryFieldConfig[category]
 
   return (
-    <Card className="bg-background/40">
+    <Card className={cn('border-l-4 bg-background/40', metadata.cardBorderClassName, metadata.surfaceClassName)}>
       <CardHeader>
-        <CardTitle>{t('addFlow.categoryDetailsHeading')}</CardTitle>
+        <div className="flex flex-wrap items-center gap-3">
+          <CardTitle>{t('addFlow.categoryDetailsHeading')}</CardTitle>
+          <Badge className={metadata.accentClassName} variant="outline">
+            {metadata.label}
+          </Badge>
+        </div>
         <CardDescription>{t(config.headingKey)}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4 md:grid-cols-2">

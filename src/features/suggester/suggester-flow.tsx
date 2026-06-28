@@ -9,6 +9,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { getCategoryMetadata } from '@/features/items/metadata'
 import { useLocale } from '@/i18n/locale-provider'
 
+import { cn } from '@/lib/utils'
+
 import {
   getMockRecommendations,
   suggestionMoodOptions,
@@ -80,21 +82,13 @@ export function SmartSuggesterFlow({ isDesktop, onRequestClose }: SmartSuggester
     return getMockRecommendations(selectedTime, selectedMood, locale)
   }, [hasGenerated, locale, selectedMood, selectedTime])
 
-  const presentationLabel = resolvedIsDesktop ? t('suggester.desktopMode') : t('suggester.mobileMode')
   const isGenerateDisabled = !selectedTime || !selectedMood
 
   const content = (
     <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-3">
-          <Badge variant="outline">{t('suggester.localOnlyBadge')}</Badge>
-          <Badge variant="outline">{presentationLabel}</Badge>
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('suggester.title')}</h1>
-          <p className="text-sm leading-6 text-muted-foreground">{t('suggester.description')}</p>
-        </div>
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('suggester.title')}</h1>
+        <p className="text-sm leading-6 text-muted-foreground">{t('suggester.description')}</p>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
@@ -154,17 +148,14 @@ export function SmartSuggesterFlow({ isDesktop, onRequestClose }: SmartSuggester
 
       {hasGenerated ? (
         <div className="space-y-4">
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">{t('suggester.resultsTitle')}</h2>
-            <p className="text-sm leading-6 text-muted-foreground">{t('suggester.resultsDescription')}</p>
-          </div>
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">{t('suggester.resultsTitle')}</h2>
 
           <div className="grid gap-4 xl:grid-cols-3">
             {recommendations.map((recommendation) => {
               const metadata = getCategoryMetadata(recommendation.category, locale)
 
               return (
-                <Card className={`flex h-full flex-col border-l-4 ${metadata.cardBorderClassName}`} key={recommendation.id} role="article">
+                <Card className={cn('flex h-full flex-col border-l-4', metadata.cardBorderClassName, metadata.surfaceClassName)} key={recommendation.id} role="article">
                   <CardHeader>
                     <div className="space-y-3">
                       <Badge className={metadata.accentClassName} variant="outline">

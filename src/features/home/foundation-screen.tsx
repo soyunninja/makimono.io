@@ -18,9 +18,6 @@ export function FoundationLandingScreen() {
               className="rounded-2xl border border-border/70 bg-background/80 p-5 shadow-lg shadow-black/10"
               key={milestoneKey}
             >
-              <div className="mb-3 inline-flex items-center rounded-full border border-accent-cyan/30 bg-accent-cyan/10 px-3 py-1 text-xs font-medium text-accent-cyan">
-                {landing.milestoneBadge}
-              </div>
               <h2 className="text-xl font-semibold text-foreground">{milestone.title}</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">{milestone.description}</p>
             </article>

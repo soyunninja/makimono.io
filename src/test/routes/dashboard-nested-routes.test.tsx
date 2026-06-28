@@ -77,31 +77,31 @@ describe('dashboard nested routes', () => {
     await renderRoute('/dashboard/add')
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Your interests backlog', hidden: true }),
+      await screen.findByRole('heading', { level: 1, name: 'Your interests', hidden: true }),
     ).toBeInTheDocument()
-    expect(screen.getAllByRole('heading', { level: 1, name: 'Your interests backlog', hidden: true })).toHaveLength(1)
+    expect(screen.getAllByRole('heading', { level: 1, name: 'Your interests', hidden: true })).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'Add interest' })).toBeInTheDocument()
-    expect(screen.getByText('Mobile sheet')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Add interest' })).toBeInTheDocument()
   })
 
   it('renders the suggester flow on top of the dashboard without duplicating the dashboard shell', async () => {
     await renderRoute('/dashboard/suggest')
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Your interests backlog', hidden: true }),
+      await screen.findByRole('heading', { level: 1, name: 'Your interests', hidden: true }),
     ).toBeInTheDocument()
-    expect(screen.getAllByRole('heading', { level: 1, name: 'Your interests backlog', hidden: true })).toHaveLength(1)
-    expect(screen.getByRole('button', { name: 'Get 3 suggestions' })).toBeInTheDocument()
-    expect(screen.getByText('Mobile sheet')).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 1, name: 'Your interests', hidden: true })).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Get 3 picks' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Suggestions' })).toBeInTheDocument()
   })
 
   it('renders the archive route as a full replacement instead of overlaying the dashboard shell', async () => {
     await renderRoute('/dashboard/archive')
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Completed backlog history' }),
+      await screen.findByRole('heading', { level: 1, name: 'Completed items' }),
     ).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { level: 1, name: 'Your interests backlog' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Back to dashboard' })).toBeInTheDocument()
   })
 })

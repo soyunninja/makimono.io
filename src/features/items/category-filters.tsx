@@ -40,8 +40,8 @@ export function CategoryFilters({
         {categories.map((category) => (
           <ToggleGroupItem
             className={cn(
-              'border-border/80 data-[state=on]:border-current data-[state=on]:bg-current/15',
-              category.key === value ? category.accentClassName : undefined,
+              'data-[state=on]:border-current data-[state=on]:bg-current/15',
+              category.controlClassName,
             )}
             key={category.key}
             value={category.key}

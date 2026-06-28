@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -19,6 +18,8 @@ import { listCategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import type { Category, InterestItem, InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
+
+import { cn } from '@/lib/utils'
 
 type AdaptiveAddFlowProps = {
   repository?: InterestRepository
@@ -98,8 +99,10 @@ export function AdaptiveAddFlow({
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [categoryFieldValues, setCategoryFieldValues] = useState(createInitialCategoryFieldValues)
+  const selectedCategoryMetadata = selectedCategory
+    ? categories.find((category) => category.key === selectedCategory) ?? null
+    : null
 
-  const presentationLabel = resolvedIsDesktop ? t('addFlow.desktopMode') : t('addFlow.mobileMode')
   const isSubmitDisabled = isSubmitting || !selectedCategory || title.trim().length === 0
 
   function updateCategoryField(field: CategoryFieldValueKey, value: string) {
@@ -147,16 +150,9 @@ export function AdaptiveAddFlow({
 
   const formContent = (
     <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-3">
-          <Badge variant="outline">{t('addFlow.localOnlyBadge')}</Badge>
-          <Badge variant="outline">{presentationLabel}</Badge>
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('addFlow.title')}</h1>
-          <p className="text-sm leading-6 text-muted-foreground">{t('addFlow.description')}</p>
-        </div>
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('addFlow.title')}</h1>
+        <p className="text-sm leading-6 text-muted-foreground">{t('addFlow.description')}</p>
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
@@ -175,7 +171,12 @@ export function AdaptiveAddFlow({
               value={selectedCategory ?? ''}
             >
               {categories.map((category) => (
-                <ToggleGroupItem key={category.key} value={category.key} variant="outline">
+                <ToggleGroupItem
+                  className={cn('data-[state=on]:border-current data-[state=on]:bg-current/15', category.controlClassName)}
+                  key={category.key}
+                  value={category.key}
+                  variant="outline"
+                >
                   {category.label}
                 </ToggleGroupItem>
               ))}
@@ -186,7 +187,6 @@ export function AdaptiveAddFlow({
         <Card className="bg-background/40">
           <CardHeader>
             <CardTitle>{t('addFlow.commonDetailsHeading')}</CardTitle>
-            <CardDescription>{t('dashboard.localDataNote')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -222,9 +222,10 @@ export function AdaptiveAddFlow({
           </CardContent>
         </Card>
 
-        {selectedCategory ? (
+        {selectedCategory && selectedCategoryMetadata ? (
           <AddCategoryFields
             category={selectedCategory}
+            metadata={selectedCategoryMetadata}
             onChange={updateCategoryField}
             t={t}
             values={categoryFieldValues[selectedCategory]}

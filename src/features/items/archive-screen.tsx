@@ -10,6 +10,8 @@ import { getAppInterestRepository } from '@/features/items/mock-repository'
 import type { InterestItem, InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
 
+import { cn } from '@/lib/utils'
+
 type ArchiveScreenProps = {
   repository?: InterestRepository
 }
@@ -79,7 +81,6 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
           <Button asChild variant={'outline'}>
             <a href={'/dashboard'}>{t('archive.backAction')}</a>
           </Button>
-          <Badge variant={'outline'}>{t('archive.localDataBadge')}</Badge>
           <LanguageToggle />
         </div>
       )}
@@ -88,13 +89,11 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
       title={t('archive.title')}
     >
       <div className={'space-y-6'}>
-        <p className={'max-w-2xl text-sm leading-6 text-muted-foreground'}>{t('archive.localDataNote')}</p>
-
         <div className={'grid gap-4 sm:grid-cols-2 xl:grid-cols-5'}>
           {categorySummaries.map(({ category, count }) => (
-            <Card className={'bg-background/40'} key={category.key}>
+            <Card className={cn('bg-background/40', category.surfaceClassName)} key={category.key}>
               <CardHeader>
-                <CardDescription>{category.label}</CardDescription>
+                <CardDescription className={category.textClassName}>{category.label}</CardDescription>
                 <CardTitle className={'text-3xl'}>{count}</CardTitle>
               </CardHeader>
             </Card>
@@ -105,7 +104,6 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
           <Card>
             <CardHeader>
               <CardTitle>{t('archive.loading')}</CardTitle>
-              <CardDescription>{t('archive.localDataNote')}</CardDescription>
             </CardHeader>
           </Card>
         ) : null}
@@ -125,7 +123,7 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
               const metadata = getCategoryMetadata(item.category, locale)
 
               return (
-                <Card className={'border-l-4 bg-background/40'} key={item.id} role={'article'}>
+                <Card className={cn('border-l-4 bg-background/40', metadata.cardBorderClassName, metadata.surfaceClassName)} key={item.id} role={'article'}>
                   <CardHeader className={'gap-4'}>
                     <div className={'flex flex-wrap items-start justify-between gap-3'}>
                       <div className={'space-y-2'}>
@@ -135,18 +133,21 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
                         <CardTitle>{item.title}</CardTitle>
                         <CardDescription>{item.notes ?? metadata.statusLabels.completed}</CardDescription>
                       </div>
-
-                      <Badge variant={'default'}>{metadata.statusLabels.completed}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className={'space-y-4'}>
-                    <div className={'flex flex-wrap gap-2'}>
-                      {item.tags.map((tag) => (
-                        <Badge className={'font-mono font-medium'} key={tag} variant={'outline'}>
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
+                    {item.tags.length > 0 ? (
+                      <div className={'flex flex-wrap gap-2'}>
+                        {item.tags.map((tag) => (
+                          <span
+                            className={'rounded-full border border-border/70 px-2.5 py-0.5 font-mono text-xs font-medium text-muted-foreground'}
+                            key={tag}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
 
                     <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
                       <p className={'text-xs uppercase tracking-[0.18em] text-muted-foreground'}>

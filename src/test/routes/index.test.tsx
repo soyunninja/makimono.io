@@ -16,22 +16,18 @@ describe('FoundationLandingScreen', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: 'MeInteresa is ready for the next mock UI work unit',
+        name: 'MeInteresa foundation',
       }),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText(/without introducing persistence, authentication, or AI integrations/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText('TanStack Start, Tailwind v4, and shadcn-ready tokens are in place.')).toBeInTheDocument()
 
     expect(screen.getAllByRole('article')).toHaveLength(3)
-    expect(screen.getAllByText('Ready')).toHaveLength(3)
+    expect(screen.queryByText('Ready')).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'TanStack Start scaffold' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Tailwind CSS v4 theme' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'shadcn-ready baseline' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'Next autonomous slice' })).toBeInTheDocument()
-    expect(
-      screen.getByText(/shared UI primitives, mock item boundaries, and ES\/EN dictionaries/i),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Next' })).toBeInTheDocument()
+    expect(screen.getByText('Add shared UI, mock items, and ES/EN copy on top of this scaffold.')).toBeInTheDocument()
   })
 
   it('renders the localized landing copy in Spanish', () => {
@@ -45,10 +41,10 @@ describe('FoundationLandingScreen', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: 'MeInteresa está listo para la siguiente unidad mock de UI',
+        name: 'Base de MeInteresa',
       }),
     ).toBeInTheDocument()
-    expect(screen.getAllByText('Listo')).toHaveLength(3)
-    expect(screen.getByRole('heading', { level: 2, name: 'Siguiente slice autónomo' })).toBeInTheDocument()
+    expect(screen.queryByText('Listo')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Siguiente paso' })).toBeInTheDocument()
   })
 })
