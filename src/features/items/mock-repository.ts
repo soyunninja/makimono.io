@@ -1,9 +1,11 @@
 import {
-  type CreateInterestItemInput,
   type InterestItem,
   type InterestRepository,
   type ItemStatus,
 } from '@/features/items/types'
+
+import { createLocalStorageInterestRepository } from '@/features/items/local-storage-repository'
+import { buildInterestItem, cloneInterestItem, cloneInterestItems } from '@/features/items/repository-helpers'
 
 let appInterestRepository: InterestRepository | null = null
 
@@ -56,44 +58,18 @@ export const defaultMockItems: InterestItem[] = [
 ]
 
 function cloneItem(item: InterestItem): InterestItem {
-  return {
-    ...item,
-    tags: [...item.tags],
-  }
-}
-
-function createItemId(title: string, createdAt: string): string {
-  const normalizedTitle = title
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-
-  return `${normalizedTitle || 'item'}-${createdAt}`
-}
-
-function normalizeTags(tags?: string[]): string[] {
-  return (tags ?? []).map((tag) => tag.trim()).filter(Boolean)
+  return cloneInterestItem(item)
 }
 
 export function createMockInterestRepository(seedItems: InterestItem[] = defaultMockItems): InterestRepository {
-  let items = seedItems.map(cloneItem)
+  let items = cloneInterestItems(seedItems)
 
   return {
     async listItems() {
-      return items.map(cloneItem)
+      return cloneInterestItems(items)
     },
-    async createItem(input: CreateInterestItemInput) {
-      const createdAt = new Date().toISOString()
-      const item: InterestItem = {
-        id: createItemId(input.title, createdAt),
-        category: input.category,
-        title: input.title,
-        status: 'pending',
-        notes: input.notes,
-        tags: normalizeTags(input.tags),
-        createdAt,
-      }
+    async createItem(input) {
+      const item = buildInterestItem(input)
 
       items = [item, ...items]
 
@@ -120,9 +96,17 @@ export function createMockInterestRepository(seedItems: InterestItem[] = default
   }
 }
 
+function createAppInterestRepository(seedItems: InterestItem[]): InterestRepository {
+  if (typeof window === 'undefined') {
+    return createMockInterestRepository(seedItems)
+  }
+
+  return createLocalStorageInterestRepository(seedItems)
+}
+
 export function getAppInterestRepository(seedItems: InterestItem[] = defaultMockItems): InterestRepository {
   if (!appInterestRepository) {
-    appInterestRepository = createMockInterestRepository(seedItems)
+    appInterestRepository = createAppInterestRepository(seedItems)
   }
 
   return appInterestRepository
