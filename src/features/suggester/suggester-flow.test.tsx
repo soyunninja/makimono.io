@@ -7,7 +7,7 @@ import { LocaleProvider } from '@/i18n/locale-provider'
 describe('SmartSuggesterFlow', () => {
   it('renders exactly three mock recommendation cards with a reason and CTA after time and mood are chosen', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <SmartSuggesterFlow isDesktop />
       </LocaleProvider>,
     )
@@ -28,7 +28,7 @@ describe('SmartSuggesterFlow', () => {
 
   it('keeps suggester controls accessible and only enables generation after both choices', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <SmartSuggesterFlow isDesktop={false} />
       </LocaleProvider>,
     )

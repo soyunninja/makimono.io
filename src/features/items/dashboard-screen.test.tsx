@@ -32,7 +32,7 @@ afterEach(() => {
 describe('DashboardScreen', () => {
   it('renders only active category cards behind the local mock repository', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
@@ -54,7 +54,7 @@ describe('DashboardScreen', () => {
 
   it('filters the visible cards by category', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
@@ -79,7 +79,7 @@ describe('DashboardScreen', () => {
 
   it('keeps status changes local and advances a pending movie into progress', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
@@ -106,7 +106,7 @@ describe('DashboardScreen', () => {
 
   it('keeps the completion trigger in the card header, without the old footer action label or card date', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
@@ -125,7 +125,7 @@ describe('DashboardScreen', () => {
 
   it('opens a completion confirmation modal from the radio-style control', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
@@ -141,7 +141,7 @@ describe('DashboardScreen', () => {
 
   it('keeps an item active when the completion confirmation is canceled', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
@@ -163,7 +163,7 @@ describe('DashboardScreen', () => {
     const repository = createMockInterestRepository()
 
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={repository} />
       </LocaleProvider>,
     )
@@ -185,9 +185,9 @@ describe('DashboardScreen', () => {
     expect((await repository.listItems()).find((item) => item.id === 'book-atomic-habits')?.status).toBe('completed')
   })
 
-  it('switches the visible dashboard copy when the language toggle changes locale', async () => {
+  it('hides the language selector from the visible dashboard actions', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
@@ -198,21 +198,10 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Get suggestions' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Archive' })).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'ES' }))
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 1, name: 'Tus intereses' })).toBeInTheDocument()
-    })
-
-    expect(screen.getByRole('link', { name: 'Añadir interés' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Pedir sugerencias' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Archivo' })).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Idioma' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
   })
 
-  it('switches visible UI text back to English when the app starts in Spanish', async () => {
+  it('keeps the dashboard copy localized when the app starts in Spanish without showing the selector', async () => {
     render(
       <LocaleProvider initialLocale="es">
         <DashboardScreen repository={createMockInterestRepository()} />
@@ -223,25 +212,16 @@ describe('DashboardScreen', () => {
       await screen.findByRole('heading', { level: 1, name: 'Tus intereses' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Añadir interés' })).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Idioma' })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'EN' }))
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
-    })
-
-    expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Get suggestions' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Archive' })).toBeInTheDocument()
-    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Pedir sugerencias' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Archivo' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Idioma' })).not.toBeInTheDocument()
   })
 
   it('reloads repository items when the dashboard returns from the add flow', async () => {
     const repository = resetAppInterestRepository([])
 
     const dashboard = render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen reloadKey={'/dashboard/add'} repository={repository} />
       </LocaleProvider>,
     )
@@ -256,7 +236,7 @@ describe('DashboardScreen', () => {
     })
 
     dashboard.rerender(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen reloadKey={'/dashboard'} repository={repository} />
       </LocaleProvider>,
     )
@@ -266,7 +246,7 @@ describe('DashboardScreen', () => {
 
   it('exposes the text content area as the edit link without separate dashboard edit or delete buttons', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
@@ -282,7 +262,7 @@ describe('DashboardScreen', () => {
 
   it('preserves app-level status changes after repository recreation', async () => {
     const firstRender = render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen />
       </LocaleProvider>,
     )
@@ -304,7 +284,7 @@ describe('DashboardScreen', () => {
     resetAppInterestRepository()
 
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={getAppInterestRepository()} />
       </LocaleProvider>,
     )
@@ -322,7 +302,7 @@ describe('DashboardScreen', () => {
 
   it('exposes accessible filters, navigation actions, and usable status controls', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
@@ -334,8 +314,8 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('link', { name: 'Add interest' })).toHaveAttribute('href', '/dashboard/add')
     expect(screen.getByRole('link', { name: 'Get suggestions' })).toHaveAttribute('href', '/dashboard/suggest')
     expect(screen.getByRole('link', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
-    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'EN' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'EN' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 2, name: 'Celeste' })).not.toBeInTheDocument()
 
     const arrivalAction = within(getArrivalCard()).getByRole('button', { name: 'Start now' })
@@ -357,7 +337,7 @@ describe('DashboardScreen', () => {
       'This note intentionally stretches the card copy so the dashboard has to grow naturally while still keeping the footer readable and actionable.'
 
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <DashboardScreen
           repository={createMockInterestRepository([
             {

@@ -20,7 +20,7 @@ afterEach(() => {
 describe('AdaptiveAddFlow', () => {
   it('keeps only the common fields visible when the selected category changes on desktop', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <AdaptiveAddFlow isDesktop repository={createMockInterestRepository([])} />
       </LocaleProvider>,
     )
@@ -58,7 +58,7 @@ describe('AdaptiveAddFlow', () => {
     const onCreated = vi.fn()
 
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <AdaptiveAddFlow isDesktop={false} onCreated={onCreated} repository={repository} />
       </LocaleProvider>,
     )
@@ -89,7 +89,7 @@ describe('AdaptiveAddFlow', () => {
 
   it('keeps adaptive add controls accessible and only enables submit when required fields are ready', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <AdaptiveAddFlow isDesktop={false} repository={createMockInterestRepository([])} />
       </LocaleProvider>,
     )
@@ -116,7 +116,7 @@ describe('AdaptiveAddFlow', () => {
     resetAppInterestRepository([])
 
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <AdaptiveAddFlow isDesktop={false} onCreated={onCreated} />
       </LocaleProvider>,
     )
@@ -144,7 +144,7 @@ describe('AdaptiveAddFlow', () => {
 
   it('shows icon-only save and delete actions in the edit flow footer without a cancel button', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <AdaptiveEditFlow isDesktop itemId="movie-arrival" repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )

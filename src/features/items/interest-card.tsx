@@ -67,13 +67,13 @@ export function InterestCard({
         className={cn('flex h-full flex-col border-l-4', metadata.cardBorderClassName, metadata.surfaceClassName)}
         role="article"
       >
-        <CardContent className="flex flex-1 items-start gap-4 p-6">
+        <CardContent className="flex flex-1 items-start !gap-0 p-6">
           {showsCompletionControl ? (
             <Button
               aria-haspopup="dialog"
               aria-label={completionControlLabel}
               className={cn(
-                '-translate-x-1 -translate-y-1 shrink-0 self-start rounded-full border-transparent bg-transparent p-0 hover:bg-background/35',
+                '!-translate-x-4 !-translate-y-4 cursor-pointer shrink-0 self-start rounded-full border-transparent bg-transparent p-0',
                 metadata.textClassName,
               )}
               onClick={() => setIsCompletionDialogOpen(true)}
@@ -90,7 +90,7 @@ export function InterestCard({
 
           <a
             aria-label={editLinkLabel}
-            className="group -mx-3 -my-2 flex min-w-0 flex-1 flex-col gap-4 rounded-xl px-3 py-2 transition-colors hover:bg-background/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+            className="group -mx-3 -my-2 py-1 flex min-w-0 flex-1 flex-col gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             href={editHref}
             onClick={handleEditClick}
           >
@@ -104,7 +104,7 @@ export function InterestCard({
               </Badge>
             </div>
 
-            <div className="min-w-0 space-y-2">
+            <div className="min-w-0 space-y-0">
               <h2 className="text-balance break-words text-2xl font-semibold tracking-tight text-foreground underline-offset-4 group-hover:underline group-focus-visible:underline">
                 {item.title}
               </h2>

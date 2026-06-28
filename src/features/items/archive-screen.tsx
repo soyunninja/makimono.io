@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
-import { LanguageToggle } from '@/components/app/language-toggle'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -90,7 +89,6 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
           <Button asChild variant={'outline'}>
             <a href={'/dashboard'}>{t('archive.backAction')}</a>
           </Button>
-          <LanguageToggle />
         </div>
       )}
       description={t('archive.subtitle')}

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
-import { LanguageToggle } from '@/components/app/language-toggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CategoryFilters } from '@/features/items/category-filters'
@@ -96,7 +95,6 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
           <Button asChild variant={'outline'}>
             <a href={'/dashboard/archive'}>{t('dashboard.archiveAction')}</a>
           </Button>
-          <LanguageToggle />
         </div>
       )}
       description={t('dashboard.subtitle')}

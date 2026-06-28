@@ -20,7 +20,7 @@ import { installMockLocalStorage } from '@/test/mock-local-storage'
 
 function TestRoot() {
   return (
-    <LocaleProvider>
+    <LocaleProvider initialLocale="en">
       <Outlet />
     </LocaleProvider>
   )

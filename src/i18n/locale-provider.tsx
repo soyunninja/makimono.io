@@ -10,6 +10,22 @@ import {
 import { getDictionary, translate, type Dictionary } from '@/i18n/dictionaries'
 import type { Locale } from '@/i18n/types'
 
+const defaultLocale: Locale = 'es'
+
+function resolveBrowserLocale(): Locale {
+  if (typeof navigator === 'undefined') {
+    return defaultLocale
+  }
+
+  const browserLanguage = navigator.languages.find((language) => language.length > 0) ?? navigator.language
+
+  if (!browserLanguage) {
+    return defaultLocale
+  }
+
+  return browserLanguage.toLowerCase().startsWith('es') ? 'es' : 'en'
+}
+
 type LocaleContextValue = {
   locale: Locale
   setLocale: (locale: Locale) => void
@@ -23,8 +39,18 @@ type LocaleProviderProps = PropsWithChildren<{
   initialLocale?: Locale
 }>
 
-export function LocaleProvider({ children, initialLocale = 'en' }: LocaleProviderProps) {
-  const [locale, setLocale] = useState<Locale>(initialLocale)
+export function LocaleProvider({ children, initialLocale }: LocaleProviderProps) {
+  const [locale, setLocale] = useState<Locale>(initialLocale ?? defaultLocale)
+
+  useEffect(() => {
+    if (initialLocale !== undefined) {
+      return
+    }
+
+    const browserLocale = resolveBrowserLocale()
+
+    setLocale((currentLocale) => (currentLocale === browserLocale ? currentLocale : browserLocale))
+  }, [initialLocale])
 
   useEffect(() => {
     if (typeof document !== 'undefined') {

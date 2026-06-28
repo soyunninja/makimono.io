@@ -20,7 +20,7 @@ afterEach(() => {
 describe('ArchiveScreen', () => {
   it('keeps category colors visible in summary cards and completed item badges', async () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <ArchiveScreen repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
@@ -31,6 +31,7 @@ describe('ArchiveScreen', () => {
     const [gamesSummary, categoryBadge] = screen.getAllByText('Games')
     const completedArticle = await screen.findByRole('article')
 
+    expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
     expect(gamesSummary).toHaveClass('text-accent-green')
     expect(gamesSummary.closest('[data-slot="card"]')).toHaveClass('bg-accent-green/10')
     expect(completedArticle).toHaveClass('border-accent-green/30', 'bg-accent-green/10')
@@ -49,7 +50,7 @@ describe('ArchiveScreen', () => {
     resetAppInterestRepository([])
 
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <ArchiveScreen repository={getAppInterestRepository([])} />
       </LocaleProvider>,
     )
@@ -77,7 +78,7 @@ describe('ArchiveScreen', () => {
     await repository.updateStatus(completedItem.id, 'completed')
 
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <ArchiveScreen repository={repository} />
       </LocaleProvider>,
     )

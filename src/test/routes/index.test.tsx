@@ -7,7 +7,7 @@ import { LocaleProvider } from '@/i18n/locale-provider'
 describe('FoundationLandingScreen', () => {
   it('renders the localized reviewable root route contract for the first slice in English', () => {
     render(
-      <LocaleProvider>
+      <LocaleProvider initialLocale="en">
         <FoundationLandingScreen />
       </LocaleProvider>,
     )
