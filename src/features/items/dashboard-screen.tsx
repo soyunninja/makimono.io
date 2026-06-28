@@ -9,10 +9,12 @@ import { InterestCard } from '@/features/items/interest-card'
 import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import { getNextStatus } from '@/features/items/status-flow'
-import type { Category, InterestItem, InterestRepository } from '@/features/items/types'
+import type { Category, InterestItem, InterestRepository, ItemStatus } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
 
 type CategoryFilterValue = Category | 'all'
+
+const activeDashboardStatuses = new Set<ItemStatus>(['pending', 'in_progress'])
 
 type DashboardScreenProps = {
   reloadKey?: string
@@ -54,9 +56,9 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
 
   const filteredItems = useMemo(
     () =>
-      selectedCategory === 'all'
-        ? items
-        : items.filter((item) => item.category === selectedCategory),
+      items.filter(
+        (item) => activeDashboardStatuses.has(item.status) && (selectedCategory === 'all' || item.category === selectedCategory),
+      ),
     [items, selectedCategory],
   )
 
@@ -73,9 +75,11 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
       return
     }
 
-    setItems((currentItems) =>
-      currentItems.map((currentItem) => (currentItem.id === updatedItem.id ? updatedItem : currentItem)),
-    )
+    setItems((currentItems) => (
+      updatedItem.status === 'completed'
+        ? currentItems.filter((currentItem) => currentItem.id !== updatedItem.id)
+        : currentItems.map((currentItem) => (currentItem.id === updatedItem.id ? updatedItem : currentItem))
+    ))
   }
 
   async function handleDeleteItem(item: InterestItem) {

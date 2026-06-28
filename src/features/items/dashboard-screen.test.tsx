@@ -23,7 +23,7 @@ afterEach(() => {
 })
 
 describe('DashboardScreen', () => {
-  it('renders the five first-class category cards behind the local mock repository', async () => {
+  it('renders only active category cards behind the local mock repository', async () => {
     render(
       <LocaleProvider>
         <DashboardScreen repository={createMockInterestRepository()} />
@@ -34,7 +34,8 @@ describe('DashboardScreen', () => {
       await screen.findByRole('heading', { level: 1, name: 'Your interests' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
-    expect(await screen.findAllByRole('article')).toHaveLength(5)
+    expect(await screen.findAllByRole('article')).toHaveLength(4)
+    expect(screen.queryByRole('heading', { level: 2, name: 'Celeste' })).not.toBeInTheDocument()
 
     expect(screen.getByRole('radio', { name: 'All' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Series' })).toBeInTheDocument()
@@ -93,6 +94,31 @@ describe('DashboardScreen', () => {
     })
 
     expect(screen.getByRole('button', { name: 'Mark as watched' })).toBeInTheDocument()
+  })
+
+  it('removes an item from the dashboard as soon as it reaches completed', async () => {
+    const repository = createMockInterestRepository()
+
+    render(
+      <LocaleProvider>
+        <DashboardScreen repository={repository} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(await screen.findByRole('radio', { name: 'Books' }))
+
+    const atomicHabitsCard = await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })
+    expect(atomicHabitsCard).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as read' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { level: 2, name: 'Atomic Habits' })).not.toBeInTheDocument()
+    })
+
+    expect(screen.getByText('No items match this category yet')).toBeInTheDocument()
+    expect(screen.getByText('Try another category.')).toBeInTheDocument()
+    expect((await repository.listItems()).find((item) => item.id === 'book-atomic-habits')?.status).toBe('completed')
   })
 
   it('switches the visible dashboard copy when the language toggle changes locale', async () => {
@@ -191,7 +217,7 @@ describe('DashboardScreen', () => {
       expect(screen.queryByRole('heading', { level: 2, name: 'Arrival' })).not.toBeInTheDocument()
     })
 
-    expect(screen.getAllByRole('article')).toHaveLength(4)
+    expect(screen.getAllByRole('article')).toHaveLength(3)
     expect((await repository.listItems()).map((item) => item.id)).not.toContain('movie-arrival')
   })
 
@@ -258,18 +284,16 @@ describe('DashboardScreen', () => {
     await screen.findAllByRole('article')
 
     const getArrivalCard = () => screen.getByRole('heading', { level: 2, name: 'Arrival' }).closest('[role="article"]') as HTMLElement
-    const completedCard = screen.getByRole('heading', { level: 2, name: 'Celeste' }).closest('[role="article"]') as HTMLElement
-
     expect(screen.getByRole('radiogroup', { name: 'Category filters' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Add interest' })).toHaveAttribute('href', '/dashboard/add')
     expect(screen.getByRole('link', { name: 'Get suggestions' })).toHaveAttribute('href', '/dashboard/suggest')
     expect(screen.getByRole('link', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'EN' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('heading', { level: 2, name: 'Celeste' })).not.toBeInTheDocument()
 
     const arrivalAction = within(getArrivalCard()).getByRole('button', { name: 'Start now' })
     expect(arrivalAction).toBeEnabled()
-    expect(within(completedCard).getByRole('button', { name: 'Completed' })).toBeDisabled()
 
     fireEvent.click(arrivalAction)
 
