@@ -5,9 +5,10 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { cn } from '@/lib/utils'
 
 type CategoryFiltersProps = {
-  categories: CategoryMetadata[]
+  categories: Array<CategoryMetadata & { count: number }>
   label: string
   allLabel: string
+  totalCount: number
   value: Category | 'all'
   onValueChange: (value: Category | 'all') => void
 }
@@ -16,12 +17,12 @@ export function CategoryFilters({
   categories,
   label,
   allLabel,
+  totalCount,
   value,
   onValueChange,
 }: CategoryFiltersProps) {
   return (
-    <div className="space-y-3">
-      <p className="text-sm font-medium text-muted-foreground">{label}</p>
+    <div>
       <ToggleGroup
         aria-label={label}
         className="flex flex-wrap justify-start gap-2"
@@ -34,7 +35,7 @@ export function CategoryFilters({
         value={value}
       >
         <ToggleGroupItem value="all" variant="outline">
-          {allLabel}
+          {`${allLabel} (${totalCount})`}
         </ToggleGroupItem>
 
         {categories.map((category) => (
@@ -47,7 +48,7 @@ export function CategoryFilters({
             value={category.key}
             variant="outline"
           >
-            {category.label}
+            {`${category.label} (${category.count})`}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>

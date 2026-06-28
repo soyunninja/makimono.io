@@ -44,12 +44,13 @@ describe('DashboardScreen', () => {
     expect(await screen.findAllByRole('article')).toHaveLength(4)
     expect(screen.queryByRole('heading', { level: 2, name: 'Celeste' })).not.toBeInTheDocument()
 
-    expect(screen.getByRole('radio', { name: 'All' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Series' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Movies' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Games' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Books' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Music' })).toBeInTheDocument()
+    expect(screen.queryByText('Category filters')).not.toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'All (4)' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Series (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Movies (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Games (0)' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Books (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Music (1)' })).toBeInTheDocument()
   })
 
   it('filters the visible cards by category', async () => {
@@ -61,7 +62,7 @@ describe('DashboardScreen', () => {
 
     await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Books' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Books (1)' }))
 
     await waitFor(() => {
       expect(screen.getAllByRole('article')).toHaveLength(1)
@@ -70,7 +71,7 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Atomic Habits' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 2, name: 'Severance' })).not.toBeInTheDocument()
 
-    const booksFilter = screen.getByRole('radio', { name: 'Books' })
+    const booksFilter = screen.getByRole('radio', { name: 'Books (1)' })
     const article = screen.getByRole('article')
 
     expect(booksFilter).toHaveAttribute('aria-checked', 'true')
@@ -86,15 +87,20 @@ describe('DashboardScreen', () => {
 
     await screen.findByRole('heading', { level: 2, name: 'Arrival' })
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Movies' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Movies (1)' }))
 
     await waitFor(() => {
       expect(screen.getAllByRole('article')).toHaveLength(1)
     })
 
-    expect(screen.getByText('Planned')).toBeInTheDocument()
+    const arrivalCard = screen.getByRole('heading', { level: 2, name: 'Arrival' }).closest('[role="article"]') as HTMLElement
+    const startButton = within(arrivalCard).getByRole('button', { name: 'Start now' })
+    const cardHeading = within(arrivalCard).getByRole('heading', { level: 2, name: 'Arrival' })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Start now' }))
+    expect(within(arrivalCard).queryByText('Planned')).not.toBeInTheDocument()
+    expect(startButton.compareDocumentPosition(cardHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    fireEvent.click(startButton)
 
     await waitFor(() => {
       expect(screen.getByText('In progress')).toBeInTheDocument()
@@ -168,7 +174,7 @@ describe('DashboardScreen', () => {
       </LocaleProvider>,
     )
 
-    fireEvent.click(await screen.findByRole('radio', { name: 'Books' }))
+    fireEvent.click(await screen.findByRole('radio', { name: 'Books (1)' }))
 
     const atomicHabitsCard = await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })
     expect(atomicHabitsCard).toBeInTheDocument()
@@ -268,7 +274,7 @@ describe('DashboardScreen', () => {
     )
 
     await screen.findByRole('heading', { level: 2, name: 'Arrival' })
-    fireEvent.click(screen.getByRole('radio', { name: 'Movies' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Movies (1)' }))
 
     await waitFor(() => {
       expect(screen.getAllByRole('article')).toHaveLength(1)
@@ -290,7 +296,7 @@ describe('DashboardScreen', () => {
     )
 
     await screen.findByRole('heading', { level: 2, name: 'Arrival' })
-    fireEvent.click(screen.getByRole('radio', { name: 'Movies' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Movies (1)' }))
 
     await waitFor(() => {
       expect(screen.getAllByRole('article')).toHaveLength(1)
@@ -327,6 +333,7 @@ describe('DashboardScreen', () => {
       expect(within(getArrivalCard()).getByText('In progress')).toBeInTheDocument()
     })
 
+    expect(screen.getByRole('radio', { name: 'All (4)' })).toHaveAttribute('aria-checked', 'true')
     expect(within(getArrivalCard()).getByRole('button', { name: 'Mark as watched: Arrival' })).toHaveAttribute('aria-haspopup', 'dialog')
   })
 
@@ -355,11 +362,13 @@ describe('DashboardScreen', () => {
     const article = await screen.findByRole('article')
     const title = within(article).getByRole('heading', { level: 2, name: longTitle })
     const actionButton = within(article).getByRole('button', { name: 'Start now' })
+    const heading = within(article).getByRole('heading', { level: 2, name: longTitle })
 
     expect(title).toBeVisible()
     expect(within(article).getByText(longNotes)).toBeInTheDocument()
     expect(article).toHaveAttribute('role', 'article')
     expect(actionButton).toBeEnabled()
+    expect(actionButton.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     fireEvent.click(actionButton)
 

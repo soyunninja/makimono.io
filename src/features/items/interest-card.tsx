@@ -5,7 +5,7 @@ import type { InterestItem } from '@/features/items/types'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter } from '@/components/ui/card'
+import { Card, CardContent, CardDescription } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
@@ -88,48 +88,49 @@ export function InterestCard({
             </Button>
           ) : null}
 
-          <a
-            aria-label={editLinkLabel}
-            className="group -mx-3 -my-2 py-1 flex min-w-0 flex-1 flex-col gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-            href={editHref}
-            onClick={handleEditClick}
-          >
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <Badge className={metadata.accentClassName} variant="outline">
                 {metadata.label}
               </Badge>
 
-              <Badge variant={item.status === 'completed' ? 'default' : item.status === 'in_progress' ? 'secondary' : 'outline'}>
-                {metadata.statusLabels[item.status]}
-              </Badge>
+              {showsStartAction ? (
+                <Button onClick={() => onAdvance(item)} type="button" variant="outline">
+                  {startLabel}
+                </Button>
+              ) : (
+                <Badge variant={item.status === 'completed' ? 'default' : item.status === 'in_progress' ? 'secondary' : 'outline'}>
+                  {metadata.statusLabels[item.status]}
+                </Badge>
+              )}
             </div>
 
-            <div className="min-w-0 space-y-0">
-              <h2 className="text-balance break-words text-2xl font-semibold tracking-tight text-foreground underline-offset-4 group-hover:underline group-focus-visible:underline">
-                {item.title}
-              </h2>
-              <CardDescription>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
-            </div>
-
-            {item.tags.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {item.tags.map((tag) => (
-                  <Badge className="font-mono font-medium" key={tag} variant="outline">
-                    {tag}
-                  </Badge>
-                ))}
+            <a
+              aria-label={editLinkLabel}
+              className="group -mx-3 -my-2 py-1 flex min-w-0 flex-col gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              href={editHref}
+              onClick={handleEditClick}
+            >
+              <div className="min-w-0 space-y-0">
+                <h2 className="text-balance break-words text-2xl font-semibold tracking-tight text-foreground underline-offset-4 group-hover:underline group-focus-visible:underline">
+                  {item.title}
+                </h2>
+                <CardDescription>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
               </div>
-            ) : null}
-          </a>
+
+              {item.tags.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {item.tags.map((tag) => (
+                    <Badge className="font-mono font-medium" key={tag} variant="outline">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+            </a>
+          </div>
         </CardContent>
 
-        {showsStartAction ? (
-          <CardFooter className="mt-auto justify-end pt-0">
-            <Button className="w-full sm:w-auto" onClick={() => onAdvance(item)} type="button">
-              {startLabel}
-            </Button>
-          </CardFooter>
-        ) : null}
       </Card>
 
       <Dialog onOpenChange={setIsCompletionDialogOpen} open={isCompletionDialogOpen}>

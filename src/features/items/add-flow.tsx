@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Save, Trash2 } from 'lucide-react'
+import { Plus, Save, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -185,16 +185,14 @@ export function AdaptiveAddFlow({
 
   const formContent = (
     <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
-      <div className="space-y-2">
+      <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('addFlow.title')}</h1>
-        <p className="text-sm leading-6 text-muted-foreground">{t('addFlow.description')}</p>
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
         <Card className="bg-background/40">
           <CardHeader>
             <CardTitle>{t('addFlow.categoryLabel')}</CardTitle>
-            <CardDescription>{t('addFlow.categoryHint')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ToggleGroup
@@ -228,12 +226,9 @@ export function AdaptiveAddFlow({
           title={title}
         />
 
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button onClick={onRequestClose} type="button" variant="outline">
-            {t('addFlow.cancel')}
-          </Button>
-          <Button disabled={isSubmitDisabled} type="submit">
-            {t('addFlow.submit')}
+        <div className="flex justify-end">
+          <Button aria-label={t('addFlow.submit')} disabled={isSubmitDisabled} size="icon" type="submit">
+            <Plus aria-hidden="true" />
           </Button>
         </div>
       </form>

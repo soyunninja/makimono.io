@@ -26,6 +26,8 @@ describe('AdaptiveAddFlow', () => {
     )
 
     expect(screen.getByRole('heading', { level: 1, name: 'Add interest' })).toBeInTheDocument()
+    expect(screen.queryByText('Choose a category and save the basics.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Choose a category for this item.')).not.toBeInTheDocument()
 
     const seriesOption = screen.getByRole('radio', { name: 'Series' })
 
@@ -96,12 +98,11 @@ describe('AdaptiveAddFlow', () => {
 
     const seriesOption = screen.getByRole('radio', { name: 'Series' })
     const titleInput = screen.getByLabelText('Title')
-    const cancelButton = screen.getByRole('button', { name: 'Cancel' })
     const submitButton = screen.getByRole('button', { name: 'Add interest' })
 
     expect(seriesOption).toBeEnabled()
     expect(titleInput).toBeEnabled()
-    expect(cancelButton).toBeEnabled()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
     expect(submitButton).toBeDisabled()
 
     fireEvent.click(seriesOption)
@@ -140,6 +141,19 @@ describe('AdaptiveAddFlow', () => {
       tags: ['architecture', 'boundaries'],
       title: 'Clean Architecture',
     })
+  })
+
+  it('uses an icon-only submit button with an accessible name and no visible submit text', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveAddFlow isDesktop={false} repository={createMockInterestRepository([])} />
+      </LocaleProvider>,
+    )
+
+    const submitButton = screen.getByRole('button', { name: 'Add interest' })
+
+    expect(submitButton).toBeInTheDocument()
+    expect(submitButton).not.toHaveTextContent('Add interest')
   })
 
   it('shows icon-only save and delete actions in the edit flow footer without a cancel button', async () => {

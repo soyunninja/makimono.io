@@ -54,12 +54,23 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
 
   const categories = useMemo(() => listCategoryMetadata(locale), [locale])
 
+  const activeItems = useMemo(
+    () => items.filter((item) => activeDashboardStatuses.has(item.status)),
+    [items],
+  )
+
+  const categoriesWithCounts = useMemo(
+    () => categories.map((category) => ({
+      ...category,
+      count: activeItems.filter((item) => item.category === category.key).length,
+    })),
+    [activeItems, categories],
+  )
+
   const filteredItems = useMemo(
     () =>
-      items.filter(
-        (item) => activeDashboardStatuses.has(item.status) && (selectedCategory === 'all' || item.category === selectedCategory),
-      ),
-    [items, selectedCategory],
+      activeItems.filter((item) => selectedCategory === 'all' || item.category === selectedCategory),
+    [activeItems, selectedCategory],
   )
 
   async function handleAdvanceStatus(item: InterestItem) {
@@ -105,9 +116,10 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
         <div className={'flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between'}>
           <CategoryFilters
             allLabel={t('dashboard.allCategories')}
-            categories={categories}
+            categories={categoriesWithCounts}
             label={t('dashboard.filtersLabel')}
             onValueChange={setSelectedCategory}
+            totalCount={activeItems.length}
             value={selectedCategory}
           />
         </div>
