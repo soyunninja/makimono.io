@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.output/
+.vinxi/
+.nitro/
+.tanstack/
+.codegraph/
+.DS_Store
+
+# Local AI/tooling and design workspace files
+.atl/
+.gga
+.mcp.json
+opencode.json
+untitled.op
