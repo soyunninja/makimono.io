@@ -13,7 +13,7 @@ const SheetPortal = DialogPrimitive.Portal
 const SheetOverlay = forwardRef<ElementRef<typeof DialogPrimitive.Overlay>, ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>>(({ className, ...props }, ref) => <DialogPrimitive.Overlay className={cn('fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out', className)} data-slot="sheet-overlay" ref={ref} {...props} />)
 SheetOverlay.displayName = DialogPrimitive.Overlay.displayName
 
-const sheetVariants = cva('fixed z-50 gap-4 border-border/70 bg-card p-6 text-card-foreground shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out sm:p-8', {
+const sheetVariants = cva('fixed z-50 gap-4 border-border/70 bg-card p-4 text-card-foreground shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out sm:p-6', {
   variants: {
     side: {
       top: 'inset-x-0 top-0 border-b',

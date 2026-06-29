@@ -293,7 +293,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
     },
     dashboard: {
       eyebrow: 'Dashboard',
-      title: 'Me interesa',
+      title: 'Tus intereses',
       subtitle: 'Sigue los elementos mock por categoría y muévelos por el backlog.',
       localDataBadge: 'Solo datos locales',
       localDataNote: 'Los cambios de estado se mantienen en memoria hasta que recargues la página.',

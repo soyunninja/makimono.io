@@ -69,15 +69,15 @@ export function InterestCard({
         className={cn('flex h-full flex-col border-l-4', metadata.cardBorderClassName, metadata.surfaceClassName)}
         role="article"
       >
-        <CardContent className="flex flex-1 items-start !gap-0 p-6">
+        <CardContent className="flex flex-1 items-start !gap-0 p-4 xl:p-6">
           {showsCompletionControl || showsStartAction ? (
-            <div className="shrink-0 self-start">
+            <div className="shrink-0 self-start !-translate-x-2 !-translate-y-2.5">
               {showsCompletionControl ? (
                 <Button
                   aria-haspopup="dialog"
                   aria-label={completionControlLabel}
                   className={cn(
-                    '!-translate-x-4 !-translate-y-4 rounded-full border-transparent bg-transparent p-0',
+                    'rounded-full border-transparent bg-transparent p-0',
                     metadata.textClassName,
                   )}
                   onClick={() => setIsCompletionDialogOpen(true)}
@@ -94,7 +94,7 @@ export function InterestCard({
                 <Button
                   aria-label={startControlLabel}
                   className={cn(
-                    '!-translate-x-4 !-translate-y-4 rounded-full border-transparent bg-transparent p-0',
+                    'rounded-full border-transparent bg-transparent p-0',
                     metadata.textClassName,
                   )}
                   onClick={() => onAdvance(item)}
@@ -109,11 +109,10 @@ export function InterestCard({
           ) : null}
 
           <div className="flex min-w-0 flex-1 flex-col gap-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <Badge className={metadata.accentClassName} variant="outline">
                 {metadata.label}
               </Badge>
-
               <Badge variant={item.status === 'completed' ? 'default' : item.status === 'in_progress' ? 'secondary' : 'outline'}>
                 {metadata.statusLabels[item.status]}
               </Badge>
@@ -121,12 +120,12 @@ export function InterestCard({
 
             <a
               aria-label={editLinkLabel}
-              className="group -mx-3 -my-2 py-1 flex min-w-0 flex-col gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              className="group -my-2 py-1 flex min-w-0 flex-col gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
               href={editHref}
               onClick={handleEditClick}
             >
               <div className="min-w-0 space-y-0">
-                <h2 className="text-balance break-words text-2xl font-semibold tracking-tight text-foreground underline-offset-4 group-hover:underline group-focus-visible:underline">
+                <h2 className="text-balance break-words text-xl xl:text-2xl font-semibold tracking-tight text-foreground underline-offset-4 group-hover:underline group-focus-visible:underline">
                   {item.title}
                 </h2>
                 <CardDescription>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
