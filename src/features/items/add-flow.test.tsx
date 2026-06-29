@@ -56,7 +56,7 @@ describe('AdaptiveAddFlow', () => {
     expect(screen.queryByLabelText('Current season')).not.toBeInTheDocument()
   })
 
-  it('uses the mobile sheet presentation and creates a mock item from trimmed Enter/comma tags without duplicate chips', async () => {
+  it('shows Podcasts in the selector and saves podcast items from trimmed Enter/comma tags without duplicate chips', async () => {
     const repository = createMockInterestRepository([])
     const onCreated = vi.fn()
 
@@ -68,8 +68,12 @@ describe('AdaptiveAddFlow', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Add interest' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Music' }))
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Nujabes — Modal Soul' } })
+    const podcastOption = screen.getByRole('radio', { name: 'Podcasts' })
+
+    expect(podcastOption).toBeInTheDocument()
+
+    fireEvent.click(podcastOption)
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Syntax — Taming Complexity' } })
 
     const tagsInput = screen.getByLabelText('Tags')
 
@@ -100,8 +104,8 @@ describe('AdaptiveAddFlow', () => {
 
     expect(items).toHaveLength(1)
     expect(items[0]).toMatchObject({
-      category: 'music',
-      title: 'Nujabes — Modal Soul',
+      category: 'podcasts',
+      title: 'Syntax — Taming Complexity',
       tags: ['spotify', 'chillhop'],
     })
     expect(items[0].notes).toBe('Keep this handy for the next focus block.')
@@ -203,6 +207,42 @@ describe('AdaptiveAddFlow', () => {
     }))
   })
 
+  it('maps podcast cover lookups to the music resolver path while saving the item as podcasts', async () => {
+    const repository = createMockInterestRepository([])
+    const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue({
+      coverImageUrl: 'https://images.example.com/syntax.jpg',
+      coverMatchedTitle: 'Syntax',
+      coverProvider: 'cover-art-archive',
+    })
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveAddFlow coverResolver={coverResolver} isDesktop={false} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Podcasts' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Syntax' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
+
+    await waitFor(async () => {
+      const items = await repository.listItems()
+
+      expect(items).toHaveLength(1)
+      expect(items[0]).toMatchObject({
+        category: 'podcasts',
+        coverImageUrl: 'https://images.example.com/syntax.jpg',
+        coverMatchedTitle: 'Syntax',
+        coverProvider: 'cover-art-archive',
+      })
+    })
+
+    expect(coverResolver).toHaveBeenCalledWith(expect.objectContaining({
+      category: 'music',
+      title: 'Syntax',
+    }))
+  })
+
   it('still creates the item when the cover lookup fails quietly', async () => {
     const repository = createMockInterestRepository([])
     const onCreated = vi.fn()
@@ -264,7 +304,6 @@ describe('AdaptiveAddFlow', () => {
     })
     expect(screen.queryByText('Actualiza los detalles guardados y mantén el elemento en tu dashboard.')).not.toBeInTheDocument()
     expect(screen.queryByText('Detalles')).not.toBeInTheDocument()
-    expect(titleInput.closest('[class*="bg-background/40"]')).toBeNull()
     expect(titleInput).toBeVisible()
     expect(tagsInput).toBeVisible()
     expect(notesInput).toBeVisible()

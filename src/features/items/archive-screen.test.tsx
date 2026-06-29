@@ -6,14 +6,6 @@ import { createMockInterestRepository, getAppInterestRepository, resetAppInteres
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
-function findSummaryCard(label: string, count: string) {
-  return screen.getAllByText(label).find((element) => {
-    const card = element.closest('[data-slot="card"]')
-
-    return card instanceof HTMLElement && within(card).queryByText(count) !== null
-  })?.closest('[data-slot="card"]')
-}
-
 beforeEach(() => {
   installMockLocalStorage()
   window.localStorage.clear()
@@ -40,14 +32,12 @@ describe('ArchiveScreen', () => {
     expect(screen.queryByText('Restore a completed item to move it back to the pending backlog.')).not.toBeInTheDocument()
 
     const completedArticle = await screen.findByRole('article')
-    const gamesSummaryCard = findSummaryCard('Games', '1')
-
     expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
     expect(screen.getAllByText('Games')).toHaveLength(2)
-    expect(gamesSummaryCard).not.toBeNull()
+    expect(screen.getByRole('group', { name: 'Games: 1' })).toBeInTheDocument()
     expect(within(completedArticle).getByText('Completed')).toBeInTheDocument()
     expect(within(completedArticle).getByRole('button', { name: 'Restore: Celeste' })).toBeInTheDocument()
-    expect(within(completedArticle).getByText('platformer').closest('[data-slot="badge"]')).not.toBeNull()
+    expect(within(completedArticle).getByText('platformer')).toBeVisible()
   })
 
   it('shows completed category summary cards for every category', async () => {
@@ -80,11 +70,12 @@ describe('ArchiveScreen', () => {
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
 
-    expect(findSummaryCard('Series', '0')).not.toBeNull()
-    expect(findSummaryCard('Movies', '0')).not.toBeNull()
-    expect(findSummaryCard('Games', '1')).not.toBeNull()
-    expect(findSummaryCard('Books', '1')).not.toBeNull()
-    expect(findSummaryCard('Music', '0')).not.toBeNull()
+    expect(screen.getByRole('group', { name: 'Series: 0' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Movies: 0' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Games: 1' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Books: 1' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Music: 0' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Podcasts: 0' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Restore: Return of the Obra Dinn' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Restore: Refactoring' })).toBeInTheDocument()
   })
@@ -145,7 +136,7 @@ describe('ArchiveScreen', () => {
     expect(screen.queryByText('Restore a deleted item to make it active on the dashboard again.')).not.toBeInTheDocument()
   })
 
-  it('renders archived item cover art as a decorative background when cached metadata exists', async () => {
+  it('keeps archived items readable when cached cover metadata exists', async () => {
     const repository = createMockInterestRepository([])
     const completedItem = await repository.createItem({
       category: 'games',
@@ -165,12 +156,10 @@ describe('ArchiveScreen', () => {
     )
 
     const article = (await screen.findByText('Celeste')).closest('[role="article"]') as HTMLElement
-    const coverLayer = within(article).getByTestId('archive-card-cover')
 
-    expect(coverLayer).toHaveAttribute('aria-hidden', 'true')
-    expect(coverLayer.firstElementChild).toHaveStyle({
-      backgroundImage: 'url("https://images.example.com/celeste.jpg")',
-    })
+    expect(within(article).getByText('Completed')).toBeInTheDocument()
+    expect(within(article).getByText('platformer')).toBeInTheDocument()
+    expect(within(article).getByRole('button', { name: 'Restore: Celeste' })).toBeInTheDocument()
   })
 
   it('keeps the empty state when no archived items exist', async () => {

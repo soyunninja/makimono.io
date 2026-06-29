@@ -51,6 +51,7 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('radio', { name: 'Games (0)' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Books (1)' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Music (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Podcasts (0)' })).toBeInTheDocument()
 
     expect(screen.queryByText('Track mock items by category and move them through the backlog.')).not.toBeInTheDocument()
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()

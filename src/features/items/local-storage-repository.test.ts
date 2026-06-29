@@ -142,6 +142,27 @@ describe('createLocalStorageInterestRepository', () => {
     await expect(repository.listItems()).resolves.toEqual(legacyItems)
   })
 
+  it('accepts persisted podcast items as valid version 1 data', async () => {
+    const legacyItems = [{
+      id: 'podcast-syntax',
+      category: 'podcasts',
+      title: 'Syntax',
+      status: 'pending',
+      notes: 'Keep this queued.',
+      tags: ['development'],
+      createdAt: '2026-06-01T08:00:00.000Z',
+    }]
+
+    window.localStorage.setItem(INTEREST_ITEMS_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      items: legacyItems,
+    }))
+
+    const repository = createLocalStorageInterestRepository([])
+
+    await expect(repository.listItems()).resolves.toEqual(legacyItems)
+  })
+
   it('accepts older items without cover fields and persists new cover metadata', async () => {
     const legacyItems = [{
       id: 'series-andor',

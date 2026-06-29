@@ -203,7 +203,12 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
         {!isLoading && completedItems.length > 0 ? (
           <div className={'grid gap-4 sm:grid-cols-2 xl:grid-cols-5'}>
             {categorySummaries.map(({ category, count }) => (
-              <Card className={cn('bg-background/40', category.surfaceClassName)} key={category.key}>
+              <Card
+                aria-label={`${category.label}: ${count}`}
+                className={cn('bg-background/40', category.surfaceClassName)}
+                key={category.key}
+                role={'group'}
+              >
                 <CardHeader>
                   <CardDescription className={category.textClassName}>{category.label}</CardDescription>
                   <CardTitle className={'text-3xl'}>{count}</CardTitle>

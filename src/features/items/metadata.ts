@@ -59,6 +59,15 @@ const categoryAppearance: Record<
     textClassName: 'text-accent-blue',
     cardBorderClassName: 'border-l-accent-blue',
   },
+  podcasts: {
+    accentToken: 'accent-cyan',
+    accentClassName: 'border-accent-cyan/30 bg-accent-cyan/10 text-accent-cyan',
+    controlClassName:
+      'border-accent-cyan/40 text-accent-cyan hover:border-accent-cyan/60 hover:bg-accent-cyan/10 hover:text-accent-cyan',
+    surfaceClassName: 'border-accent-cyan/30 bg-accent-cyan/10',
+    textClassName: 'text-accent-cyan',
+    cardBorderClassName: 'border-l-accent-cyan',
+  },
 }
 
 export type CategoryMetadata = {

@@ -53,6 +53,10 @@ function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError'
 }
 
+function getCoverLookupCategory(category: Category): Category {
+  return category === 'podcasts' ? 'music' : category
+}
+
 async function lookupCoverMetadata(
   coverResolver: InterestCoverResolver,
   category: Category,
@@ -65,7 +69,7 @@ async function lookupCoverMetadata(
 
   try {
     return await coverResolver({
-      category,
+      category: getCoverLookupCategory(category),
       signal: controller.signal,
       title,
     })

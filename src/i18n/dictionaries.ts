@@ -1,8 +1,9 @@
+import type { Category, ItemStatus } from '@/features/items/types'
 import type { Locale } from '@/i18n/types'
 
-type CategoryDictionary = Record<'series' | 'movies' | 'games' | 'books' | 'music', string>
-type StatusDictionary = Record<'pending' | 'in_progress' | 'completed', string>
-type CategoryActionsDictionary = Record<keyof CategoryDictionary, StatusDictionary>
+type CategoryDictionary = Record<Category, string>
+type StatusDictionary = Record<ItemStatus, string>
+type CategoryActionsDictionary = Record<Category, StatusDictionary>
 type LandingMilestoneDictionary = Record<
   'scaffold' | 'theme' | 'baseline',
   {
@@ -230,6 +231,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       games: 'Games',
       books: 'Books',
       music: 'Music',
+      podcasts: 'Podcasts',
     },
     status: {
       pending: 'Planned',
@@ -259,6 +261,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       },
       music: {
         pending: 'Plan music',
+        in_progress: 'Keep listening',
+        completed: 'Mark as listened',
+      },
+      podcasts: {
+        pending: 'Plan podcast',
         in_progress: 'Keep listening',
         completed: 'Mark as listened',
       },
@@ -384,6 +391,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       games: 'Juegos',
       books: 'Libros',
       music: 'Música',
+      podcasts: 'Podcast',
     },
     status: {
       pending: 'Pendiente',
@@ -415,6 +423,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
         pending: 'Planear música',
         in_progress: 'Seguir escuchando',
         completed: 'Marcar como escuchada',
+      },
+      podcasts: {
+        pending: 'Planear podcast',
+        in_progress: 'Seguir escuchando',
+        completed: 'Marcar como escuchado',
       },
     },
   },

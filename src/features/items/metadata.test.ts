@@ -3,13 +3,14 @@ import { describe, expect, it } from 'vitest'
 import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
 
 describe('item category metadata', () => {
-  it('covers the five first-class categories in English and Spanish', () => {
+  it('covers the six first-class categories in English and Spanish', () => {
     expect(listCategoryMetadata('en').map(({ key, label }) => [key, label])).toEqual([
       ['series', 'Series'],
       ['movies', 'Movies'],
       ['games', 'Games'],
       ['books', 'Books'],
       ['music', 'Music'],
+      ['podcasts', 'Podcasts'],
     ])
 
     expect(listCategoryMetadata('es').map(({ key, label }) => [key, label])).toEqual([
@@ -18,12 +19,14 @@ describe('item category metadata', () => {
       ['games', 'Juegos'],
       ['books', 'Libros'],
       ['music', 'Música'],
+      ['podcasts', 'Podcast'],
     ])
   })
 
   it('keeps category-specific completion verbs', () => {
     expect(getCategoryMetadata('books', 'en').statusActions.completed).toBe('Mark as read')
     expect(getCategoryMetadata('music', 'en').statusActions.completed).toBe('Mark as listened')
+    expect(getCategoryMetadata('podcasts', 'es').statusActions.completed).toBe('Marcar como escuchado')
     expect(getCategoryMetadata('movies', 'es').statusActions.completed).toBe('Marcar como vista')
   })
 
@@ -34,6 +37,7 @@ describe('item category metadata', () => {
       games: 'green',
       books: 'yellow',
       music: 'blue',
+      podcasts: 'cyan',
     } as const
 
     for (const [category, accent] of Object.entries(expectedAccents)) {
