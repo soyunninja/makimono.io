@@ -1,3 +1,4 @@
+import { Bot, Box, Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
@@ -31,6 +32,9 @@ export function DashboardScreen({
   onSuggestItem,
 }: DashboardScreenProps) {
   const { locale, t } = useLocale()
+  const addActionLabel = t('dashboard.addAction')
+  const suggestActionLabel = t('dashboard.suggestAction')
+  const archiveActionLabel = t('dashboard.archiveAction')
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilterValue>('all')
@@ -105,27 +109,38 @@ export function DashboardScreen({
     <AppShell
       actions={(
         <div className={'flex flex-wrap items-center justify-end gap-3'}>
-          {onAddItem ? (
-            <Button onClick={onAddItem} type={'button'}>
-              {t('dashboard.addAction')}
-            </Button>
-          ) : (
-            <Button asChild>
-              <a href={'/dashboard/add'}>{t('dashboard.addAction')}</a>
-            </Button>
-          )}
-          {onSuggestItem ? (
-            <Button onClick={onSuggestItem} type={'button'} variant={'secondary'}>
-              {t('dashboard.suggestAction')}
-            </Button>
-          ) : (
-            <Button asChild variant={'secondary'}>
-              <a href={'/dashboard/suggest'}>{t('dashboard.suggestAction')}</a>
-            </Button>
-          )}
-          <Button asChild variant={'outline'}>
-            <a href={'/dashboard/archive'}>{t('dashboard.archiveAction')}</a>
+          <Button asChild size={'icon'} variant={'outline'}>
+            <a href={'/dashboard/archive'} title={archiveActionLabel}>
+              <Box aria-hidden={'true'} />
+              <span className={'sr-only'}>{archiveActionLabel}</span>
+            </a>
           </Button>
+          {onSuggestItem ? (
+            <Button onClick={onSuggestItem} size={'icon'} type={'button'} variant={'secondary'}>
+              <Bot aria-hidden={'true'} />
+              <span className={'sr-only'}>{suggestActionLabel}</span>
+            </Button>
+          ) : (
+            <Button asChild size={'icon'} variant={'secondary'}>
+              <a href={'/dashboard/suggest'} title={suggestActionLabel}>
+                <Bot aria-hidden={'true'} />
+                <span className={'sr-only'}>{suggestActionLabel}</span>
+              </a>
+            </Button>
+          )}
+          {onAddItem ? (
+            <Button className={'[&_svg]:size-6'} onClick={onAddItem} size={'icon'} type={'button'}>
+              <Plus aria-hidden={'true'} className={'size-6'} />
+              <span className={'sr-only'}>{addActionLabel}</span>
+            </Button>
+          ) : (
+            <Button asChild className={'[&_svg]:size-6'} size={'icon'}>
+              <a href={'/dashboard/add'} title={addActionLabel}>
+                <Plus aria-hidden={'true'} className={'size-6'} />
+                <span className={'sr-only'}>{addActionLabel}</span>
+              </a>
+            </Button>
+          )}
         </div>
       )}
       contentVariant={'plain'}

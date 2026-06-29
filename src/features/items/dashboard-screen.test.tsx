@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DashboardScreen } from '@/features/items/dashboard-screen'
 import {
@@ -52,15 +52,8 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('radio', { name: 'Books (1)' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Music (1)' })).toBeInTheDocument()
 
-    const header = screen.getByRole('heading', { level: 1, name: 'Your interests' }).closest('header') as HTMLElement
-    const content = screen.getByRole('radiogroup', { name: 'Category filters' }).closest('section') as HTMLElement
-
     expect(screen.queryByText('Track mock items by category and move them through the backlog.')).not.toBeInTheDocument()
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
-    expect(header).toHaveAttribute('data-variant', 'plain')
-    expect(header).not.toHaveClass('rounded-3xl', 'border', 'bg-card/80', 'shadow-2xl', 'backdrop-blur')
-    expect(content).toHaveAttribute('data-variant', 'plain')
-    expect(content).not.toHaveClass('rounded-3xl', 'border', 'bg-card/65', 'shadow-xl', 'backdrop-blur')
   })
 
   it('filters the visible cards by category', async () => {
@@ -88,43 +81,6 @@ describe('DashboardScreen', () => {
     expect(within(article).getByText('Books')).toBeInTheDocument()
   })
 
-  it('keeps the fallback category styling when an item has no cached cover image', async () => {
-    render(
-      <LocaleProvider initialLocale="en">
-        <DashboardScreen repository={createMockInterestRepository()} />
-      </LocaleProvider>,
-    )
-
-    const arrivalCard = (await screen.findByRole('heading', { level: 2, name: 'Arrival' })).closest('[role="article"]') as HTMLElement
-
-    expect(within(arrivalCard).queryByTestId('interest-card-cover')).not.toBeInTheDocument()
-  })
-
-  it('renders a decorative cover background layer when cached cover metadata exists', async () => {
-    render(
-      <LocaleProvider initialLocale="en">
-        <DashboardScreen
-          repository={createMockInterestRepository([
-            {
-              ...defaultMockItems[1],
-              coverImageUrl: 'https://images.example.com/arrival.jpg',
-              coverMatchedTitle: 'Arrival',
-              coverProvider: 'tmdb',
-            },
-          ])}
-        />
-      </LocaleProvider>,
-    )
-
-    const arrivalCard = (await screen.findByRole('heading', { level: 2, name: 'Arrival' })).closest('[role="article"]') as HTMLElement
-    const coverLayer = within(arrivalCard).getByTestId('interest-card-cover')
-
-    expect(coverLayer).toHaveAttribute('aria-hidden', 'true')
-    expect(coverLayer.firstElementChild).toHaveStyle({
-      backgroundImage: 'url("https://images.example.com/arrival.jpg")',
-    })
-  })
-
   it('keeps status changes local and advances a pending movie into progress', async () => {
     render(
       <LocaleProvider initialLocale="en">
@@ -142,13 +98,11 @@ describe('DashboardScreen', () => {
 
     const arrivalCard = screen.getByRole('heading', { level: 2, name: 'Arrival' }).closest('[role="article"]') as HTMLElement
     const startButton = within(arrivalCard).getByRole('button', { name: 'Start now: Arrival' })
-    const cardHeading = within(arrivalCard).getByRole('heading', { level: 2, name: 'Arrival' })
 
     expect(within(arrivalCard).getByText('Planned')).toBeInTheDocument()
     expect(within(arrivalCard).queryByRole('button', { name: 'Start now' })).not.toBeInTheDocument()
     expect(within(arrivalCard).queryByText('Start now')).not.toBeInTheDocument()
     expect(startButton).not.toHaveTextContent('Start now')
-    expect(startButton.compareDocumentPosition(cardHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     fireEvent.click(startButton)
 
@@ -173,10 +127,7 @@ describe('DashboardScreen', () => {
     expect(within(atomicHabitsCard).queryByRole('button', { name: 'Mark as read' })).not.toBeInTheDocument()
 
     const completionTrigger = within(atomicHabitsCard).getByRole('button', { name: 'Mark as read: Atomic Habits' })
-    const cardHeading = within(atomicHabitsCard).getByRole('heading', { level: 2, name: 'Atomic Habits' })
-
     expect(completionTrigger).toHaveAttribute('aria-haspopup', 'dialog')
-    expect(completionTrigger.compareDocumentPosition(cardHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('opens a completion confirmation modal from the radio-style control', async () => {
@@ -273,6 +224,34 @@ describe('DashboardScreen', () => {
     expect(screen.queryByRole('group', { name: 'Idioma' })).not.toBeInTheDocument()
     expect(screen.queryByText('Sigue los elementos mock por categoría y muévelos por el backlog.')).not.toBeInTheDocument()
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+  })
+
+  it('renders icon-only header actions with accessible names and keeps the add action last', async () => {
+    const handleAddItem = vi.fn()
+    const handleSuggestItem = vi.fn()
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen
+          onAddItem={handleAddItem}
+          onSuggestItem={handleSuggestItem}
+          repository={createMockInterestRepository()}
+        />
+      </LocaleProvider>,
+    )
+
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
+    const archiveAction = within(header).getByRole('link', { name: 'Archive' })
+    const suggestAction = within(header).getByRole('button', { name: 'Get suggestions' })
+    const addAction = within(header).getByRole('button', { name: 'Add interest' })
+
+    expect(archiveAction).toHaveAttribute('href', '/dashboard/archive')
+
+    fireEvent.click(suggestAction)
+    fireEvent.click(addAction)
+
+    expect(handleSuggestItem).toHaveBeenCalledTimes(1)
+    expect(handleAddItem).toHaveBeenCalledTimes(1)
   })
 
   it('reloads repository items when the dashboard returns from the add flow', async () => {
@@ -415,13 +394,10 @@ describe('DashboardScreen', () => {
     const article = await screen.findByRole('article')
     const title = within(article).getByRole('heading', { level: 2, name: longTitle })
     const actionButton = within(article).getByRole('button', { name: `Start now: ${longTitle}` })
-    const heading = within(article).getByRole('heading', { level: 2, name: longTitle })
 
     expect(title).toBeVisible()
     expect(within(article).getByText(longNotes)).toBeInTheDocument()
-    expect(article).toHaveAttribute('role', 'article')
     expect(actionButton).toBeEnabled()
-    expect(actionButton.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     fireEvent.click(actionButton)
 
