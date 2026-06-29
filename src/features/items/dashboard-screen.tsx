@@ -155,11 +155,13 @@ export function DashboardScreen({
       title={t('dashboard.title')}
     >
       <div className={'space-y-6'}>
-        <div className={'flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between'}>
-          <div className={'flex-1'}>
+        <div className={'flex flex-col gap-4 lg:flex-row lg:items-end'}>
+          <div className={'min-w-0 flex-1'}>
             <CategoryFilters
               allLabel={t('dashboard.allCategories')}
               categories={categoriesWithCounts}
+              className={'lg:min-w-max lg:flex-nowrap'}
+              containerClassName={'lg:overflow-x-auto lg:overflow-y-hidden'}
               label={t('dashboard.filtersLabel')}
               onValueChange={setSelectedCategory}
               totalCount={activeItems.length}
@@ -167,14 +169,16 @@ export function DashboardScreen({
             />
           </div>
 
-          <Input
-            aria-label={t('dashboard.searchLabel')}
-            className={'w-full lg:max-w-sm'}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder={t('dashboard.searchPlaceholder')}
-            type={'search'}
-            value={searchQuery}
-          />
+          <div className={'w-full lg:w-80 lg:max-w-sm lg:shrink-0'}>
+            <Input
+              aria-label={t('dashboard.searchLabel')}
+              className={'w-full'}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={t('dashboard.searchPlaceholder')}
+              type={'search'}
+              value={searchQuery}
+            />
+          </div>
         </div>
 
         {isLoading ? (

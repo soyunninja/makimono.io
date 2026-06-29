@@ -11,6 +11,8 @@ type CategoryFiltersProps = {
   totalCount: number
   value: Category | 'all'
   onValueChange: (value: Category | 'all') => void
+  className?: string
+  containerClassName?: string
 }
 
 export function CategoryFilters({
@@ -20,12 +22,14 @@ export function CategoryFilters({
   totalCount,
   value,
   onValueChange,
+  className,
+  containerClassName,
 }: CategoryFiltersProps) {
   return (
-    <div>
+    <div className={cn('min-w-0', containerClassName)}>
       <ToggleGroup
         aria-label={label}
-        className="flex flex-wrap justify-start gap-2"
+        className={cn('flex flex-wrap justify-start gap-2', className)}
         onValueChange={(nextValue) => {
           if (nextValue) {
             onValueChange(nextValue as Category | 'all')
