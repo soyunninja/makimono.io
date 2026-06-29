@@ -91,7 +91,7 @@ function ArchiveItemCard({
             <h3 className={'text-balance break-words text-xl font-semibold tracking-tight text-foreground xl:text-2xl'}>
               {item.title}
             </h3>
-            <CardDescription>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
+            <CardDescription className={item.coverImageUrl ? 'text-foreground/80' : undefined}>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
           </div>
 
           {item.tags.length > 0 ? (

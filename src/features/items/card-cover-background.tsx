@@ -17,7 +17,7 @@ export function CardCoverBackground({ item, metadata, testId }: CardCoverBackgro
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden" data-testid={testId}>
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-25"
         style={{ backgroundImage: `url("${item.coverImageUrl}")` }}
       />
       <div className={cn('absolute inset-0', metadata.surfaceClassName)} />

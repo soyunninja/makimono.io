@@ -130,7 +130,7 @@ export function InterestCard({
                 <h2 className="text-balance break-words text-xl xl:text-2xl font-semibold tracking-tight text-foreground underline-offset-4 group-hover:underline group-focus-visible:underline">
                   {item.title}
                 </h2>
-                <CardDescription>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
+                <CardDescription className={item.coverImageUrl ? 'text-foreground/80' : undefined}>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
               </div>
 
               {item.tags.length > 0 ? (
