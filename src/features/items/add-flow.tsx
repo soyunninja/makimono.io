@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Plus, Save, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +14,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { resolveInterestCoverMetadata, type InterestCoverResolver } from '@/features/items/cover-metadata'
 import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
-import type { Category, InterestItem, InterestRepository } from '@/features/items/types'
+import type { Category, CoverProvider, InterestItem, InterestItemCoverMetadata, InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
 
 import { cn } from '@/lib/utils'
@@ -49,12 +49,43 @@ const clearedCoverMetadata = {
   coverProvider: undefined,
 } as const
 
+type EditableCoverMetadata = {
+  coverImageUrl: string | undefined
+  coverMatchedTitle: string | undefined
+  coverProvider: CoverProvider | undefined
+}
+
+type CoverLookupStatus = 'idle' | 'searching' | 'found' | 'not_found'
+
 function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === 'AbortError'
 }
 
 function getCoverLookupCategory(category: Category): Category {
   return category === 'podcasts' ? 'music' : category
+}
+
+function toEditableCoverMetadata(coverMetadata?: InterestItemCoverMetadata | null): EditableCoverMetadata {
+  return {
+    coverImageUrl: coverMetadata?.coverImageUrl,
+    coverMatchedTitle: coverMetadata?.coverMatchedTitle,
+    coverProvider: coverMetadata?.coverProvider,
+  }
+}
+
+function hasSelectedCover(coverMetadata: EditableCoverMetadata): coverMetadata is EditableCoverMetadata & { coverImageUrl: string } {
+  return typeof coverMetadata.coverImageUrl === 'string' && coverMetadata.coverImageUrl.trim().length > 0
+}
+
+function getCoverProviderLabel(provider: CoverProvider) {
+  switch (provider) {
+    case 'tmdb':
+      return 'TMDB'
+    case 'rawg':
+      return 'RAWG'
+    case 'cover-art-archive':
+      return 'Cover Art Archive'
+  }
 }
 
 async function lookupCoverMetadata(
@@ -133,13 +164,101 @@ type InterestDetailsFieldsProps = {
   title: string
   tags: string[]
   notes: string
+  coverFields?: ReactNode
   surface?: 'card' | 'plain'
   onTitleChange: (value: string) => void
   onTagsChange: (value: string[]) => void
   onNotesChange: (value: string) => void
 }
 
-function InterestDetailsFields({ title, tags, notes, surface = 'card', onTitleChange, onTagsChange, onNotesChange }: InterestDetailsFieldsProps) {
+type CoverPreviewFieldsProps = {
+  category: Category | null
+  title: string
+  coverMetadata: EditableCoverMetadata
+  lookupStatus: CoverLookupStatus
+  onLookup: () => void
+  onRemove: () => void
+}
+
+function CoverPreviewFields({ category, title, coverMetadata, lookupStatus, onLookup, onRemove }: CoverPreviewFieldsProps) {
+  const { t } = useLocale()
+  const isSearching = lookupStatus === 'searching'
+  const hasCover = hasSelectedCover(coverMetadata)
+  const isLookupDisabled = isSearching || !category || title.trim().length === 0
+  const providerLabel = coverMetadata.coverProvider ? getCoverProviderLabel(coverMetadata.coverProvider) : null
+
+  return (
+    <div className="space-y-3 rounded-lg border border-dashed border-border/70 bg-background/30 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button disabled={isLookupDisabled} onClick={onLookup} size="sm" type="button" variant="outline">
+          {t('addFlow.findCoverAction')}
+        </Button>
+
+        {hasCover
+          ? (
+              <Button disabled={isSearching} onClick={onRemove} size="sm" type="button" variant="ghost">
+                {t('addFlow.removeCoverAction')}
+              </Button>
+            )
+          : null}
+      </div>
+
+      {isSearching
+        ? (
+            <p aria-live="polite" className="text-sm text-muted-foreground">
+              {t('addFlow.coverLookupSearching')}
+            </p>
+          )
+        : null}
+
+      {lookupStatus === 'not_found'
+        ? (
+            <p aria-live="polite" className="text-sm text-muted-foreground">
+              {t('addFlow.coverLookupNotFound')}
+            </p>
+          )
+        : null}
+
+      {hasCover
+        ? (
+            <div className="flex items-start gap-3 rounded-md border border-border/60 bg-background/70 p-3">
+              <img
+                alt={t('addFlow.coverPreviewAlt')}
+                className="h-24 w-16 rounded-md border border-border/60 object-cover shadow-sm"
+                src={coverMetadata.coverImageUrl}
+              />
+
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">{t('addFlow.coverFoundStatus')}</p>
+
+                {coverMetadata.coverMatchedTitle
+                  ? (
+                      <p>
+                        <span className="font-medium text-foreground">{t('addFlow.coverMatchedTitleLabel')}</span>
+                        {' '}
+                        {coverMetadata.coverMatchedTitle}
+                      </p>
+                    )
+                  : null}
+
+                {providerLabel
+                  ? (
+                      <p>
+                        <span className="font-medium text-foreground">{t('addFlow.coverProviderLabel')}</span>
+                        {' '}
+                        {providerLabel}
+                      </p>
+                    )
+                  : null}
+              </div>
+            </div>
+          )
+        : null}
+    </div>
+  )
+}
+
+function InterestDetailsFields({ title, tags, notes, coverFields, surface = 'card', onTitleChange, onTagsChange, onNotesChange }: InterestDetailsFieldsProps) {
   const { t } = useLocale()
 
   const fields = (
@@ -153,6 +272,8 @@ function InterestDetailsFields({ title, tags, notes, surface = 'card', onTitleCh
           required
           value={title}
         />
+
+        {coverFields}
       </div>
 
       <div className="space-y-2">
@@ -207,8 +328,36 @@ export function AdaptiveAddFlow({
   const [tags, setTags] = useState<string[]>([])
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [coverMetadata, setCoverMetadata] = useState<EditableCoverMetadata>(toEditableCoverMetadata())
+  const [coverLookupStatus, setCoverLookupStatus] = useState<CoverLookupStatus>('idle')
 
   const isSubmitDisabled = isSubmitting || !selectedCategory || title.trim().length === 0
+
+  async function handleFindCover() {
+    if (!selectedCategory || title.trim().length === 0 || coverLookupStatus === 'searching') {
+      return
+    }
+
+    setCoverLookupStatus('searching')
+
+    const resolvedCoverMetadata = await lookupCoverMetadata(coverResolver, selectedCategory, title.trim())
+
+    setCoverMetadata(toEditableCoverMetadata(resolvedCoverMetadata))
+    setCoverLookupStatus(resolvedCoverMetadata ? 'found' : 'not_found')
+  }
+
+  function handleRemoveCover() {
+    setCoverMetadata(toEditableCoverMetadata())
+    setCoverLookupStatus('idle')
+  }
+
+  function handleTitleChange(value: string) {
+    setTitle(value)
+
+    if (coverLookupStatus !== 'searching') {
+      setCoverLookupStatus('idle')
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -221,7 +370,6 @@ export function AdaptiveAddFlow({
 
     try {
       const trimmedTitle = title.trim()
-      const coverMetadata = await lookupCoverMetadata(coverResolver, selectedCategory, trimmedTitle)
       const createdItem = await repository.createItem({
         category: selectedCategory,
         title: trimmedTitle,
@@ -254,6 +402,8 @@ export function AdaptiveAddFlow({
             <ToggleGroup
               className="flex flex-wrap gap-2"
               onValueChange={(value) => {
+                setCoverMetadata(toEditableCoverMetadata())
+                setCoverLookupStatus('idle')
                 setSelectedCategory((value as Category) || null)
               }}
               type="single"
@@ -274,10 +424,22 @@ export function AdaptiveAddFlow({
         </Card>
 
         <InterestDetailsFields
+          coverFields={(
+            <CoverPreviewFields
+              category={selectedCategory}
+              coverMetadata={coverMetadata}
+              lookupStatus={coverLookupStatus}
+              onLookup={() => {
+                void handleFindCover()
+              }}
+              onRemove={handleRemoveCover}
+              title={title}
+            />
+          )}
           notes={notes}
           onNotesChange={setNotes}
           onTagsChange={setTags}
-          onTitleChange={setTitle}
+          onTitleChange={handleTitleChange}
           tags={tags}
           title={title}
         />
@@ -341,6 +503,8 @@ export function AdaptiveEditFlow({
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [coverMetadata, setCoverMetadata] = useState<EditableCoverMetadata>(toEditableCoverMetadata())
+  const [coverLookupStatus, setCoverLookupStatus] = useState<CoverLookupStatus>('idle')
 
   useEffect(() => {
     let isMounted = true
@@ -361,6 +525,8 @@ export function AdaptiveEditFlow({
       setTitle(nextItem.title)
       setTags(nextItem.tags)
       setNotes(nextItem.notes ?? '')
+      setCoverMetadata(toEditableCoverMetadata(nextItem))
+      setCoverLookupStatus('idle')
     }
 
     void loadItem()
@@ -374,8 +540,35 @@ export function AdaptiveEditFlow({
     return null
   }
 
-  const metadata = getCategoryMetadata(item.category, locale)
+  const itemCategory = item.category
+  const metadata = getCategoryMetadata(itemCategory, locale)
   const isSubmitDisabled = isSubmitting || isDeleting || title.trim().length === 0
+
+  async function handleFindCover() {
+    if (title.trim().length === 0 || coverLookupStatus === 'searching') {
+      return
+    }
+
+    setCoverLookupStatus('searching')
+
+    const resolvedCoverMetadata = await lookupCoverMetadata(coverResolver, itemCategory, title.trim())
+
+    setCoverMetadata(toEditableCoverMetadata(resolvedCoverMetadata))
+    setCoverLookupStatus(resolvedCoverMetadata ? 'found' : 'not_found')
+  }
+
+  function handleRemoveCover() {
+    setCoverMetadata(toEditableCoverMetadata())
+    setCoverLookupStatus('idle')
+  }
+
+  function handleTitleChange(value: string) {
+    setTitle(value)
+
+    if (coverLookupStatus !== 'searching') {
+      setCoverLookupStatus('idle')
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -388,15 +581,11 @@ export function AdaptiveEditFlow({
 
     try {
       const trimmedTitle = title.trim()
-      const shouldRefreshCover = trimmedTitle !== item.title || !item.coverImageUrl
-      const coverMetadata = shouldRefreshCover
-        ? await lookupCoverMetadata(coverResolver, item.category, trimmedTitle)
-        : null
       const updatedItem = await repository.updateItem(item.id, {
         title: trimmedTitle,
         notes: notes.trim() ? notes.trim() : undefined,
         tags,
-        ...(trimmedTitle !== item.title ? (coverMetadata ?? clearedCoverMetadata) : coverMetadata ?? {}),
+        ...coverMetadata,
       })
 
       setIsSubmitting(false)
@@ -407,6 +596,8 @@ export function AdaptiveEditFlow({
       }
 
       setItem(updatedItem)
+      setCoverMetadata(toEditableCoverMetadata(updatedItem))
+      setCoverLookupStatus('idle')
       await onUpdated?.(updatedItem)
     }
     catch (error) {
@@ -457,10 +648,22 @@ export function AdaptiveEditFlow({
 
       <form className="space-y-6" onSubmit={handleSubmit}>
         <InterestDetailsFields
+          coverFields={(
+            <CoverPreviewFields
+              category={itemCategory}
+              coverMetadata={coverMetadata}
+              lookupStatus={coverLookupStatus}
+              onLookup={() => {
+                void handleFindCover()
+              }}
+              onRemove={handleRemoveCover}
+              title={title}
+            />
+          )}
           notes={notes}
           onNotesChange={setNotes}
           onTagsChange={setTags}
-          onTitleChange={setTitle}
+          onTitleChange={handleTitleChange}
           surface="plain"
           tags={tags}
           title={title}

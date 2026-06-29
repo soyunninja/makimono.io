@@ -83,6 +83,14 @@ export type Dictionary = {
     removeTagAction: string
     notesLabel: string
     notesPlaceholder: string
+    findCoverAction: string
+    removeCoverAction: string
+    coverLookupSearching: string
+    coverLookupNotFound: string
+    coverFoundStatus: string
+    coverMatchedTitleLabel: string
+    coverProviderLabel: string
+    coverPreviewAlt: string
     cancel: string
     submit: string
   }
@@ -195,6 +203,14 @@ export const dictionaries: Record<Locale, Dictionary> = {
       removeTagAction: 'Remove tag: {tag}',
       notesLabel: 'Notes',
       notesPlaceholder: 'Optional context for the card',
+      findCoverAction: 'Find cover',
+      removeCoverAction: 'Remove cover',
+      coverLookupSearching: 'Looking up a cover…',
+      coverLookupNotFound: 'No cover found. You can still save without one.',
+      coverFoundStatus: 'Cover ready to save',
+      coverMatchedTitleLabel: 'Matched title:',
+      coverProviderLabel: 'Provider:',
+      coverPreviewAlt: 'Cover preview',
       cancel: 'Cancel',
       submit: 'Add interest',
     },
@@ -355,6 +371,14 @@ export const dictionaries: Record<Locale, Dictionary> = {
       removeTagAction: 'Eliminar etiqueta: {tag}',
       notesLabel: 'Notas',
       notesPlaceholder: 'Contexto opcional para la tarjeta',
+      findCoverAction: 'Buscar portada',
+      removeCoverAction: 'Quitar portada',
+      coverLookupSearching: 'Buscando una portada…',
+      coverLookupNotFound: 'No se ha encontrado ninguna portada. Puedes guardar sin ella.',
+      coverFoundStatus: 'Portada lista para guardar',
+      coverMatchedTitleLabel: 'Título encontrado:',
+      coverProviderLabel: 'Proveedor:',
+      coverPreviewAlt: 'Vista previa de la portada',
       cancel: 'Cancelar',
       submit: 'Añadir interés',
     },

@@ -9,7 +9,7 @@
    - RAWG for `games` using `VITE_RAWG_API_KEY`
    - MusicBrainz + Cover Art Archive for `music` without secrets
    - Skip `books` for now
-4. Resolve cover metadata during add/edit submits with a short timeout and swallow failures so local item writes still complete.
+4. Resolve cover metadata only when the user explicitly requests a cover search during add/edit, show the result before save, and swallow failures so local item writes still complete.
 5. Render cover art as a decorative background layer under translucent category color overlays in dashboard and archive item cards.
 
 ## Constraints

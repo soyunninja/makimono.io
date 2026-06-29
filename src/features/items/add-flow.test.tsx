@@ -7,6 +7,10 @@ import { createMockInterestRepository, getAppInterestRepository, resetAppInteres
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
+function hasExactText(text: string) {
+  return (_content: string, element: Element | null) => element?.textContent === text
+}
+
 beforeEach(() => {
   installMockLocalStorage()
   window.localStorage.clear()
@@ -172,7 +176,7 @@ describe('AdaptiveAddFlow', () => {
     })
   })
 
-  it('stores resolved cover metadata on create when the lookup returns a match', async () => {
+  it('shows a cover preview after an explicit search and stores the selected metadata on create', async () => {
     const repository = createMockInterestRepository([])
     const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue({
       coverImageUrl: 'https://images.example.com/severance.jpg',
@@ -188,6 +192,14 @@ describe('AdaptiveAddFlow', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Series' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Severance' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Find cover' }))
+
+    expect(await screen.findByRole('img', { name: 'Cover preview' })).toHaveAttribute('src', 'https://images.example.com/severance.jpg')
+    expect(screen.getByText('Cover ready to save')).toBeVisible()
+    expect(screen.getByText(hasExactText('Matched title: Severance'))).toBeVisible()
+    expect(screen.getByText(hasExactText('Provider: TMDB'))).toBeVisible()
+
     fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
 
     await waitFor(async () => {
@@ -207,6 +219,47 @@ describe('AdaptiveAddFlow', () => {
     }))
   })
 
+  it('removes a found cover preview before submit and saves the item without cover metadata', async () => {
+    const repository = createMockInterestRepository([])
+    const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue({
+      coverImageUrl: 'https://images.example.com/severance.jpg',
+      coverMatchedTitle: 'Severance',
+      coverProvider: 'tmdb',
+    })
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveAddFlow coverResolver={coverResolver} isDesktop={false} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Series' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Severance' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Find cover' }))
+
+    await screen.findByRole('img', { name: 'Cover preview' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove cover' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('img', { name: 'Cover preview' })).not.toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
+
+    await waitFor(async () => {
+      const [createdItem] = await repository.listItems()
+
+      expect(createdItem).toMatchObject({
+        category: 'series',
+        title: 'Severance',
+      })
+      expect(createdItem.coverImageUrl).toBeUndefined()
+      expect(createdItem.coverMatchedTitle).toBeUndefined()
+      expect(createdItem.coverProvider).toBeUndefined()
+    })
+  })
+
   it('maps podcast cover lookups to the music resolver path while saving the item as podcasts', async () => {
     const repository = createMockInterestRepository([])
     const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue({
@@ -223,6 +276,9 @@ describe('AdaptiveAddFlow', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Podcasts' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Syntax' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Find cover' }))
+
+    await screen.findByRole('img', { name: 'Cover preview' })
     fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
 
     await waitFor(async () => {
@@ -243,10 +299,10 @@ describe('AdaptiveAddFlow', () => {
     }))
   })
 
-  it('still creates the item when the cover lookup fails quietly', async () => {
+  it('still creates the item without cover metadata when the user skips cover search', async () => {
     const repository = createMockInterestRepository([])
     const onCreated = vi.fn()
-    const coverResolver: InterestCoverResolver = vi.fn().mockRejectedValue(new Error('lookup failed'))
+    const coverResolver: InterestCoverResolver = vi.fn()
 
     render(
       <LocaleProvider initialLocale="en">
@@ -269,6 +325,7 @@ describe('AdaptiveAddFlow', () => {
       title: 'Clean Code',
     })
     expect(createdItem.coverImageUrl).toBeUndefined()
+    expect(coverResolver).not.toHaveBeenCalled()
   })
 
   it('uses an icon-only submit button with an accessible name and no visible submit text', async () => {
@@ -359,7 +416,7 @@ describe('AdaptiveAddFlow', () => {
     )
   })
 
-  it('keeps edit saves working when cover refresh fails and clears stale cover data after a title change', async () => {
+  it('shows an existing cover preview, lets users remove it, and clears the cover metadata on save', async () => {
     const repository = createMockInterestRepository([
       {
         id: 'series-old',
@@ -374,12 +431,10 @@ describe('AdaptiveAddFlow', () => {
       },
     ])
     const onUpdated = vi.fn()
-    const coverResolver: InterestCoverResolver = vi.fn().mockRejectedValue(new Error('tmdb down'))
 
     render(
       <LocaleProvider initialLocale="en">
         <AdaptiveEditFlow
-          coverResolver={coverResolver}
           isDesktop
           itemId="series-old"
           onUpdated={onUpdated}
@@ -388,9 +443,16 @@ describe('AdaptiveAddFlow', () => {
       </LocaleProvider>,
     )
 
-    const titleInput = await screen.findByLabelText('Title')
+    expect(await screen.findByRole('img', { name: 'Cover preview' })).toHaveAttribute('src', 'https://images.example.com/severance.jpg')
+    expect(screen.getByText(hasExactText('Matched title: Severance'))).toBeVisible()
+    expect(screen.getByText(hasExactText('Provider: TMDB'))).toBeVisible()
 
-    fireEvent.change(titleInput, { target: { value: 'Black Mirror' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Remove cover' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('img', { name: 'Cover preview' })).not.toBeInTheDocument()
+    })
+
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
     await waitFor(() => {
@@ -399,13 +461,55 @@ describe('AdaptiveAddFlow', () => {
 
     const [updatedItem] = await repository.listItems()
 
-    expect(updatedItem?.title).toBe('Black Mirror')
+    expect(updatedItem?.title).toBe('Severance')
     expect(updatedItem?.coverImageUrl).toBeUndefined()
     expect(updatedItem?.coverMatchedTitle).toBeUndefined()
     expect(updatedItem?.coverProvider).toBeUndefined()
   })
 
-  it('persists the full resolved cover metadata set after a successful edit lookup', async () => {
+  it('shows no-cover feedback when an edit lookup finds nothing and still allows saving', async () => {
+    const repository = createMockInterestRepository([
+      {
+        id: 'movie-old',
+        category: 'movies',
+        title: 'Arrival',
+        status: 'pending',
+        tags: ['sci-fi'],
+        createdAt: '2026-06-01T08:00:00.000Z',
+      },
+    ])
+    const onUpdated = vi.fn()
+    const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue(null)
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveEditFlow coverResolver={coverResolver} isDesktop itemId="movie-old" onUpdated={onUpdated} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    const titleInput = await screen.findByLabelText('Title')
+
+    fireEvent.change(titleInput, { target: { value: 'Arrival (2016)' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Find cover' }))
+
+    expect(await screen.findByText('No cover found. You can still save without one.')).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => {
+      expect(onUpdated).toHaveBeenCalledTimes(1)
+    })
+
+    const [updatedItem] = await repository.listItems()
+
+    expect(updatedItem).toMatchObject({
+      title: 'Arrival (2016)',
+      category: 'movies',
+    })
+    expect(updatedItem?.coverImageUrl).toBeUndefined()
+  })
+
+  it('persists the full resolved cover metadata set after an explicit successful edit lookup', async () => {
     const repository = createMockInterestRepository([
       {
         id: 'movie-old',
@@ -431,6 +535,9 @@ describe('AdaptiveAddFlow', () => {
     const titleInput = await screen.findByLabelText('Title')
 
     fireEvent.change(titleInput, { target: { value: 'Blade Runner 2049' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Find cover' }))
+
+    await screen.findByRole('img', { name: 'Cover preview' })
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
 
     await waitFor(async () => {
