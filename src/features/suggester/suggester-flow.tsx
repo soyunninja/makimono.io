@@ -21,6 +21,7 @@ import {
 
 type SmartSuggesterFlowProps = {
   isDesktop?: boolean
+  onRequestAdd?: () => void
   onRequestClose?: () => void
 }
 
@@ -67,7 +68,7 @@ function useDesktopBreakpoint(forcedValue?: boolean) {
   return isDesktop
 }
 
-export function SmartSuggesterFlow({ isDesktop, onRequestClose }: SmartSuggesterFlowProps) {
+export function SmartSuggesterFlow({ isDesktop, onRequestAdd, onRequestClose }: SmartSuggesterFlowProps) {
   const { locale, t } = useLocale()
   const resolvedIsDesktop = useDesktopBreakpoint(isDesktop)
   const [selectedTime, setSelectedTime] = useState<SuggestionTime | null>(null)
@@ -173,9 +174,15 @@ export function SmartSuggesterFlow({ isDesktop, onRequestClose }: SmartSuggester
                       <p className="text-sm leading-6 text-muted-foreground">{recommendation.reason}</p>
                     </div>
 
-                    <Button asChild className="mt-auto w-full sm:w-auto">
-                      <a href="/dashboard/add">{t('suggester.cta')}</a>
-                    </Button>
+                    {onRequestAdd ? (
+                      <Button className="mt-auto w-full sm:w-auto" onClick={onRequestAdd} type="button">
+                        {t('suggester.cta')}
+                      </Button>
+                    ) : (
+                      <Button asChild className="mt-auto w-full sm:w-auto">
+                        <a href="/dashboard/add">{t('suggester.cta')}</a>
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               )

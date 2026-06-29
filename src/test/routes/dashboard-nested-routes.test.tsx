@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import {
   Outlet,
   RouterProvider,
@@ -99,11 +99,10 @@ describe('dashboard nested routes', () => {
   it('renders the adaptive add flow on top of the dashboard without duplicating the dashboard shell', async () => {
     await renderRoute('/dashboard/add')
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Your interests', hidden: true }),
-    ).toBeInTheDocument()
+    await screen.findByRole('heading', { level: 1, name: 'Your interests', hidden: true })
+
     expect(screen.getAllByRole('heading', { level: 1, name: 'Your interests', hidden: true })).toHaveLength(1)
-    expect(screen.getByRole('button', { name: 'Add interest' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { hidden: true, name: 'Add interest' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Add interest' })).toBeInTheDocument()
   })
 
@@ -127,6 +126,44 @@ describe('dashboard nested routes', () => {
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.queryByText('Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Back to dashboard' })).toBeInTheDocument()
+  })
+
+  it('opens and closes the local add flow from the dashboard without changing the route', async () => {
+    const router = await renderRoute('/dashboard')
+
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
+
+    fireEvent.click(within(header).getByRole('button', { name: 'Add interest' }))
+
+    expect(router.state.location.pathname).toBe('/dashboard')
+    expect(screen.getByRole('heading', { level: 1, name: 'Add interest' })).toBeInTheDocument()
+
+    fireEvent.click(within(screen.getByRole('dialog')).getAllByRole('button', { name: 'Close' })[0])
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { level: 1, name: 'Add interest' })).not.toBeInTheDocument()
+    })
+
+    expect(router.state.location.pathname).toBe('/dashboard')
+  })
+
+  it('opens and closes the local suggester flow from the dashboard without changing the route', async () => {
+    const router = await renderRoute('/dashboard')
+
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
+
+    fireEvent.click(within(header).getByRole('button', { name: 'Get suggestions' }))
+
+    expect(router.state.location.pathname).toBe('/dashboard')
+    expect(screen.getByRole('heading', { level: 1, name: 'Suggestions' })).toBeInTheDocument()
+
+    fireEvent.click(within(screen.getByRole('dialog')).getAllByRole('button', { name: 'Close' })[0])
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { level: 1, name: 'Suggestions' })).not.toBeInTheDocument()
+    })
+
+    expect(router.state.location.pathname).toBe('/dashboard')
   })
 
   it('restores a completed item from the archive back to the dashboard backlog', async () => {
@@ -183,10 +220,12 @@ describe('dashboard nested routes', () => {
   it('shows a created item on the dashboard after the add flow closes back to /dashboard', async () => {
     const router = await renderRoute('/dashboard/add')
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Books' }))
-    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Refactoring' } })
-    fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'martin, legacy' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
+    const dialog = screen.getByRole('dialog')
+
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Books' }))
+    fireEvent.change(within(dialog).getByLabelText('Title'), { target: { value: 'Refactoring' } })
+    fireEvent.change(within(dialog).getByLabelText('Tags'), { target: { value: 'martin, legacy' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add interest' }))
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/dashboard')
@@ -195,14 +234,12 @@ describe('dashboard nested routes', () => {
     expect(await screen.findByRole('heading', { level: 2, name: 'Refactoring' })).toBeInTheDocument()
   })
 
-  it('opens the edit route when the dashboard card content link is activated', async () => {
+  it('opens the local edit overlay when the dashboard card content link is activated without changing the route', async () => {
     const router = await renderRoute('/dashboard')
 
     fireEvent.click(await screen.findByRole('link', { name: 'Edit: Arrival' }))
 
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/dashboard/edit/movie-arrival')
-    })
+    expect(router.state.location.pathname).toBe('/dashboard')
 
     await waitFor(() => {
       expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
@@ -212,6 +249,28 @@ describe('dashboard nested routes', () => {
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete interest' })).toBeInTheDocument()
+  })
+
+  it('shows a created item on the dashboard after the local add flow closes without leaving /dashboard', async () => {
+    const router = await renderRoute('/dashboard')
+
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
+
+    fireEvent.click(within(header).getByRole('button', { name: 'Add interest' }))
+
+    const dialog = screen.getByRole('dialog')
+
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Books' }))
+    fireEvent.change(within(dialog).getByLabelText('Title'), { target: { value: 'Refactoring' } })
+    fireEvent.change(within(dialog).getByLabelText('Tags'), { target: { value: 'martin, legacy' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add interest' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { level: 1, name: 'Add interest' })).not.toBeInTheDocument()
+    })
+
+    expect(router.state.location.pathname).toBe('/dashboard')
+    expect(await screen.findByRole('heading', { level: 2, name: 'Refactoring' })).toBeInTheDocument()
   })
 
   it('updates a dashboard item from the edit flow and closes back to /dashboard', async () => {
@@ -230,6 +289,27 @@ describe('dashboard nested routes', () => {
       expect(router.state.location.pathname).toBe('/dashboard')
     })
 
+    expect(await screen.findByRole('heading', { level: 2, name: 'Arrival (Director Cut)' })).toBeInTheDocument()
+    expect(screen.getByText('Updated for the next rewatch.')).toBeInTheDocument()
+  })
+
+  it('updates a dashboard item from the local edit flow and keeps the dashboard route stable', async () => {
+    const router = await renderRoute('/dashboard')
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Edit: Arrival' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'Edit interest' })
+
+    fireEvent.change(within(dialog).getByLabelText('Title'), { target: { value: 'Arrival (Director Cut)' } })
+    fireEvent.change(within(dialog).getByLabelText('Tags'), { target: { value: 'drama, revisit' } })
+    fireEvent.change(within(dialog).getByLabelText('Notes'), { target: { value: 'Updated for the next rewatch.' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Edit interest' })).not.toBeInTheDocument()
+    })
+
+    expect(router.state.location.pathname).toBe('/dashboard')
     expect(await screen.findByRole('heading', { level: 2, name: 'Arrival (Director Cut)' })).toBeInTheDocument()
     expect(screen.getByText('Updated for the next rewatch.')).toBeInTheDocument()
   })

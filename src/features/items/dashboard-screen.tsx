@@ -16,12 +16,20 @@ type CategoryFilterValue = Category | 'all'
 const activeDashboardStatuses = new Set<ItemStatus>(['pending', 'in_progress'])
 
 type DashboardScreenProps = {
-  reloadKey?: string
+  reloadKey?: string | number
   repository?: InterestRepository
+  onAddItem?: () => void
   onEditItem?: (itemId: string) => void
+  onSuggestItem?: () => void
 }
 
-export function DashboardScreen({ reloadKey, repository = getAppInterestRepository(), onEditItem }: DashboardScreenProps) {
+export function DashboardScreen({
+  reloadKey,
+  repository = getAppInterestRepository(),
+  onAddItem,
+  onEditItem,
+  onSuggestItem,
+}: DashboardScreenProps) {
   const { locale, t } = useLocale()
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
@@ -97,12 +105,24 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
     <AppShell
       actions={(
         <div className={'flex flex-wrap items-center justify-end gap-3'}>
-          <Button asChild>
-            <a href={'/dashboard/add'}>{t('dashboard.addAction')}</a>
-          </Button>
-          <Button asChild variant={'secondary'}>
-            <a href={'/dashboard/suggest'}>{t('dashboard.suggestAction')}</a>
-          </Button>
+          {onAddItem ? (
+            <Button onClick={onAddItem} type={'button'}>
+              {t('dashboard.addAction')}
+            </Button>
+          ) : (
+            <Button asChild>
+              <a href={'/dashboard/add'}>{t('dashboard.addAction')}</a>
+            </Button>
+          )}
+          {onSuggestItem ? (
+            <Button onClick={onSuggestItem} type={'button'} variant={'secondary'}>
+              {t('dashboard.suggestAction')}
+            </Button>
+          ) : (
+            <Button asChild variant={'secondary'}>
+              <a href={'/dashboard/suggest'}>{t('dashboard.suggestAction')}</a>
+            </Button>
+          )}
           <Button asChild variant={'outline'}>
             <a href={'/dashboard/archive'}>{t('dashboard.archiveAction')}</a>
           </Button>
