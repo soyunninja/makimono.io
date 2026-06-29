@@ -5,6 +5,7 @@ import { PocketBaseAuthGate } from '@/features/auth/pocketbase-auth-gate'
 import { LocaleProvider } from '@/i18n/locale-provider'
 
 type MockAuthState = {
+  client: unknown
   enabled: boolean
   isAuthenticated: boolean
   isLoading: boolean
@@ -14,6 +15,7 @@ type MockAuthState = {
 }
 
 let mockAuthState: MockAuthState = {
+  client: null,
   enabled: false,
   isAuthenticated: false,
   isLoading: false,
@@ -38,6 +40,7 @@ function renderGate(locale: 'en' | 'es' = 'en') {
 
 beforeEach(() => {
   mockAuthState = {
+    client: {},
     enabled: false,
     isAuthenticated: false,
     isLoading: false,
@@ -73,11 +76,31 @@ describe('PocketBaseAuthGate', () => {
 
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'mariano@example.com' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'super-secret' } })
-    fireEvent.click(screen.getAllByRole('button', { name: 'Sign in' })[1])
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in to my account' }))
 
     await waitFor(() => {
       expect(mockAuthState.login).toHaveBeenCalledWith('mariano@example.com', 'super-secret')
     })
+  })
+
+  it('switching to create-account mode updates the submit action and active state', () => {
+    mockAuthState.enabled = true
+
+    renderGate('es')
+
+    const loginModeButton = screen.getByRole('button', { name: 'Entrar' })
+    const registerModeButton = screen.getByRole('button', { name: 'Crear cuenta' })
+
+    expect(loginModeButton).toHaveAttribute('aria-pressed', 'true')
+    expect(registerModeButton).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Entrar con mi cuenta' })).toBeInTheDocument()
+
+    fireEvent.click(registerModeButton)
+
+    expect(loginModeButton).toHaveAttribute('aria-pressed', 'false')
+    expect(registerModeButton).toHaveAttribute('aria-pressed', 'true')
+    expect(registerModeButton).toHaveAttribute('data-state', 'active')
+    expect(screen.getByRole('button', { name: 'Crear cuenta nueva' })).toBeInTheDocument()
   })
 
   it('submits registration data with localized Spanish copy', async () => {
@@ -85,14 +108,59 @@ describe('PocketBaseAuthGate', () => {
 
     renderGate('es')
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Crear cuenta' })[0])
+    fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }))
     fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'mariano@example.com' } })
     fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'super-secret' } })
-    fireEvent.click(screen.getAllByRole('button', { name: 'Crear cuenta' })[1])
+    fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta nueva' }))
 
     await waitFor(() => {
       expect(mockAuthState.register).toHaveBeenCalledWith('mariano@example.com', 'super-secret')
     })
+    expect(mockAuthState.login).not.toHaveBeenCalled()
+  })
+
+  it('keeps the form disabled and visible while the auth client is not ready', () => {
+    mockAuthState.enabled = true
+    mockAuthState.client = null
+
+    renderGate('es')
+
+    expect(screen.getByRole('status')).toHaveTextContent('Preparando la autenticación…')
+    expect(screen.getByRole('button', { name: 'Entrar con mi cuenta' })).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'mariano@example.com' } })
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'super-secret' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar con mi cuenta' }))
+
+    expect(mockAuthState.login).not.toHaveBeenCalled()
+    expect(mockAuthState.register).not.toHaveBeenCalled()
+  })
+
+  it('displays failed login errors accessibly', async () => {
+    mockAuthState.enabled = true
+    mockAuthState.login = vi.fn().mockRejectedValue(new Error('Credenciales inválidas'))
+
+    renderGate('es')
+
+    fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'mariano@example.com' } })
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'bad-password' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar con mi cuenta' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Credenciales inválidas')
+  })
+
+  it('displays failed registration errors accessibly', async () => {
+    mockAuthState.enabled = true
+    mockAuthState.register = vi.fn().mockRejectedValue(new Error('El correo ya está registrado'))
+
+    renderGate('es')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }))
+    fireEvent.change(screen.getByLabelText('Correo electrónico'), { target: { value: 'mariano@example.com' } })
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'super-secret' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta nueva' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('El correo ya está registrado')
   })
 
   it('renders protected content when the user is authenticated', () => {

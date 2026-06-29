@@ -12,18 +12,22 @@ import { getPocketBaseErrorMessage } from '@/lib/pocketbase'
 type PocketBaseAuthMode = 'login' | 'register'
 
 function PocketBaseAuthScreen() {
-  const { login, register } = useOptionalPocketBaseAuth()
+  const { client, isLoading, login, register } = useOptionalPocketBaseAuth()
   const { t } = useLocale()
   const [mode, setMode] = useState<PocketBaseAuthMode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const isClientReady = client !== null
+  const canSubmit = isClientReady && !isLoading && !isSubmitting
+  const submitLabel = mode === 'login' ? t('auth.submitLogin') : t('auth.submitRegister')
+  const submittingLabel = mode === 'login' ? t('auth.submittingLogin') : t('auth.submittingRegister')
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (isSubmitting) {
+    if (!canSubmit) {
       return
     }
 
@@ -57,6 +61,8 @@ function PocketBaseAuthScreen() {
             <div className={'flex flex-wrap gap-2'}>
               <Button
                 aria-pressed={mode === 'login'}
+                data-state={mode === 'login' ? 'active' : 'inactive'}
+                className={mode === 'login' ? 'ring-2 ring-ring/40 ring-offset-2 ring-offset-background' : undefined}
                 onClick={() => setMode('login')}
                 type={'button'}
                 variant={mode === 'login' ? 'default' : 'outline'}
@@ -65,6 +71,8 @@ function PocketBaseAuthScreen() {
               </Button>
               <Button
                 aria-pressed={mode === 'register'}
+                data-state={mode === 'register' ? 'active' : 'inactive'}
+                className={mode === 'register' ? 'ring-2 ring-ring/40 ring-offset-2 ring-offset-background' : undefined}
                 onClick={() => setMode('register')}
                 type={'button'}
                 variant={mode === 'register' ? 'default' : 'outline'}
@@ -100,10 +108,18 @@ function PocketBaseAuthScreen() {
                 />
               </div>
 
-              {errorMessage ? <CardDescription className={'text-destructive'}>{errorMessage}</CardDescription> : null}
+              {!isClientReady ? (
+                <CardDescription role={'status'}>{t('auth.readyStatus')}</CardDescription>
+              ) : null}
 
-              <Button className={'w-full'} disabled={isSubmitting} type={'submit'}>
-                {mode === 'login' ? t('auth.submitLogin') : t('auth.submitRegister')}
+              {errorMessage ? (
+                <CardDescription aria-live={'assertive'} className={'text-destructive'} role={'alert'}>
+                  {errorMessage}
+                </CardDescription>
+              ) : null}
+
+              <Button className={'w-full'} disabled={!canSubmit} type={'submit'}>
+                {isSubmitting || isLoading ? submittingLabel : submitLabel}
               </Button>
             </form>
           </CardHeader>

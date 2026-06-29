@@ -43,11 +43,15 @@ const disabledAuthContextValue: PocketBaseAuthContextValue = {
 
 const PocketBaseAuthContext = createContext<PocketBaseAuthContextValue | null>(null)
 
+function resolveAuthenticatedUser(token: string, isValid: boolean, record: PocketBaseAuthRecord | null) {
+  return token && isValid && record ? record : null
+}
+
 export function PocketBaseAuthProvider({ children }: PropsWithChildren) {
   const [client, setClient] = useState<ReturnType<typeof getPocketBaseClient>>(null)
   const [enabled, setEnabled] = useState(() => isPocketBaseEnabled())
   const [user, setUser] = useState<PocketBaseAuthRecord | null>(null)
-  const [isLoading, setIsLoading] = useState(() => isPocketBaseEnabled())
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const nextEnabled = isPocketBaseEnabled()
@@ -62,12 +66,13 @@ export function PocketBaseAuthProvider({ children }: PropsWithChildren) {
       return
     }
 
-    const unsubscribe = nextClient.authStore.onChange((token, record) => {
-      const nextUser = token && nextClient.authStore.isValid && record ? record : null
-
-      setUser(nextUser)
+    const unsubscribe = nextClient.authStore.onChange((token, model) => {
+      setUser(resolveAuthenticatedUser(token, nextClient.authStore.isValid, model))
       setIsLoading(false)
-    }, true)
+    })
+
+    setUser(resolveAuthenticatedUser(nextClient.authStore.token, nextClient.authStore.isValid, nextClient.authStore.model))
+    setIsLoading(false)
 
     return () => {
       unsubscribe()

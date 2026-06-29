@@ -31,6 +31,9 @@ export type Dictionary = {
     passwordPlaceholder: string
     submitLogin: string
     submitRegister: string
+    submittingLogin: string
+    submittingRegister: string
+    readyStatus: string
     logoutAction: string
     errorGeneric: string
   }
@@ -160,8 +163,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       emailPlaceholder: 'you@example.com',
       passwordLabel: 'Password',
       passwordPlaceholder: 'Your password',
-      submitLogin: 'Sign in',
-      submitRegister: 'Create account',
+      submitLogin: 'Sign in to my account',
+      submitRegister: 'Create new account',
+      submittingLogin: 'Signing in…',
+      submittingRegister: 'Creating account…',
+      readyStatus: 'Preparing authentication…',
       logoutAction: 'Logout',
       errorGeneric: 'We could not complete authentication. Check your details and try again.',
     },
@@ -352,8 +358,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       emailPlaceholder: 'tu@ejemplo.com',
       passwordLabel: 'Contraseña',
       passwordPlaceholder: 'Tu contraseña',
-      submitLogin: 'Entrar',
-      submitRegister: 'Crear cuenta',
+      submitLogin: 'Entrar con mi cuenta',
+      submitRegister: 'Crear cuenta nueva',
+      submittingLogin: 'Entrando…',
+      submittingRegister: 'Creando cuenta…',
+      readyStatus: 'Preparando la autenticación…',
       logoutAction: 'Salir',
       errorGeneric: 'No hemos podido completar la autenticación. Revisa los datos e inténtalo de nuevo.',
     },
