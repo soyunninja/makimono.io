@@ -34,3 +34,4 @@ Use this file as the project-level review contract for automated and human check
 - Run `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build` before review-ready commits.
 - Document any manual mobile/desktop inspection limitations instead of claiming unsupported QA.
 - Automated review hooks may exclude test files from the reviewed code list; when they do, verify behavior evidence in committed `*.test.*` files and OpenSpec/apply-progress artifacts before treating UI behavior as untested.
+- Automated review responses must put `STATUS: PASSED` or `STATUS: FAILED` as the first line with no preamble, so strict hooks can parse the result reliably.

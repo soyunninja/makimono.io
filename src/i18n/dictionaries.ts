@@ -62,6 +62,7 @@ export type Dictionary = {
     addAction: string
     suggestAction: string
     archiveAction: string
+    settingsAction: string
     editAction: string
     deleteAction: string
     deleteEditAction: string
@@ -93,6 +94,17 @@ export type Dictionary = {
     backAction: string
     searchLabel: string
     searchPlaceholder: string
+  }
+  settings: {
+    title: string
+    description: string
+    languageTitle: string
+    languageDescription: string
+    sessionTitle: string
+    sessionDescription: string
+    versionTitle: string
+    versionDescription: string
+    backAction: string
   }
   addFlow: {
     title: string
@@ -209,6 +221,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addAction: 'Add interest',
       suggestAction: 'Get suggestions',
       archiveAction: 'Archive',
+      settingsAction: 'Settings',
       editAction: 'Edit',
       deleteAction: 'Delete',
       deleteEditAction: 'Delete interest',
@@ -240,6 +253,17 @@ export const dictionaries: Record<Locale, Dictionary> = {
       backAction: 'Back to dashboard',
       searchLabel: 'Search archived items by title, tag, or notes',
       searchPlaceholder: 'Search title, tag, or notes',
+    },
+    settings: {
+      title: 'Settings',
+      description: 'Manage language, session, and app details.',
+      languageTitle: 'Language',
+      languageDescription: 'Choose the interface language.',
+      sessionTitle: 'Session',
+      sessionDescription: 'Sign out of the current PocketBase session.',
+      versionTitle: 'Version',
+      versionDescription: 'Current app version.',
+      backAction: 'Back to dashboard',
     },
     addFlow: {
       title: 'Add',
@@ -404,6 +428,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addAction: 'Añadir interés',
       suggestAction: 'Pedir sugerencias',
       archiveAction: 'Archivo',
+      settingsAction: 'Ajustes',
       editAction: 'Editar',
       deleteAction: 'Eliminar',
       deleteEditAction: 'Eliminar interés',
@@ -435,6 +460,17 @@ export const dictionaries: Record<Locale, Dictionary> = {
       backAction: 'Volver al dashboard',
       searchLabel: 'Buscar archivados por título, etiqueta o notas',
       searchPlaceholder: 'Buscar por título, etiqueta o notas',
+    },
+    settings: {
+      title: 'Ajustes',
+      description: 'Gestiona el idioma, la sesión y los detalles de la app.',
+      languageTitle: 'Idioma',
+      languageDescription: 'Elige el idioma de la interfaz.',
+      sessionTitle: 'Sesión',
+      sessionDescription: 'Cierra la sesión actual de PocketBase.',
+      versionTitle: 'Versión',
+      versionDescription: 'Versión actual de la app.',
+      backAction: 'Volver al dashboard',
     },
     addFlow: {
       title: 'Añadir',

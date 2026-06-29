@@ -16,7 +16,7 @@ export function DashboardRoutePage() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const repository = useAppInterestRepository()
 
-  if (pathname === '/dashboard/archive') {
+  if (pathname === '/dashboard/archive' || pathname === '/dashboard/settings') {
     return <Outlet />
   }
 

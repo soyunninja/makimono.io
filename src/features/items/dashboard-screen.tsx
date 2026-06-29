@@ -1,11 +1,10 @@
-import { Bot, Box, Plus } from 'lucide-react'
+import { Bot, Box, Plus, Settings } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provider'
 import { CategoryFilters } from '@/features/items/category-filters'
 import { InterestCard } from '@/features/items/interest-card'
 import { filterItemsBySearchQuery } from '@/features/items/item-search'
@@ -35,10 +34,10 @@ export function DashboardScreen({
   onSuggestItem,
 }: DashboardScreenProps) {
   const { locale, t } = useLocale()
-  const { isAuthenticated, logout } = useOptionalPocketBaseAuth()
   const addActionLabel = t('dashboard.addAction')
   const suggestActionLabel = t('dashboard.suggestAction')
   const archiveActionLabel = t('dashboard.archiveAction')
+  const settingsActionLabel = t('dashboard.settingsAction')
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilterValue>('all')
@@ -118,15 +117,16 @@ export function DashboardScreen({
     <AppShell
       actions={(
         <div className={'flex flex-wrap items-center justify-end gap-3'}>
-          {isAuthenticated ? (
-            <Button onClick={() => void logout()} type={'button'} variant={'outline'}>
-              {t('auth.logoutAction')}
-            </Button>
-          ) : null}
           <Button asChild size={'icon'} variant={'outline'}>
             <a href={'/dashboard/archive'} title={archiveActionLabel}>
               <Box aria-hidden={'true'} />
               <span className={'sr-only'}>{archiveActionLabel}</span>
+            </a>
+          </Button>
+          <Button asChild size={'icon'} variant={'outline'}>
+            <a href={'/dashboard/settings'} title={settingsActionLabel}>
+              <Settings aria-hidden={'true'} />
+              <span className={'sr-only'}>{settingsActionLabel}</span>
             </a>
           </Button>
           {onSuggestItem ? (

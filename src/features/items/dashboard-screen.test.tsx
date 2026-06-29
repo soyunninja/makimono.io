@@ -41,6 +41,7 @@ describe('DashboardScreen', () => {
       await screen.findByRole('heading', { level: 1, name: 'Your interests' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(await screen.findAllByRole('article')).toHaveLength(4)
     expect(screen.queryByRole('heading', { level: 2, name: 'Celeste' })).not.toBeInTheDocument()
 

@@ -7,23 +7,58 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { PocketBaseAuthProvider } from '@/features/auth/pocketbase-auth-provider'
 import { resetAppInterestRepository } from '@/features/items/mock-repository'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { DashboardAddRoutePage } from '@/routes/dashboard.add'
 import { DashboardArchiveRoutePage } from '@/routes/dashboard.archive'
 import { DashboardEditRoutePage } from '@/routes/dashboard.edit.$itemId'
+import { DashboardSettingsRoutePage } from '@/routes/dashboard.settings'
 import { DashboardSuggestRoutePage } from '@/routes/dashboard.suggest'
 import { DashboardRoutePage } from '@/routes/dashboard'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
+type AuthRecord = { email: string, id: string }
+type AuthChangeCallback = (token: string, record: AuthRecord | null) => void
+
+const pocketBaseMock = vi.hoisted(() => ({
+  authChangeCallbacks: [] as AuthChangeCallback[],
+  client: null as null | {
+    authStore: {
+      clear: ReturnType<typeof vi.fn>
+      isValid: boolean
+      model: AuthRecord | null
+      onChange: ReturnType<typeof vi.fn>
+      record: AuthRecord | null
+      token: string
+    }
+    collection: ReturnType<typeof vi.fn>
+  },
+  enabled: false,
+}))
+
+vi.mock('@/lib/pocketbase', () => ({
+  getPocketBaseClient: () => pocketBaseMock.client,
+  getPocketBaseErrorMessage: (_error: unknown, fallbackMessage: string) => fallbackMessage,
+  isPocketBaseEnabled: () => pocketBaseMock.enabled,
+}))
+
+let shouldUsePocketBaseAuthProvider = false
+
 function TestRoot() {
-  return (
+  const content = (
     <LocaleProvider initialLocale="en">
       <Outlet />
     </LocaleProvider>
   )
+
+  if (shouldUsePocketBaseAuthProvider) {
+    return <PocketBaseAuthProvider>{content}</PocketBaseAuthProvider>
+  }
+
+  return content
 }
 
 const rootRoute = createRootRoute({
@@ -54,6 +89,12 @@ const dashboardArchiveRoute = createRoute({
   component: DashboardArchiveRoutePage,
 })
 
+const dashboardSettingsRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: '/settings',
+  component: DashboardSettingsRoutePage,
+})
+
 const dashboardEditRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: '/edit/$itemId',
@@ -65,11 +106,16 @@ const routeTree = rootRoute.addChildren([
     dashboardAddRoute,
     dashboardSuggestRoute,
     dashboardArchiveRoute,
+    dashboardSettingsRoute,
     dashboardEditRoute,
   ]),
 ])
 
-async function renderRoute(pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive' | '/dashboard/edit/movie-arrival') {
+async function renderRoute(
+  pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive' | '/dashboard/settings' | '/dashboard/edit/movie-arrival',
+  options: { withPocketBaseAuthProvider?: boolean } = {},
+) {
+  shouldUsePocketBaseAuthProvider = options.withPocketBaseAuthProvider ?? false
   const router = createRouter({
     routeTree,
     history: createMemoryHistory({
@@ -84,15 +130,55 @@ async function renderRoute(pathname: '/dashboard' | '/dashboard/add' | '/dashboa
   return router
 }
 
+function authenticatePocketBaseMock() {
+  const client = pocketBaseMock.client
+
+  if (!client) {
+    throw new Error('PocketBase mock client must be initialized before authentication.')
+  }
+
+  pocketBaseMock.enabled = true
+  client.authStore.isValid = true
+  client.authStore.model = {
+    email: 'reader@example.com',
+    id: 'user-reader',
+  }
+  client.authStore.record = client.authStore.model
+  client.authStore.token = 'test-token'
+}
+
 beforeEach(() => {
   installMockLocalStorage()
   window.localStorage.clear()
   resetAppInterestRepository()
+  pocketBaseMock.authChangeCallbacks = []
+  pocketBaseMock.enabled = false
+  pocketBaseMock.client = {
+    authStore: {
+      clear: vi.fn(),
+      isValid: false,
+      model: null,
+      onChange: vi.fn((callback: AuthChangeCallback) => {
+        pocketBaseMock.authChangeCallbacks.push(callback)
+
+        return vi.fn()
+      }),
+      record: null,
+      token: '',
+    },
+    collection: vi.fn(() => ({
+      authWithPassword: vi.fn(),
+      create: vi.fn(),
+      getFullList: vi.fn(async () => []),
+    })),
+  }
+  shouldUsePocketBaseAuthProvider = false
 })
 
 afterEach(() => {
   window.localStorage.clear()
   resetAppInterestRepository()
+  shouldUsePocketBaseAuthProvider = false
 })
 
 describe('dashboard nested routes', () => {
@@ -128,6 +214,47 @@ describe('dashboard nested routes', () => {
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.queryByText('Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Back to dashboard' })).toBeInTheDocument()
+  })
+
+  it('renders the settings route as a full replacement instead of overlaying the dashboard shell', async () => {
+    await renderRoute('/dashboard/settings')
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Settings' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
+    expect(screen.getByText('v0.3')).toBeInTheDocument()
+  })
+
+  it('requires PocketBase auth before rendering the settings route content', async () => {
+    pocketBaseMock.enabled = true
+
+    await renderRoute('/dashboard/settings', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Settings' })).not.toBeInTheDocument()
+    expect(screen.queryByText('v0.3')).not.toBeInTheDocument()
+  })
+
+  it('does not expose a logout action on the authenticated dashboard route', async () => {
+    authenticatePocketBaseMock()
+
+    await renderRoute('/dashboard', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Logout' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Salir' })).not.toBeInTheDocument()
+  })
+
+  it('does not expose a logout action on the authenticated archive route', async () => {
+    authenticatePocketBaseMock()
+
+    await renderRoute('/dashboard/archive', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Archive' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Logout' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Salir' })).not.toBeInTheDocument()
   })
 
   it('opens and closes the local add flow from the dashboard without changing the route', async () => {

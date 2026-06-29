@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardSuggestRouteImport } from './routes/dashboard.suggest'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardArchiveRouteImport } from './routes/dashboard.archive'
 import { Route as DashboardAddRouteImport } from './routes/dashboard.add'
 import { Route as DashboardEditItemIdRouteImport } from './routes/dashboard.edit.$itemId'
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const DashboardSuggestRoute = DashboardSuggestRouteImport.update({
   id: '/suggest',
   path: '/suggest',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardArchiveRoute = DashboardArchiveRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/add'
     | '/dashboard/archive'
+    | '/dashboard/settings'
     | '/dashboard/suggest'
     | '/dashboard/edit/$itemId'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/add'
     | '/dashboard/archive'
+    | '/dashboard/settings'
     | '/dashboard/suggest'
     | '/dashboard/edit/$itemId'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/add'
     | '/dashboard/archive'
+    | '/dashboard/settings'
     | '/dashboard/suggest'
     | '/dashboard/edit/$itemId'
   fileRoutesById: FileRoutesById
@@ -127,6 +139,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSuggestRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/archive': {
       id: '/dashboard/archive'
       path: '/archive'
@@ -154,6 +173,7 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardAddRoute: typeof DashboardAddRoute
   DashboardArchiveRoute: typeof DashboardArchiveRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSuggestRoute: typeof DashboardSuggestRoute
   DashboardEditItemIdRoute: typeof DashboardEditItemIdRoute
 }
@@ -161,6 +181,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAddRoute: DashboardAddRoute,
   DashboardArchiveRoute: DashboardArchiveRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSuggestRoute: DashboardSuggestRoute,
   DashboardEditItemIdRoute: DashboardEditItemIdRoute,
 }
