@@ -6,7 +6,7 @@ export const itemStatuses = ['pending', 'in_progress', 'completed'] as const
 
 export type ItemStatus = (typeof itemStatuses)[number]
 
-export const coverProviders = ['tmdb', 'rawg', 'cover-art-archive'] as const
+export const coverProviders = ['tmdb', 'rawg', 'cover-art-archive', 'open-library'] as const
 
 export type CoverProvider = (typeof coverProviders)[number]
 

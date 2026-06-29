@@ -128,6 +128,7 @@ src/
 ## Optional cover metadata
 
 - Optional cover metadata is documented as a separate approved slice under `openspec/changes/add-cover-metadata-cache/`.
+- Current provider coverage is TMDB for series/movies, RAWG for games, Open Library for books, and MusicBrainz + Cover Art Archive for music/podcasts.
 - If that slice is unavailable or disabled in a local environment, add/edit flows still save normally and cards fall back to category color only.
 
 ## SDD and review evidence

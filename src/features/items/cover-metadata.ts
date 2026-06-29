@@ -190,6 +190,60 @@ async function resolveRawgCoverMetadata(
   return getFirstRawgCover(data)
 }
 
+function getFirstOpenLibraryCover(data: unknown): CoverLookupResponse | null {
+  if (!isRecord(data) || !Array.isArray(data.docs)) {
+    return null
+  }
+
+  for (const result of data.docs) {
+    if (
+      !isRecord(result)
+      || typeof result.cover_i !== 'number'
+      || !Number.isFinite(result.cover_i)
+      || result.cover_i <= 0
+    ) {
+      continue
+    }
+
+    const matchedTitle = isNonEmptyString(result.title)
+      ? result.title.trim()
+      : isNonEmptyString(result.title_suggest)
+        ? result.title_suggest.trim()
+        : null
+
+    if (!matchedTitle) {
+      continue
+    }
+
+    return {
+      matchedTitle,
+      provider: 'open-library',
+      imageUrl: `https://covers.openlibrary.org/b/id/${result.cover_i}-L.jpg`,
+    }
+  }
+
+  return null
+}
+
+async function resolveOpenLibraryCoverMetadata(
+  title: string,
+  signal: AbortSignal | undefined,
+  fetchFn: FetchLike,
+): Promise<CoverLookupResponse | null> {
+  const url = new URL('https://openlibrary.org/search.json')
+
+  url.searchParams.set('title', title)
+  url.searchParams.set('limit', '1')
+  url.searchParams.set('fields', 'title,title_suggest,cover_i')
+
+  const data = await fetchJson(fetchFn, url.toString(), {
+    headers: { Accept: 'application/json' },
+    signal,
+  })
+
+  return getFirstOpenLibraryCover(data)
+}
+
 function splitMusicTitle(title: string): { artist?: string; releaseTitle: string } {
   const separatorMatch = title.match(/\s+[—–-]\s+/u)
 
@@ -327,6 +381,10 @@ export async function resolveInterestCoverMetadata(
 
     if (input.category === 'games') {
       return toCoverMetadata(await resolveRawgCoverMetadata(normalizedTitle, input.signal, env, fetchFn))
+    }
+
+    if (input.category === 'books') {
+      return toCoverMetadata(await resolveOpenLibraryCoverMetadata(normalizedTitle, input.signal, fetchFn))
     }
 
     if (input.category === 'music') {

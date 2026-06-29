@@ -90,6 +90,8 @@ function getCoverProviderLabel(provider: CoverProvider) {
       return 'RAWG'
     case 'cover-art-archive':
       return 'Cover Art Archive'
+    case 'open-library':
+      return 'Open Library'
   }
 }
 
