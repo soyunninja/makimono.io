@@ -96,7 +96,7 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
   return (
     <AppShell
       actions={(
-        <div className={'flex flex-wrap items-center gap-3'}>
+        <div className={'flex flex-wrap items-center justify-end gap-3'}>
           <Button asChild>
             <a href={'/dashboard/add'}>{t('dashboard.addAction')}</a>
           </Button>
@@ -108,8 +108,8 @@ export function DashboardScreen({ reloadKey, repository = getAppInterestReposito
           </Button>
         </div>
       )}
-      description={t('dashboard.subtitle')}
-      eyebrow={t('dashboard.eyebrow')}
+      contentVariant={'plain'}
+      headerVariant={'plain'}
       title={t('dashboard.title')}
     >
       <div className={'space-y-6'}>

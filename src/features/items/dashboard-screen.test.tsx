@@ -51,6 +51,16 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('radio', { name: 'Games (0)' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Books (1)' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: 'Music (1)' })).toBeInTheDocument()
+
+    const header = screen.getByRole('heading', { level: 1, name: 'Your interests' }).closest('header') as HTMLElement
+    const content = screen.getByRole('radiogroup', { name: 'Category filters' }).closest('section') as HTMLElement
+
+    expect(screen.queryByText('Track mock items by category and move them through the backlog.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+    expect(header).toHaveAttribute('data-variant', 'plain')
+    expect(header).not.toHaveClass('rounded-3xl', 'border', 'bg-card/80', 'shadow-2xl', 'backdrop-blur')
+    expect(content).toHaveAttribute('data-variant', 'plain')
+    expect(content).not.toHaveClass('rounded-3xl', 'border', 'bg-card/65', 'shadow-xl', 'backdrop-blur')
   })
 
   it('filters the visible cards by category', async () => {
@@ -224,6 +234,8 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('link', { name: 'Pedir sugerencias' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Archivo' })).toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'Idioma' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Sigue los elementos mock por categoría y muévelos por el backlog.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
   })
 
   it('reloads repository items when the dashboard returns from the add flow', async () => {

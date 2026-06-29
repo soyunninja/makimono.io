@@ -96,6 +96,8 @@ The mobile/desktop assertions are runtime DOM/class contract checks in jsdom, no
 - ✅ Updated dashboard tests to assert the pending Play control uses the shared action slot, no duplicate text start button remains, and in-progress completion modal behavior still works.
 - ✅ Simplified the edit modal by removing the visible `Edit interest` heading/description in edit mode, moving the category badge into the top row aligned with the close affordance, and preserving accessible dialog naming via `aria-label` / `aria-description` on the overlay content.
 - ✅ Updated edit-flow and nested-route tests to assert the visible title/description are gone while the category badge and icon-only save/delete controls remain, then re-ran `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
+- ✅ Made the dashboard shell use a plain/transparent header and content surface by adding `AppShell` surface variants, leaving only the localized title plus right-side actions visible on the dashboard while preserving default card styling for the home and archive screens.
+- ✅ Updated `AppShell` and dashboard tests to assert the dashboard no longer renders the eyebrow/subtitle or card-like shell classes, then re-ran `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
 
 ## Status
 
