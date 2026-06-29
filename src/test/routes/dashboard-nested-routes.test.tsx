@@ -142,7 +142,7 @@ describe('dashboard nested routes', () => {
 
     expect(await screen.findByText('Portal 2')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Restore' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restore: Portal 2' }))
 
     await waitFor(() => {
       expect(screen.queryByText('Portal 2')).not.toBeInTheDocument()

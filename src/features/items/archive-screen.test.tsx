@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { ArchiveScreen } from '@/features/items/archive-screen'
@@ -36,6 +36,8 @@ describe('ArchiveScreen', () => {
     expect(gamesSummary.closest('[data-slot="card"]')).toHaveClass('bg-accent-green/10')
     expect(completedArticle).toHaveClass('border-accent-green/30', 'bg-accent-green/10')
     expect(categoryBadge).toHaveClass('bg-accent-green/10', 'text-accent-green')
+    expect(within(completedArticle).getByRole('button', { name: 'Restore: Celeste' })).toBeInTheDocument()
+    expect(within(completedArticle).getByText('platformer').closest('[data-slot="badge"]')).not.toBeNull()
   })
 
   it('shows completed items from the recreated app repository after reload', async () => {
@@ -58,7 +60,7 @@ describe('ArchiveScreen', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Archive' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
     expect(screen.getByText('Hades II')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Restore' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Restore: Hades II' })).toBeInTheDocument()
   })
 
   it('shows deleted items in a separate section with deleted-specific badges', async () => {
@@ -89,5 +91,7 @@ describe('ArchiveScreen', () => {
     expect(screen.getByText('Floating Points — Promises')).toBeInTheDocument()
     expect(screen.getByText('Deleted')).toBeInTheDocument()
     expect(screen.getAllByText('Planned')).not.toHaveLength(0)
+    expect(screen.getByRole('button', { name: 'Restore: Domain-Driven Design' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Restore: Floating Points — Promises' })).toBeInTheDocument()
   })
 })

@@ -1,13 +1,15 @@
+import { RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
+import { getCategoryMetadata, listCategoryMetadata, type CategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import type { InterestItem, InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
+import type { Locale } from '@/i18n/types'
 
 import { cn } from '@/lib/utils'
 
@@ -15,11 +17,90 @@ type ArchiveScreenProps = {
   repository?: InterestRepository
 }
 
+type ArchiveItemCardProps = {
+  item: InterestItem
+  locale: Locale
+  metadata: CategoryMetadata
+  restoreLabel: string
+  deletedBadgeLabel: string
+  deletedOnLabel: string
+  onRestore: (item: InterestItem) => void
+}
+
 function formatCreatedAt(createdAt: string, locale: 'en' | 'es') {
   return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'short',
   }).format(new Date(createdAt))
+}
+
+function ArchiveItemCard({
+  item,
+  locale,
+  metadata,
+  restoreLabel,
+  deletedBadgeLabel,
+  deletedOnLabel,
+  onRestore,
+}: ArchiveItemCardProps) {
+  const isDeleted = item.deletedAt !== undefined
+  const restoreControlLabel = `${restoreLabel}: ${item.title}`
+  const dateSummary = isDeleted
+    ? `${formatCreatedAt(item.createdAt, locale)} · ${deletedOnLabel} ${formatCreatedAt(item.deletedAt ?? item.createdAt, locale)}`
+    : formatCreatedAt(item.createdAt, locale)
+
+  return (
+    <Card
+      className={cn('flex h-full flex-col border-l-4', metadata.cardBorderClassName, metadata.surfaceClassName)}
+      key={item.id}
+      role={'article'}
+    >
+      <CardContent className={'flex flex-1 flex-col gap-4 p-4 xl:p-6'}>
+        <div className={'flex flex-wrap items-start justify-between gap-3'}>
+          <div className={'flex flex-wrap gap-2'}>
+            <Badge className={metadata.accentClassName} variant={'outline'}>
+              {metadata.label}
+            </Badge>
+            <Badge variant={isDeleted ? 'secondary' : 'default'}>
+              {metadata.statusLabels[item.status]}
+            </Badge>
+            {isDeleted ? <Badge variant={'destructive'}>{deletedBadgeLabel}</Badge> : null}
+          </div>
+
+          <Button
+            aria-label={restoreControlLabel}
+            className={cn('rounded-full border-transparent bg-transparent p-0', metadata.textClassName)}
+            onClick={() => void onRestore(item)}
+            size={'icon'}
+            type={'button'}
+            variant={'ghost'}
+          >
+            <RotateCcw aria-hidden={'true'} />
+            <span className={'sr-only'}>{restoreControlLabel}</span>
+          </Button>
+        </div>
+
+        <div className={'space-y-0'}>
+          <h3 className={'text-balance break-words text-xl font-semibold tracking-tight text-foreground xl:text-2xl'}>
+            {item.title}
+          </h3>
+          <CardDescription>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
+        </div>
+
+        {item.tags.length > 0 ? (
+          <div className={'flex flex-wrap gap-2'}>
+            {item.tags.map((tag) => (
+              <Badge className={'font-mono font-medium'} key={tag} variant={'outline'}>
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
+
+        <CardDescription className={'text-xs'}>{dateSummary}</CardDescription>
+      </CardContent>
+    </Card>
+  )
 }
 
 export function ArchiveScreen({ repository = getAppInterestRepository() }: ArchiveScreenProps) {
@@ -138,42 +219,16 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
                 const metadata = getCategoryMetadata(item.category, locale)
 
                 return (
-                  <Card className={cn('border-l-4 bg-background/40', metadata.cardBorderClassName, metadata.surfaceClassName)} key={item.id} role={'article'}>
-                    <CardHeader className={'gap-4'}>
-                      <div className={'flex flex-wrap items-start justify-between gap-3'}>
-                        <div className={'space-y-2'}>
-                          <Badge className={metadata.accentClassName} variant={'outline'}>
-                            {metadata.label}
-                          </Badge>
-                          <CardTitle>{item.title}</CardTitle>
-                          <CardDescription>{item.notes ?? metadata.statusLabels.completed}</CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className={'space-y-4'}>
-                      {item.tags.length > 0 ? (
-                        <div className={'flex flex-wrap gap-2'}>
-                          {item.tags.map((tag) => (
-                            <span
-                              className={'rounded-full border border-border/70 px-2.5 py-0.5 font-mono text-xs font-medium text-muted-foreground'}
-                              key={tag}
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
-
-                      <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
-                        <p className={'text-xs uppercase tracking-[0.18em] text-muted-foreground'}>
-                          {formatCreatedAt(item.createdAt, locale)}
-                        </p>
-                        <Button onClick={() => void handleRestore(item)} type={'button'} variant={'secondary'}>
-                          {t('archive.restoreAction')}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <ArchiveItemCard
+                    deletedBadgeLabel={t('archive.deletedBadge')}
+                    deletedOnLabel={t('archive.deletedOnLabel')}
+                    item={item}
+                    key={item.id}
+                    locale={locale}
+                    metadata={metadata}
+                    onRestore={handleRestore}
+                    restoreLabel={t('archive.restoreAction')}
+                  />
                 )
               })}
             </div>
@@ -192,47 +247,16 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
                 const metadata = getCategoryMetadata(item.category, locale)
 
                 return (
-                  <Card className={cn('border-l-4 bg-background/40', metadata.cardBorderClassName, metadata.surfaceClassName)} key={item.id} role={'article'}>
-                    <CardHeader className={'gap-4'}>
-                      <div className={'flex flex-wrap items-start justify-between gap-3'}>
-                        <div className={'space-y-2'}>
-                          <div className={'flex flex-wrap gap-2'}>
-                            <Badge className={metadata.accentClassName} variant={'outline'}>
-                              {metadata.label}
-                            </Badge>
-                            <Badge variant={'destructive'}>{t('archive.deletedBadge')}</Badge>
-                            <Badge variant={'secondary'}>{metadata.statusLabels[item.status]}</Badge>
-                          </div>
-                          <CardTitle>{item.title}</CardTitle>
-                          <CardDescription>{item.notes ?? metadata.statusLabels[item.status]}</CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className={'space-y-4'}>
-                      {item.tags.length > 0 ? (
-                        <div className={'flex flex-wrap gap-2'}>
-                          {item.tags.map((tag) => (
-                            <span
-                              className={'rounded-full border border-border/70 px-2.5 py-0.5 font-mono text-xs font-medium text-muted-foreground'}
-                              key={tag}
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
-
-                      <div className={'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
-                        <div className={'space-y-1 text-xs uppercase tracking-[0.18em] text-muted-foreground'}>
-                          <p>{formatCreatedAt(item.createdAt, locale)}</p>
-                          <p>{t('archive.deletedOnLabel')} {formatCreatedAt(item.deletedAt ?? item.createdAt, locale)}</p>
-                        </div>
-                        <Button onClick={() => void handleRestore(item)} type={'button'} variant={'secondary'}>
-                          {t('archive.restoreAction')}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <ArchiveItemCard
+                    deletedBadgeLabel={t('archive.deletedBadge')}
+                    deletedOnLabel={t('archive.deletedOnLabel')}
+                    item={item}
+                    key={item.id}
+                    locale={locale}
+                    metadata={metadata}
+                    onRestore={handleRestore}
+                    restoreLabel={t('archive.restoreAction')}
+                  />
                 )
               })}
             </div>
