@@ -5,7 +5,7 @@ import { AppShell } from '@/components/app/app-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getCategoryMetadata, type CategoryMetadata } from '@/features/items/metadata'
+import { getCategoryMetadata, listCategoryMetadata, type CategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import type { InterestItem, InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
@@ -142,6 +142,15 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
     [items],
   )
 
+  const categorySummaries = useMemo(
+    () =>
+      listCategoryMetadata(locale).map((category) => ({
+        category,
+        count: completedItems.filter((item) => item.category === category.key).length,
+      })),
+    [completedItems, locale],
+  )
+
   const hasArchivedItems = completedItems.length > 0 || deletedItems.length > 0
 
   async function handleRestore(item: InterestItem) {
@@ -187,6 +196,19 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
               <CardDescription>{t('archive.emptyDescription')}</CardDescription>
             </CardHeader>
           </Card>
+        ) : null}
+
+        {!isLoading && completedItems.length > 0 ? (
+          <div className={'grid gap-4 sm:grid-cols-2 xl:grid-cols-5'}>
+            {categorySummaries.map(({ category, count }) => (
+              <Card className={cn('bg-background/40', category.surfaceClassName)} key={category.key}>
+                <CardHeader>
+                  <CardDescription className={category.textClassName}>{category.label}</CardDescription>
+                  <CardTitle className={'text-3xl'}>{count}</CardTitle>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
         ) : null}
 
         {!isLoading && completedItems.length > 0 ? (

@@ -6,6 +6,14 @@ import { createMockInterestRepository, getAppInterestRepository, resetAppInteres
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
+function findSummaryCard(label: string, count: string) {
+  return screen.getAllByText(label).find((element) => {
+    const card = element.closest('[data-slot="card"]')
+
+    return card instanceof HTMLElement && within(card).queryByText(count) !== null
+  })?.closest('[data-slot="card"]')
+}
+
 beforeEach(() => {
   installMockLocalStorage()
   window.localStorage.clear()
@@ -32,12 +40,53 @@ describe('ArchiveScreen', () => {
     expect(screen.queryByText('Restore a completed item to move it back to the pending backlog.')).not.toBeInTheDocument()
 
     const completedArticle = await screen.findByRole('article')
+    const gamesSummaryCard = findSummaryCard('Games', '1')
 
     expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
-    expect(screen.getAllByText('Games')).toHaveLength(1)
+    expect(screen.getAllByText('Games')).toHaveLength(2)
+    expect(gamesSummaryCard).not.toBeNull()
     expect(within(completedArticle).getByText('Completed')).toBeInTheDocument()
     expect(within(completedArticle).getByRole('button', { name: 'Restore: Celeste' })).toBeInTheDocument()
     expect(within(completedArticle).getByText('platformer').closest('[data-slot="badge"]')).not.toBeNull()
+  })
+
+  it('shows completed category summary cards for every category', async () => {
+    const repository = createMockInterestRepository([])
+    const completedGame = await repository.createItem({
+      category: 'games',
+      title: 'Return of the Obra Dinn',
+      tags: ['deduction'],
+    })
+    const completedBook = await repository.createItem({
+      category: 'books',
+      title: 'Refactoring',
+      tags: ['craft'],
+    })
+    const deletedAlbum = await repository.createItem({
+      category: 'music',
+      title: 'Promises',
+      tags: ['ambient'],
+    })
+
+    await repository.updateStatus(completedGame.id, 'completed')
+    await repository.updateStatus(completedBook.id, 'completed')
+    await repository.deleteItem(deletedAlbum.id)
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <ArchiveScreen repository={repository} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
+
+    expect(findSummaryCard('Series', '0')).not.toBeNull()
+    expect(findSummaryCard('Movies', '0')).not.toBeNull()
+    expect(findSummaryCard('Games', '1')).not.toBeNull()
+    expect(findSummaryCard('Books', '1')).not.toBeNull()
+    expect(findSummaryCard('Music', '0')).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'Restore: Return of the Obra Dinn' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Restore: Refactoring' })).toBeInTheDocument()
   })
 
   it('shows completed items from the recreated app repository after reload', async () => {
