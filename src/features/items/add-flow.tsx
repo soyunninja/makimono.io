@@ -8,6 +8,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { TagsInput } from '@/components/ui/tags-input'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
@@ -33,15 +34,8 @@ type AdaptiveEditFlowProps = {
   onRequestClose?: () => void
 }
 
-function parseTags(tags: string) {
-  return tags
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean)
-}
-
-function formatTags(tags: string[]) {
-  return tags.join(', ')
+function getRemoveTagLabel(template: string, tag: string) {
+  return template.replace('{tag}', tag)
 }
 
 function useDesktopBreakpoint(forcedValue?: boolean) {
@@ -89,11 +83,11 @@ function useDesktopBreakpoint(forcedValue?: boolean) {
 
 type InterestDetailsFieldsProps = {
   title: string
-  tags: string
+  tags: string[]
   notes: string
   surface?: 'card' | 'plain'
   onTitleChange: (value: string) => void
-  onTagsChange: (value: string) => void
+  onTagsChange: (value: string[]) => void
   onNotesChange: (value: string) => void
 }
 
@@ -115,9 +109,10 @@ function InterestDetailsFields({ title, tags, notes, surface = 'card', onTitleCh
 
       <div className="space-y-2">
         <Label htmlFor="add-interest-tags">{t('addFlow.tagsLabel')}</Label>
-        <Input
+        <TagsInput
+          getRemoveTagLabel={(tag) => getRemoveTagLabel(t('addFlow.removeTagAction'), tag)}
           id="add-interest-tags"
-          onChange={(event) => onTagsChange(event.target.value)}
+          onValueChange={onTagsChange}
           placeholder={t('addFlow.tagsPlaceholder')}
           value={tags}
         />
@@ -160,7 +155,7 @@ export function AdaptiveAddFlow({
   const categories = useMemo(() => listCategoryMetadata(locale), [locale])
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [title, setTitle] = useState('')
-  const [tags, setTags] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -180,7 +175,7 @@ export function AdaptiveAddFlow({
         category: selectedCategory,
         title: title.trim(),
         notes: notes.trim() ? notes.trim() : undefined,
-        tags: parseTags(tags),
+        tags,
       })
 
       setIsSubmitting(false)
@@ -289,7 +284,7 @@ export function AdaptiveEditFlow({
   const resolvedIsDesktop = useDesktopBreakpoint(isDesktop)
   const [item, setItem] = useState<InterestItem | null>(null)
   const [title, setTitle] = useState('')
-  const [tags, setTags] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -311,7 +306,7 @@ export function AdaptiveEditFlow({
 
       setItem(nextItem)
       setTitle(nextItem.title)
-      setTags(formatTags(nextItem.tags))
+      setTags(nextItem.tags)
       setNotes(nextItem.notes ?? '')
     }
 
@@ -342,7 +337,7 @@ export function AdaptiveEditFlow({
       const updatedItem = await repository.updateItem(item.id, {
         title: title.trim(),
         notes: notes.trim() ? notes.trim() : undefined,
-        tags: parseTags(tags),
+        tags,
       })
 
       setIsSubmitting(false)

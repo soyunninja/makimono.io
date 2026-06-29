@@ -79,6 +79,7 @@ export type Dictionary = {
     titlePlaceholder: string
     tagsLabel: string
     tagsPlaceholder: string
+    removeTagAction: string
     notesLabel: string
     notesPlaceholder: string
     cancel: string
@@ -190,6 +191,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       titlePlaceholder: 'What do you want to track?',
       tagsLabel: 'Tags',
       tagsPlaceholder: 'Netflix, Spotify, sci-fi',
+      removeTagAction: 'Remove tag: {tag}',
       notesLabel: 'Notes',
       notesPlaceholder: 'Optional context for the card',
       cancel: 'Cancel',
@@ -291,7 +293,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
     },
     dashboard: {
       eyebrow: 'Dashboard',
-      title: 'Tus intereses',
+      title: 'Me interesa',
       subtitle: 'Sigue los elementos mock por categoría y muévelos por el backlog.',
       localDataBadge: 'Solo datos locales',
       localDataNote: 'Los cambios de estado se mantienen en memoria hasta que recargues la página.',
@@ -343,6 +345,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       titlePlaceholder: '¿Qué quieres seguir?',
       tagsLabel: 'Etiquetas',
       tagsPlaceholder: 'Netflix, Spotify, ciencia ficción',
+      removeTagAction: 'Eliminar etiqueta: {tag}',
       notesLabel: 'Notas',
       notesPlaceholder: 'Contexto opcional para la tarjeta',
       cancel: 'Cancelar',

@@ -55,7 +55,7 @@ describe('AdaptiveAddFlow', () => {
     expect(screen.queryByLabelText('Current season')).not.toBeInTheDocument()
   })
 
-  it('uses the mobile sheet presentation and creates a mock item with common notes and tags', async () => {
+  it('uses the mobile sheet presentation and creates a mock item from trimmed Enter/comma tags without duplicate chips', async () => {
     const repository = createMockInterestRepository([])
     const onCreated = vi.fn()
 
@@ -69,7 +69,24 @@ describe('AdaptiveAddFlow', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Music' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Nujabes — Modal Soul' } })
-    fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'spotify, chillhop' } })
+
+    const tagsInput = screen.getByLabelText('Tags')
+
+    fireEvent.change(tagsInput, { target: { value: '  spotify  ' } })
+    fireEvent.keyDown(tagsInput, { code: 'Comma', key: ',' })
+
+    expect(screen.getByText('spotify')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Remove tag: spotify' })).toBeVisible()
+
+    fireEvent.change(tagsInput, { target: { value: 'SPOTIFY' } })
+    fireEvent.keyDown(tagsInput, { code: 'Enter', key: 'Enter' })
+
+    expect(screen.getAllByRole('button', { name: 'Remove tag: spotify' })).toHaveLength(1)
+
+    fireEvent.change(tagsInput, { target: { value: ' chillhop ' } })
+    fireEvent.keyDown(tagsInput, { code: 'Enter', key: 'Enter' })
+
+    expect(screen.getByText('chillhop')).toBeVisible()
     fireEvent.change(screen.getByLabelText('Notes'), { target: { value: 'Keep this handy for the next focus block.' } })
 
     fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
@@ -124,7 +141,14 @@ describe('AdaptiveAddFlow', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Books' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Clean Architecture' } })
-    fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'architecture, boundaries' } })
+
+    const tagsInput = screen.getByLabelText('Tags')
+
+    fireEvent.change(tagsInput, { target: { value: 'architecture' } })
+    fireEvent.keyDown(tagsInput, { code: 'Comma', key: ',' })
+    fireEvent.change(tagsInput, { target: { value: 'boundaries' } })
+    fireEvent.keyDown(tagsInput, { code: 'Enter', key: 'Enter' })
+
     fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
 
     await waitFor(() => {
@@ -185,5 +209,50 @@ describe('AdaptiveAddFlow', () => {
     expect(deleteButton).toBeEnabled()
     expect(saveButton).toBeEnabled()
     expect(deleteButton.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('lets users remove existing edit tags and saves the updated string array', async () => {
+    const repository = createMockInterestRepository()
+    const onUpdated = vi.fn()
+
+    render(
+      <LocaleProvider initialLocale="es">
+        <AdaptiveEditFlow isDesktop itemId="movie-arrival" onUpdated={onUpdated} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    const tagsInput = await screen.findByLabelText('Etiquetas')
+
+    expect(screen.getByText('drama')).toBeVisible()
+    expect(screen.getByText('language')).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar etiqueta: drama' }))
+
+    await waitFor(() => {
+      expect(screen.queryByText('drama')).not.toBeInTheDocument()
+    })
+
+    fireEvent.keyDown(tagsInput, { code: 'Backspace', key: 'Backspace' })
+
+    await waitFor(() => {
+      expect(screen.queryByText('language')).not.toBeInTheDocument()
+    })
+
+    fireEvent.change(tagsInput, { target: { value: '  ciencia ficción  ' } })
+    fireEvent.keyDown(tagsInput, { code: 'Enter', key: 'Enter' })
+
+    expect(screen.getByText('ciencia ficción')).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+
+    await waitFor(() => {
+      expect(onUpdated).toHaveBeenCalledTimes(1)
+    })
+
+    expect(onUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tags: ['ciencia ficción'],
+      }),
+    )
   })
 })
