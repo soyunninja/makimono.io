@@ -1,0 +1,201 @@
+[
+  {
+    "id": "pbc_kyoumi_intr",
+    "listRule": "@request.auth.id != \"\" && user = @request.auth.id",
+    "viewRule": "@request.auth.id != \"\" && user = @request.auth.id",
+    "createRule": "@request.auth.id != \"\" && @request.body.user = @request.auth.id",
+    "updateRule": "@request.auth.id != \"\" && user = @request.auth.id && (@request.body.user:isset = false || @request.body.user = @request.auth.id)",
+    "deleteRule": "@request.auth.id != \"\" && user = @request.auth.id",
+    "name": "interests",
+    "type": "base",
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "help": "",
+        "hidden": false,
+        "id": "text_interests_id",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "_pb_users_auth_",
+        "help": "",
+        "hidden": false,
+        "id": "relation_user",
+        "maxSelect": 1,
+        "minSelect": 1,
+        "name": "user",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "select_category",
+        "maxSelect": 1,
+        "name": "category",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "series",
+          "movies",
+          "games",
+          "books",
+          "music",
+          "podcasts"
+        ]
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text_title",
+        "max": 240,
+        "min": 1,
+        "name": "title",
+        "pattern": "",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "select_status",
+        "maxSelect": 1,
+        "name": "status",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "pending",
+          "in_progress",
+          "completed"
+        ]
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text_notes",
+        "max": 0,
+        "min": 0,
+        "name": "notes",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "json_tags",
+        "maxSize": 0,
+        "name": "tags",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "json"
+      },
+      {
+        "exceptDomains": null,
+        "help": "",
+        "hidden": false,
+        "id": "url_cover_image",
+        "name": "coverImageUrl",
+        "onlyDomains": null,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "url"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "select_cover_provider",
+        "maxSelect": 1,
+        "name": "coverProvider",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "select",
+        "values": [
+          "tmdb",
+          "rawg",
+          "cover-art-archive",
+          "open-library"
+        ]
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text_cover_title",
+        "max": 240,
+        "min": 0,
+        "name": "coverMatchedTitle",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "date_deleted_at",
+        "max": "",
+        "min": "",
+        "name": "deletedAt",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_created",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_updated",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX `idx_interests_user` ON `interests` (`user`)",
+      "CREATE INDEX `idx_interests_user_status` ON `interests` (`user`, `status`)",
+      "CREATE INDEX `idx_interests_user_category` ON `interests` (`user`, `category`)"
+    ],
+    "system": false
+  }
+]

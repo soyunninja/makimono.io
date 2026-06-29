@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { PocketBaseAuthGate } from '@/features/auth/pocketbase-auth-gate'
+import { useAppInterestRepository } from '@/features/items/app-interest-repository'
 import { ArchiveScreen } from '@/features/items/archive-screen'
 
 export const Route = createFileRoute('/dashboard/archive')({
@@ -7,5 +9,11 @@ export const Route = createFileRoute('/dashboard/archive')({
 })
 
 export function DashboardArchiveRoutePage() {
-  return <ArchiveScreen />
+  const repository = useAppInterestRepository()
+
+  return (
+    <PocketBaseAuthGate>
+      <ArchiveScreen repository={repository} />
+    </PocketBaseAuthGate>
+  )
 }

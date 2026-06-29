@@ -18,6 +18,22 @@ export type Dictionary = {
     foundationStatus: string
     closeLabel: string
   }
+  auth: {
+    title: string
+    description: string
+    loadingTitle: string
+    loadingDescription: string
+    loginMode: string
+    registerMode: string
+    emailLabel: string
+    emailPlaceholder: string
+    passwordLabel: string
+    passwordPlaceholder: string
+    submitLogin: string
+    submitRegister: string
+    logoutAction: string
+    errorGeneric: string
+  }
   landing: {
     title: string
     description: string
@@ -132,6 +148,22 @@ export const dictionaries: Record<Locale, Dictionary> = {
       languageLabel: 'Language',
       foundationStatus: 'Foundation slice',
       closeLabel: 'Close',
+    },
+    auth: {
+      title: 'Sign in to your backlog',
+      description: 'Use your PocketBase user account to sync interests across devices.',
+      loadingTitle: 'Checking your session…',
+      loadingDescription: 'PocketBase is restoring the saved session.',
+      loginMode: 'Sign in',
+      registerMode: 'Create account',
+      emailLabel: 'Email',
+      emailPlaceholder: 'you@example.com',
+      passwordLabel: 'Password',
+      passwordPlaceholder: 'Your password',
+      submitLogin: 'Sign in',
+      submitRegister: 'Create account',
+      logoutAction: 'Logout',
+      errorGeneric: 'We could not complete authentication. Check your details and try again.',
     },
     landing: {
       title: 'Kyoumi foundation',
@@ -308,6 +340,22 @@ export const dictionaries: Record<Locale, Dictionary> = {
       languageLabel: 'Idioma',
       foundationStatus: 'Base inicial',
       closeLabel: 'Cerrar',
+    },
+    auth: {
+      title: 'Accede a tu backlog',
+      description: 'Usa tu cuenta de PocketBase para sincronizar intereses entre dispositivos.',
+      loadingTitle: 'Comprobando tu sesión…',
+      loadingDescription: 'PocketBase está restaurando la sesión guardada.',
+      loginMode: 'Entrar',
+      registerMode: 'Crear cuenta',
+      emailLabel: 'Correo electrónico',
+      emailPlaceholder: 'tu@ejemplo.com',
+      passwordLabel: 'Contraseña',
+      passwordPlaceholder: 'Tu contraseña',
+      submitLogin: 'Entrar',
+      submitRegister: 'Crear cuenta',
+      logoutAction: 'Salir',
+      errorGeneric: 'No hemos podido completar la autenticación. Revisa los datos e inténtalo de nuevo.',
     },
     landing: {
       title: 'Base de Kyoumi',

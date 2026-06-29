@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provider'
 import { CardCoverBackground } from '@/features/items/card-cover-background'
 import { filterItemsBySearchQuery } from '@/features/items/item-search'
 import { getCategoryMetadata, listCategoryMetadata, type CategoryMetadata } from '@/features/items/metadata'
@@ -113,13 +114,19 @@ function ArchiveItemCard({
 
 export function ArchiveScreen({ repository = getAppInterestRepository() }: ArchiveScreenProps) {
   const { locale, t } = useLocale()
+  const { isAuthenticated, logout } = useOptionalPocketBaseAuth()
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
+    repositoryRef.current = repository
+  }, [repository])
+
+  useEffect(() => {
     let isMounted = true
+    setIsLoading(true)
 
     async function loadItems() {
       const nextItems = await repositoryRef.current.listItems({ includeDeleted: true })
@@ -135,7 +142,7 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [repository])
 
   const completedItems = useMemo(
     () => items.filter((item) => item.deletedAt === undefined && item.status === 'completed'),
@@ -188,6 +195,11 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
     <AppShell
       actions={(
         <div className={'flex flex-wrap items-center justify-end gap-3'}>
+          {isAuthenticated ? (
+            <Button onClick={() => void logout()} type={'button'} variant={'outline'}>
+              {t('auth.logoutAction')}
+            </Button>
+          ) : null}
           <Button asChild variant={'outline'}>
             <a href={'/dashboard'}>{t('archive.backAction')}</a>
           </Button>

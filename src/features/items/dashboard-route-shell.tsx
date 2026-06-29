@@ -5,10 +5,12 @@ import {
   AdaptiveEditFlow,
 } from '@/features/items/add-flow'
 import { DashboardScreen } from '@/features/items/dashboard-screen'
+import type { InterestRepository } from '@/features/items/types'
 import { SmartSuggesterFlow } from '@/features/suggester/suggester-flow'
 
 type DashboardRouteShellProps = {
   pathname: string
+  repository: InterestRepository
   routedOverlay: ReactNode
 }
 
@@ -18,7 +20,7 @@ function isDashboardOverlayPath(pathname: string) {
     || pathname.startsWith('/dashboard/edit/')
 }
 
-export function DashboardRouteShell({ pathname, routedOverlay }: DashboardRouteShellProps) {
+export function DashboardRouteShell({ pathname, repository, routedOverlay }: DashboardRouteShellProps) {
   const previousPathnameRef = useRef(pathname)
   const [reloadKey, setReloadKey] = useState(0)
   const [isAddFlowOpen, setIsAddFlowOpen] = useState(false)
@@ -82,10 +84,11 @@ export function DashboardRouteShell({ pathname, routedOverlay }: DashboardRouteS
         onAddItem={showsLocalOverlays ? handleLocalAddOpen : undefined}
         onEditItem={showsLocalOverlays ? handleEditItem : undefined}
         onSuggestItem={showsLocalOverlays ? handleLocalSuggestOpen : undefined}
+        repository={repository}
         reloadKey={reloadKey}
       />
       {showsLocalOverlays && isAddFlowOpen ? (
-        <AdaptiveAddFlow onCreated={handleLocalMutation} onRequestClose={closeLocalOverlays} />
+        <AdaptiveAddFlow onCreated={handleLocalMutation} onRequestClose={closeLocalOverlays} repository={repository} />
       ) : null}
       {showsLocalOverlays && isSuggestFlowOpen ? (
         <SmartSuggesterFlow onRequestAdd={handleLocalAddOpen} onRequestClose={closeLocalOverlays} />
@@ -95,6 +98,7 @@ export function DashboardRouteShell({ pathname, routedOverlay }: DashboardRouteS
           itemId={editingItemId}
           onDeleted={handleLocalMutation}
           onRequestClose={closeLocalOverlays}
+          repository={repository}
           onUpdated={handleLocalMutation}
         />
       ) : null}
