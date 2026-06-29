@@ -125,7 +125,34 @@ describe('dashboard nested routes', () => {
       await screen.findByRole('heading', { level: 1, name: 'Archive' }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Back to dashboard' })).toBeInTheDocument()
+  })
+
+  it('restores a completed item from the archive back to the dashboard backlog', async () => {
+    const repository = resetAppInterestRepository([])
+    const created = await repository.createItem({
+      category: 'games',
+      title: 'Into the Breach',
+      tags: ['tactics'],
+    })
+
+    await repository.updateStatus(created.id, 'completed')
+
+    const router = await renderRoute('/dashboard/archive')
+
+    expect(await screen.findByText('Into the Breach')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore: Into the Breach' }))
+
+    await waitFor(() => {
+      expect(screen.queryByText('Into the Breach')).not.toBeInTheDocument()
+    })
+
+    await router.navigate({ to: '/dashboard' })
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Into the Breach' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start now: Into the Breach' })).toBeInTheDocument()
   })
 
   it('restores a deleted item from the archive back to the dashboard list', async () => {

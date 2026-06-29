@@ -56,7 +56,7 @@
 ## Verification Evidence
 
 - ✅ `npx pnpm typecheck`
-- ✅ `npx pnpm test` — 9 test files / 23 tests
+- ✅ `npx pnpm test` — 13 test files / 63 tests
 - ✅ `npx pnpm build`
 - ✅ `git diff --cached --check`
 - ✅ `git log --oneline --reverse --no-merges`
@@ -100,6 +100,7 @@ The mobile/desktop assertions are runtime DOM/class contract checks in jsdom, no
 - ✅ Updated `AppShell` and dashboard tests to assert the dashboard no longer renders the eyebrow/subtitle or card-like shell classes, then re-ran `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
 - ✅ Removed the edit-flow `Detalles` / `Details` heading card by adding a plain details-fields surface for edit mode only, keeping add-flow card styling intact while preserving the individual field labels and edit save/delete behavior under test, then re-ran `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
 - ✅ Realigned archive item cards with the dashboard card language by extracting a local `ArchiveItemCard`, reusing compact `CardContent` spacing, badge-chip metadata rows, dashboard-matched title sizing, subtle date metadata, and icon-only restore controls with accessible labels; archive and nested-route tests now assert the new restore labels and badge rendering, then `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build` were re-run.
+- ✅ Strengthened the archive refresh follow-up after user feedback that the first alignment was too subtle: `/dashboard/archive` now uses the same plain `AppShell` header/content variants as the dashboard, removes the archive summary-card band and section helper paragraphs, tightens completed/deleted sections to compact count rows plus `md:grid-cols-2 2xl:grid-cols-3`, keeps completed cards date-light, and verifies completed/deleted restore plus empty-state behavior in archive and nested-route tests before re-running `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
 
 ## Status
 

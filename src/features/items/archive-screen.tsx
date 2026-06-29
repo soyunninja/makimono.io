@@ -5,7 +5,7 @@ import { AppShell } from '@/components/app/app-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { getCategoryMetadata, listCategoryMetadata, type CategoryMetadata } from '@/features/items/metadata'
+import { getCategoryMetadata, type CategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import type { InterestItem, InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
@@ -27,11 +27,11 @@ type ArchiveItemCardProps = {
   onRestore: (item: InterestItem) => void
 }
 
-function formatCreatedAt(createdAt: string, locale: 'en' | 'es') {
+function formatArchiveDate(date: string, locale: 'en' | 'es') {
   return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'short',
-  }).format(new Date(createdAt))
+  }).format(new Date(date))
 }
 
 function ArchiveItemCard({
@@ -46,8 +46,8 @@ function ArchiveItemCard({
   const isDeleted = item.deletedAt !== undefined
   const restoreControlLabel = `${restoreLabel}: ${item.title}`
   const dateSummary = isDeleted
-    ? `${formatCreatedAt(item.createdAt, locale)} · ${deletedOnLabel} ${formatCreatedAt(item.deletedAt ?? item.createdAt, locale)}`
-    : formatCreatedAt(item.createdAt, locale)
+    ? `${deletedOnLabel} ${formatArchiveDate(item.deletedAt ?? item.createdAt, locale)}`
+    : undefined
 
   return (
     <Card
@@ -55,18 +55,8 @@ function ArchiveItemCard({
       key={item.id}
       role={'article'}
     >
-      <CardContent className={'flex flex-1 flex-col gap-4 p-4 xl:p-6'}>
-        <div className={'flex flex-wrap items-start justify-between gap-3'}>
-          <div className={'flex flex-wrap gap-2'}>
-            <Badge className={metadata.accentClassName} variant={'outline'}>
-              {metadata.label}
-            </Badge>
-            <Badge variant={isDeleted ? 'secondary' : 'default'}>
-              {metadata.statusLabels[item.status]}
-            </Badge>
-            {isDeleted ? <Badge variant={'destructive'}>{deletedBadgeLabel}</Badge> : null}
-          </div>
-
+      <CardContent className={'flex flex-1 items-start !gap-0 p-4 xl:p-6'}>
+        <div className={'shrink-0 self-start !-translate-x-2 !-translate-y-2.5'}>
           <Button
             aria-label={restoreControlLabel}
             className={cn('rounded-full border-transparent bg-transparent p-0', metadata.textClassName)}
@@ -75,29 +65,43 @@ function ArchiveItemCard({
             type={'button'}
             variant={'ghost'}
           >
-            <RotateCcw aria-hidden={'true'} />
+            <RotateCcw aria-hidden={'true'} className={metadata.textClassName} />
             <span className={'sr-only'}>{restoreControlLabel}</span>
           </Button>
         </div>
 
-        <div className={'space-y-0'}>
-          <h3 className={'text-balance break-words text-xl font-semibold tracking-tight text-foreground xl:text-2xl'}>
-            {item.title}
-          </h3>
-          <CardDescription>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
-        </div>
-
-        {item.tags.length > 0 ? (
-          <div className={'flex flex-wrap gap-2'}>
-            {item.tags.map((tag) => (
-              <Badge className={'font-mono font-medium'} key={tag} variant={'outline'}>
-                {tag}
+        <div className={'flex min-w-0 flex-1 flex-col gap-4'}>
+          <div className={'flex flex-wrap items-center justify-between gap-3'}>
+            <div className={'flex flex-wrap gap-2'}>
+              <Badge className={metadata.accentClassName} variant={'outline'}>
+                {metadata.label}
               </Badge>
-            ))}
-          </div>
-        ) : null}
+              <Badge variant={isDeleted ? 'secondary' : 'default'}>
+                {metadata.statusLabels[item.status]}
+              </Badge>
+              {isDeleted ? <Badge variant={'destructive'}>{deletedBadgeLabel}</Badge> : null}
+            </div>
 
-        <CardDescription className={'text-xs'}>{dateSummary}</CardDescription>
+            {dateSummary ? <CardDescription className={'text-xs'}>{dateSummary}</CardDescription> : null}
+          </div>
+
+          <div className={'min-w-0 space-y-0'}>
+            <h3 className={'text-balance break-words text-xl font-semibold tracking-tight text-foreground xl:text-2xl'}>
+              {item.title}
+            </h3>
+            <CardDescription>{item.notes ?? metadata.statusActions[item.status]}</CardDescription>
+          </div>
+
+          {item.tags.length > 0 ? (
+            <div className={'flex flex-wrap gap-2'}>
+              {item.tags.map((tag) => (
+                <Badge className={'font-mono font-medium'} key={tag} variant={'outline'}>
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </CardContent>
     </Card>
   )
@@ -138,15 +142,6 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
     [items],
   )
 
-  const categorySummaries = useMemo(
-    () =>
-      listCategoryMetadata(locale).map((category) => ({
-        category,
-        count: completedItems.filter((item) => item.category === category.key).length,
-      })),
-    [completedItems, locale],
-  )
-
   const hasArchivedItems = completedItems.length > 0 || deletedItems.length > 0
 
   async function handleRestore(item: InterestItem) {
@@ -166,30 +161,17 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
   return (
     <AppShell
       actions={(
-        <div className={'flex flex-wrap items-center gap-3'}>
+        <div className={'flex flex-wrap items-center justify-end gap-3'}>
           <Button asChild variant={'outline'}>
             <a href={'/dashboard'}>{t('archive.backAction')}</a>
           </Button>
         </div>
       )}
-      description={t('archive.subtitle')}
-      eyebrow={t('archive.eyebrow')}
+      contentVariant={'plain'}
+      headerVariant={'plain'}
       title={t('archive.title')}
     >
-      <div className={'space-y-6'}>
-        {completedItems.length > 0 ? (
-          <div className={'grid gap-4 sm:grid-cols-2 xl:grid-cols-5'}>
-            {categorySummaries.map(({ category, count }) => (
-              <Card className={cn('bg-background/40', category.surfaceClassName)} key={category.key}>
-                <CardHeader>
-                  <CardDescription className={category.textClassName}>{category.label}</CardDescription>
-                  <CardTitle className={'text-3xl'}>{count}</CardTitle>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        ) : null}
-
+      <div className={'space-y-8'}>
         {isLoading ? (
           <Card>
             <CardHeader>
@@ -209,12 +191,12 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
 
         {!isLoading && completedItems.length > 0 ? (
           <section className={'space-y-4'}>
-            <div className={'space-y-1'}>
+            <div className={'flex flex-wrap items-center gap-3'}>
               <h2 className={'text-2xl font-semibold tracking-tight text-foreground'}>{t('archive.completedSectionTitle')}</h2>
-              <p className={'text-sm text-muted-foreground'}>{t('archive.completedSectionDescription')}</p>
+              <Badge variant={'outline'}>{completedItems.length}</Badge>
             </div>
 
-            <div className={'grid gap-4 xl:grid-cols-2'}>
+            <div className={'grid gap-4 md:grid-cols-2 2xl:grid-cols-3'}>
               {completedItems.map((item) => {
                 const metadata = getCategoryMetadata(item.category, locale)
 
@@ -237,12 +219,12 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
 
         {!isLoading && deletedItems.length > 0 ? (
           <section className={'space-y-4'}>
-            <div className={'space-y-1'}>
+            <div className={'flex flex-wrap items-center gap-3'}>
               <h2 className={'text-2xl font-semibold tracking-tight text-foreground'}>{t('archive.deletedSectionTitle')}</h2>
-              <p className={'text-sm text-muted-foreground'}>{t('archive.deletedSectionDescription')}</p>
+              <Badge variant={'outline'}>{deletedItems.length}</Badge>
             </div>
 
-            <div className={'grid gap-4 xl:grid-cols-2'}>
+            <div className={'grid gap-4 md:grid-cols-2 2xl:grid-cols-3'}>
               {deletedItems.map((item) => {
                 const metadata = getCategoryMetadata(item.category, locale)
 

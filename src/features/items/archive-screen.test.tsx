@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { ArchiveScreen } from '@/features/items/archive-screen'
@@ -18,7 +18,7 @@ afterEach(() => {
 })
 
 describe('ArchiveScreen', () => {
-  it('keeps category colors visible in summary cards and completed item badges', async () => {
+  it('uses the plain archive shell with compact completed cards', async () => {
     render(
       <LocaleProvider initialLocale="en">
         <ArchiveScreen repository={createMockInterestRepository()} />
@@ -27,15 +27,15 @@ describe('ArchiveScreen', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Archive' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Back to dashboard' })).toBeInTheDocument()
+    expect(screen.queryByText('Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Restore a completed item to move it back to the pending backlog.')).not.toBeInTheDocument()
 
-    const [gamesSummary, categoryBadge] = screen.getAllByText('Games')
     const completedArticle = await screen.findByRole('article')
 
     expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
-    expect(gamesSummary).toHaveClass('text-accent-green')
-    expect(gamesSummary.closest('[data-slot="card"]')).toHaveClass('bg-accent-green/10')
-    expect(completedArticle).toHaveClass('border-accent-green/30', 'bg-accent-green/10')
-    expect(categoryBadge).toHaveClass('bg-accent-green/10', 'text-accent-green')
+    expect(screen.getAllByText('Games')).toHaveLength(1)
+    expect(within(completedArticle).getByText('Completed')).toBeInTheDocument()
     expect(within(completedArticle).getByRole('button', { name: 'Restore: Celeste' })).toBeInTheDocument()
     expect(within(completedArticle).getByText('platformer').closest('[data-slot="badge"]')).not.toBeNull()
   })
@@ -93,5 +93,43 @@ describe('ArchiveScreen', () => {
     expect(screen.getAllByText('Planned')).not.toHaveLength(0)
     expect(screen.getByRole('button', { name: 'Restore: Domain-Driven Design' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Restore: Floating Points — Promises' })).toBeInTheDocument()
+    expect(screen.queryByText('Restore a deleted item to make it active on the dashboard again.')).not.toBeInTheDocument()
+  })
+
+  it('keeps the empty state when no archived items exist', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <ArchiveScreen repository={createMockInterestRepository([])} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Archive' })).toBeInTheDocument()
+    expect(screen.getByText('Nothing is archived yet')).toBeInTheDocument()
+    expect(screen.getByText('Complete or delete an item on the dashboard to see it here.')).toBeInTheDocument()
+  })
+
+  it('restores a completed item out of the archive list', async () => {
+    const repository = createMockInterestRepository([])
+    const created = await repository.createItem({
+      category: 'games',
+      title: 'Outer Wilds',
+      tags: ['loop'],
+    })
+
+    await repository.updateStatus(created.id, 'completed')
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <ArchiveScreen repository={repository} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByText('Outer Wilds')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore: Outer Wilds' }))
+
+    await waitFor(() => {
+      expect(screen.queryByText('Outer Wilds')).not.toBeInTheDocument()
+    })
   })
 })
