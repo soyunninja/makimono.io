@@ -104,6 +104,8 @@ describe('dashboard nested routes', () => {
     expect(screen.getAllByRole('heading', { level: 1, name: 'Your interests', hidden: true })).toHaveLength(1)
     expect(screen.getByRole('link', { hidden: true, name: 'Add interest' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Add' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Details' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Choose a category for this item.')).not.toBeInTheDocument()
   })
 
   it('renders the suggester flow on top of the dashboard without duplicating the dashboard shell', async () => {
@@ -137,6 +139,8 @@ describe('dashboard nested routes', () => {
 
     expect(router.state.location.pathname).toBe('/dashboard')
     expect(screen.getByRole('heading', { level: 1, name: 'Add' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Details' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Choose a category for this item.')).not.toBeInTheDocument()
 
     fireEvent.click(within(screen.getByRole('dialog')).getAllByRole('button', { name: 'Close' })[0])
 

@@ -3,7 +3,6 @@ import { Plus, Save, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -172,7 +171,6 @@ type InterestDetailsFieldsProps = {
   notes: string
   categoryFields?: ReactNode
   coverFields?: ReactNode
-  surface?: 'card' | 'plain'
   onTitleChange: (value: string) => void
   onTagsChange: (value: string[]) => void
   onNotesChange: (value: string) => void
@@ -265,10 +263,10 @@ function CoverPreviewFields({ category, title, coverMetadata, lookupStatus, onLo
   )
 }
 
-function InterestDetailsFields({ title, tags, notes, categoryFields, coverFields, surface = 'card', onTitleChange, onTagsChange, onNotesChange }: InterestDetailsFieldsProps) {
+function InterestDetailsFields({ title, tags, notes, categoryFields, coverFields, onTitleChange, onTagsChange, onNotesChange }: InterestDetailsFieldsProps) {
   const { t } = useLocale()
 
-  const fields = (
+  return (
     <div className="space-y-4">
       {categoryFields}
 
@@ -306,19 +304,6 @@ function InterestDetailsFields({ title, tags, notes, categoryFields, coverFields
         />
       </div>
     </div>
-  )
-
-  if (surface === 'plain') {
-    return fields
-  }
-
-  return (
-    <Card className="bg-background/40">
-      <CardHeader>
-        <CardTitle>{t('addFlow.commonDetailsHeading')}</CardTitle>
-      </CardHeader>
-      <CardContent>{fields}</CardContent>
-    </Card>
   )
 }
 
@@ -407,7 +392,6 @@ export function AdaptiveAddFlow({
           categoryFields={(
             <div className="space-y-2">
               <Label>{t('addFlow.categoryLabel')}</Label>
-              <p className="text-sm text-muted-foreground">{t('addFlow.categoryHint')}</p>
               <ToggleGroup
                 aria-label={t('addFlow.categoryLabel')}
                 className="flex flex-wrap gap-2"
@@ -672,7 +656,6 @@ export function AdaptiveEditFlow({
           onNotesChange={setNotes}
           onTagsChange={setTags}
           onTitleChange={handleTitleChange}
-          surface="plain"
           tags={tags}
           title={title}
         />
