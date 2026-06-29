@@ -94,6 +94,8 @@ The mobile/desktop assertions are runtime DOM/class contract checks in jsdom, no
 - ✅ Re-verified with `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build` after the routing fix.
 - ✅ Moved the pending dashboard start action into the shared top-left card action-control slot, using an icon-only Play button with the accessible label pattern `Start now: {title}` while restoring the pending status badge on the right.
 - ✅ Updated dashboard tests to assert the pending Play control uses the shared action slot, no duplicate text start button remains, and in-progress completion modal behavior still works.
+- ✅ Simplified the edit modal by removing the visible `Edit interest` heading/description in edit mode, moving the category badge into the top row aligned with the close affordance, and preserving accessible dialog naming via `aria-label` / `aria-description` on the overlay content.
+- ✅ Updated edit-flow and nested-route tests to assert the visible title/description are gone while the category badge and icon-only save/delete controls remain, then re-ran `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
 
 ## Status
 

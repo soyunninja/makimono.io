@@ -384,18 +384,15 @@ export function AdaptiveEditFlow({
 
   const formContent = (
     <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('dashboard.editTitle')}</h1>
-        <p className="text-sm leading-6 text-muted-foreground">{t('dashboard.editDescription')}</p>
-      </div>
-
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="pr-12">
+        <div className="flex min-h-6 items-center">
           <Badge className={metadata.accentClassName} variant="outline">
             {metadata.label}
           </Badge>
         </div>
+      </div>
 
+      <form className="space-y-6" onSubmit={handleSubmit}>
         <InterestDetailsFields
           notes={notes}
           onNotesChange={setNotes}
@@ -435,7 +432,12 @@ export function AdaptiveEditFlow({
         }}
         open
       >
-        <DialogContent className="max-h-[90vh] overflow-hidden" closeLabel={t('app.closeLabel')}>
+        <DialogContent
+          aria-description={t('dashboard.editDescription')}
+          aria-label={t('dashboard.editTitle')}
+          className="max-h-[90vh] overflow-hidden"
+          closeLabel={t('app.closeLabel')}
+        >
           {formContent}
         </DialogContent>
       </Dialog>
@@ -451,7 +453,13 @@ export function AdaptiveEditFlow({
       }}
       open
     >
-      <SheetContent className="rounded-t-3xl border-x border-t border-border/70" closeLabel={t('app.closeLabel')} side="bottom">
+      <SheetContent
+        aria-description={t('dashboard.editDescription')}
+        aria-label={t('dashboard.editTitle')}
+        className="rounded-t-3xl border-x border-t border-border/70"
+        closeLabel={t('app.closeLabel')}
+        side="bottom"
+      >
         {formContent}
       </SheetContent>
     </Sheet>

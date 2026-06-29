@@ -177,7 +177,10 @@ describe('dashboard nested routes', () => {
       expect(router.state.location.pathname).toBe('/dashboard/edit/movie-arrival')
     })
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Edit interest' })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
+    })
+    expect(screen.queryByText('Update the saved details and keep the item on your dashboard.')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete interest' })).toBeInTheDocument()
@@ -187,7 +190,7 @@ describe('dashboard nested routes', () => {
     const router = await renderRoute('/dashboard/edit/movie-arrival')
 
     await screen.findByRole('heading', { level: 1, name: 'Your interests', hidden: true })
-    expect(screen.getByRole('heading', { level: 1, name: 'Edit interest' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Arrival (Director Cut)' } })
     fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'drama, revisit' } })
@@ -205,7 +208,9 @@ describe('dashboard nested routes', () => {
   it('soft-deletes an item from the edit flow and returns to the dashboard without the card', async () => {
     const router = await renderRoute('/dashboard/edit/movie-arrival')
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Edit interest' })).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
+    })
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete interest' }))
 

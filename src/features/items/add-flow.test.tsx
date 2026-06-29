@@ -156,18 +156,23 @@ describe('AdaptiveAddFlow', () => {
     expect(submitButton).not.toHaveTextContent('Add interest')
   })
 
-  it('shows icon-only save and delete actions in the edit flow footer without a cancel button', async () => {
+  it('hides the edit title and description visually while keeping the category badge and icon footer actions', async () => {
     render(
       <LocaleProvider initialLocale="en">
         <AdaptiveEditFlow isDesktop itemId="movie-arrival" repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Edit interest' })).toBeInTheDocument()
+    const categoryBadge = await screen.findByText('Movies')
 
     const deleteButton = screen.getByRole('button', { name: 'Delete interest' })
     const saveButton = screen.getByRole('button', { name: 'Save changes' })
 
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
+    })
+    expect(screen.queryByText('Update the saved details and keep the item on your dashboard.')).not.toBeInTheDocument()
+    expect(categoryBadge).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
     expect(deleteButton).toBeEnabled()
     expect(saveButton).toBeEnabled()
