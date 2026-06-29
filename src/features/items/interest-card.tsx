@@ -2,6 +2,7 @@ import { Play } from 'lucide-react'
 import { useState, type MouseEvent } from 'react'
 
 import type { CategoryMetadata } from '@/features/items/metadata'
+import { CardCoverBackground } from '@/features/items/card-cover-background'
 import type { InterestItem } from '@/features/items/types'
 
 import { Badge } from '@/components/ui/badge'
@@ -66,10 +67,11 @@ export function InterestCard({
   return (
     <>
       <Card
-        className={cn('flex h-full flex-col border-l-4', metadata.cardBorderClassName, metadata.surfaceClassName)}
+        className={cn('relative isolate flex h-full flex-col overflow-hidden border-l-4', metadata.cardBorderClassName, metadata.surfaceClassName)}
         role="article"
       >
-        <CardContent className="flex flex-1 items-start !gap-0 p-4 xl:p-6">
+        <CardCoverBackground item={item} metadata={metadata} testId="interest-card-cover" />
+        <CardContent className="relative z-10 flex flex-1 items-start !gap-0 p-4 xl:p-6">
           {showsCompletionControl || showsStartAction ? (
             <div className="shrink-0 self-start !-translate-x-2 !-translate-y-2.5">
               {showsCompletionControl ? (

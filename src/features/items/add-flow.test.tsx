@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AdaptiveAddFlow, AdaptiveEditFlow } from '@/features/items/add-flow'
+import type { InterestCoverResolver } from '@/features/items/cover-metadata'
 import { createMockInterestRepository, getAppInterestRepository, resetAppInterestRepository } from '@/features/items/mock-repository'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
@@ -167,6 +168,69 @@ describe('AdaptiveAddFlow', () => {
     })
   })
 
+  it('stores resolved cover metadata on create when the lookup returns a match', async () => {
+    const repository = createMockInterestRepository([])
+    const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue({
+      coverImageUrl: 'https://images.example.com/severance.jpg',
+      coverMatchedTitle: 'Severance',
+      coverProvider: 'tmdb',
+    })
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveAddFlow coverResolver={coverResolver} isDesktop={false} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Series' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Severance' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
+
+    await waitFor(async () => {
+      const items = await repository.listItems()
+
+      expect(items).toHaveLength(1)
+      expect(items[0]).toMatchObject({
+        coverImageUrl: 'https://images.example.com/severance.jpg',
+        coverMatchedTitle: 'Severance',
+        coverProvider: 'tmdb',
+      })
+    })
+
+    expect(coverResolver).toHaveBeenCalledWith(expect.objectContaining({
+      category: 'series',
+      title: 'Severance',
+    }))
+  })
+
+  it('still creates the item when the cover lookup fails quietly', async () => {
+    const repository = createMockInterestRepository([])
+    const onCreated = vi.fn()
+    const coverResolver: InterestCoverResolver = vi.fn().mockRejectedValue(new Error('lookup failed'))
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveAddFlow coverResolver={coverResolver} isDesktop={false} onCreated={onCreated} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Books' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Clean Code' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
+
+    await waitFor(() => {
+      expect(onCreated).toHaveBeenCalledTimes(1)
+    })
+
+    const [createdItem] = await repository.listItems()
+
+    expect(createdItem).toMatchObject({
+      category: 'books',
+      title: 'Clean Code',
+    })
+    expect(createdItem.coverImageUrl).toBeUndefined()
+  })
+
   it('uses an icon-only submit button with an accessible name and no visible submit text', async () => {
     render(
       <LocaleProvider initialLocale="en">
@@ -254,5 +318,91 @@ describe('AdaptiveAddFlow', () => {
         tags: ['ciencia ficción'],
       }),
     )
+  })
+
+  it('keeps edit saves working when cover refresh fails and clears stale cover data after a title change', async () => {
+    const repository = createMockInterestRepository([
+      {
+        id: 'series-old',
+        category: 'series',
+        title: 'Severance',
+        status: 'pending',
+        tags: ['office'],
+        createdAt: '2026-06-01T08:00:00.000Z',
+        coverImageUrl: 'https://images.example.com/severance.jpg',
+        coverMatchedTitle: 'Severance',
+        coverProvider: 'tmdb',
+      },
+    ])
+    const onUpdated = vi.fn()
+    const coverResolver: InterestCoverResolver = vi.fn().mockRejectedValue(new Error('tmdb down'))
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveEditFlow
+          coverResolver={coverResolver}
+          isDesktop
+          itemId="series-old"
+          onUpdated={onUpdated}
+          repository={repository}
+        />
+      </LocaleProvider>,
+    )
+
+    const titleInput = await screen.findByLabelText('Title')
+
+    fireEvent.change(titleInput, { target: { value: 'Black Mirror' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => {
+      expect(onUpdated).toHaveBeenCalledTimes(1)
+    })
+
+    const [updatedItem] = await repository.listItems()
+
+    expect(updatedItem?.title).toBe('Black Mirror')
+    expect(updatedItem?.coverImageUrl).toBeUndefined()
+    expect(updatedItem?.coverMatchedTitle).toBeUndefined()
+    expect(updatedItem?.coverProvider).toBeUndefined()
+  })
+
+  it('persists the full resolved cover metadata set after a successful edit lookup', async () => {
+    const repository = createMockInterestRepository([
+      {
+        id: 'movie-old',
+        category: 'movies',
+        title: 'Arrival',
+        status: 'pending',
+        tags: ['sci-fi'],
+        createdAt: '2026-06-01T08:00:00.000Z',
+      },
+    ])
+    const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue({
+      coverImageUrl: 'https://images.example.com/blade-runner.jpg',
+      coverMatchedTitle: 'Blade Runner 2049',
+      coverProvider: 'tmdb',
+    })
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveEditFlow coverResolver={coverResolver} isDesktop itemId="movie-old" repository={repository} />
+      </LocaleProvider>,
+    )
+
+    const titleInput = await screen.findByLabelText('Title')
+
+    fireEvent.change(titleInput, { target: { value: 'Blade Runner 2049' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(async () => {
+      const [updatedItem] = await repository.listItems()
+
+      expect(updatedItem).toMatchObject({
+        title: 'Blade Runner 2049',
+        coverImageUrl: 'https://images.example.com/blade-runner.jpg',
+        coverMatchedTitle: 'Blade Runner 2049',
+        coverProvider: 'tmdb',
+      })
+    })
   })
 })

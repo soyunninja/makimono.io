@@ -27,7 +27,7 @@ MeInteresa is a mock-only personal backlog UI for tracking links, books, movies,
 | Runtime stack | TanStack Start, React 19, TypeScript 6, Vite 8. |
 | Styling | Tailwind CSS v4 tokens plus shadcn-compatible CSS variables. |
 | UI primitives | Local primitives under `src/components/ui/`. |
-| Data model | Local mock repository only. No persistence or backend calls. |
+| Data model | Browser-local repository behind `InterestRepository`, persisted via localStorage when available. No backend calls. |
 | Localization | ES/EN dictionaries under `src/i18n/`. |
 | Testing | Vitest + Testing Library, focused on visible behavior. |
 | Scope boundary | No authentication, database, backend API, or real Gemini integration in this MVP. |
@@ -97,7 +97,7 @@ Expected current baseline:
 | Check | Expected result |
 |---|---|
 | Typecheck | `tsc --noEmit` passes. |
-| Tests | 9 files / 17 tests pass. |
+| Tests | 14 files / 80 tests pass. |
 | Build | Vite client and SSR builds pass. |
 | Whitespace | `git diff --cached --check` passes before commit. |
 
@@ -124,6 +124,15 @@ src/
 - Dialog and Sheet primitives require callers to pass localized `closeLabel` values.
 - Radix ToggleGroup filter pills expose radio semantics; tests should query them as radios when relevant.
 - Local AI/tooling workspace files are ignored: `.atl/`, `.gga`, `.mcp.json`, `opencode.json`, and `untitled.op`.
+
+## Optional cover lookup configuration
+
+- Cover lookups stay client-side and optional. If the related env vars are missing, add/edit flows still save normally and cards fall back to category color only.
+- Supported vars:
+  - `VITE_TMDB_ACCESS_TOKEN` or `VITE_TMDB_API_KEY` for series/movies cover lookup.
+  - `VITE_RAWG_API_KEY` for games cover lookup.
+- Music cover lookup uses MusicBrainz + Cover Art Archive without secrets.
+- Cover URLs are cached on each saved item in localStorage so the app avoids repeated provider calls for the same item.
 
 ## SDD and review evidence
 

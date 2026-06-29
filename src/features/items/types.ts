@@ -6,7 +6,17 @@ export const itemStatuses = ['pending', 'in_progress', 'completed'] as const
 
 export type ItemStatus = (typeof itemStatuses)[number]
 
-export type InterestItem = {
+export const coverProviders = ['tmdb', 'rawg', 'cover-art-archive'] as const
+
+export type CoverProvider = (typeof coverProviders)[number]
+
+export type InterestItemCoverMetadata = {
+  coverImageUrl?: string
+  coverProvider?: CoverProvider
+  coverMatchedTitle?: string
+}
+
+export type InterestItem = InterestItemCoverMetadata & {
   id: string
   category: Category
   title: string
@@ -22,13 +32,13 @@ export type CreateInterestItemInput = {
   title: string
   notes?: string
   tags?: string[]
-}
+} & InterestItemCoverMetadata
 
 export type ListInterestItemsOptions = {
   includeDeleted?: boolean
 }
 
-export type UpdateInterestItemInput = Partial<Pick<InterestItem, 'category' | 'title' | 'notes' | 'tags'>>
+export type UpdateInterestItemInput = Partial<Pick<InterestItem, 'category' | 'title' | 'notes' | 'tags' | 'coverImageUrl' | 'coverProvider' | 'coverMatchedTitle'>>
 
 export type InterestRepository = {
   listItems: (options?: ListInterestItemsOptions) => Promise<InterestItem[]>

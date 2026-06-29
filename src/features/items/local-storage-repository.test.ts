@@ -142,6 +142,93 @@ describe('createLocalStorageInterestRepository', () => {
     await expect(repository.listItems()).resolves.toEqual(legacyItems)
   })
 
+  it('accepts older items without cover fields and persists new cover metadata', async () => {
+    const legacyItems = [{
+      id: 'series-andor',
+      category: 'series',
+      title: 'Andor',
+      status: 'pending',
+      tags: ['star wars'],
+      createdAt: '2026-06-01T08:00:00.000Z',
+    }]
+
+    window.localStorage.setItem(INTEREST_ITEMS_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      items: legacyItems,
+    }))
+
+    const repository = createLocalStorageInterestRepository([])
+
+    await expect(repository.listItems()).resolves.toEqual(legacyItems)
+
+    const created = await repository.createItem({
+      category: 'movies',
+      title: 'Arrival',
+      tags: ['sci-fi'],
+      coverImageUrl: 'https://images.example.com/arrival.jpg',
+      coverMatchedTitle: 'Arrival',
+      coverProvider: 'tmdb',
+    })
+
+    expect(created).toMatchObject({
+      coverImageUrl: 'https://images.example.com/arrival.jpg',
+      coverMatchedTitle: 'Arrival',
+      coverProvider: 'tmdb',
+    })
+
+    const recreatedRepository = createLocalStorageInterestRepository([])
+    const recreatedItems = await recreatedRepository.listItems()
+
+    expect(recreatedItems[0]).toMatchObject({
+      title: 'Arrival',
+      coverImageUrl: 'https://images.example.com/arrival.jpg',
+      coverMatchedTitle: 'Arrival',
+      coverProvider: 'tmdb',
+    })
+    expect(recreatedItems[1]).toEqual(legacyItems[0])
+  })
+
+  it('drops invalid persisted cover fields while keeping the rest of the item', async () => {
+    window.localStorage.setItem(INTEREST_ITEMS_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      items: [{
+        id: 'movie-arrival',
+        category: 'movies',
+        title: 'Arrival',
+        status: 'pending',
+        tags: ['sci-fi'],
+        createdAt: '2026-06-01T08:00:00.000Z',
+        coverImageUrl: 'notaurl',
+        coverMatchedTitle: 42,
+        coverProvider: 'unknown-provider',
+      }],
+    }))
+
+    const repository = createLocalStorageInterestRepository([])
+
+    await expect(repository.listItems()).resolves.toEqual([
+      {
+        id: 'movie-arrival',
+        category: 'movies',
+        title: 'Arrival',
+        status: 'pending',
+        tags: ['sci-fi'],
+        createdAt: '2026-06-01T08:00:00.000Z',
+      },
+    ])
+    expect(JSON.parse(window.localStorage.getItem(INTEREST_ITEMS_STORAGE_KEY) as string)).toEqual({
+      version: 1,
+      items: [{
+        id: 'movie-arrival',
+        category: 'movies',
+        title: 'Arrival',
+        status: 'pending',
+        tags: ['sci-fi'],
+        createdAt: '2026-06-01T08:00:00.000Z',
+      }],
+    })
+  })
+
   it('drops legacy webs items while preserving other version 1 items', async () => {
     const legacyItems = [
       {

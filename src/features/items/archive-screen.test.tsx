@@ -145,6 +145,34 @@ describe('ArchiveScreen', () => {
     expect(screen.queryByText('Restore a deleted item to make it active on the dashboard again.')).not.toBeInTheDocument()
   })
 
+  it('renders archived item cover art as a decorative background when cached metadata exists', async () => {
+    const repository = createMockInterestRepository([])
+    const completedItem = await repository.createItem({
+      category: 'games',
+      title: 'Celeste',
+      tags: ['platformer'],
+      coverImageUrl: 'https://images.example.com/celeste.jpg',
+      coverMatchedTitle: 'Celeste',
+      coverProvider: 'rawg',
+    })
+
+    await repository.updateStatus(completedItem.id, 'completed')
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <ArchiveScreen repository={repository} />
+      </LocaleProvider>,
+    )
+
+    const article = (await screen.findByText('Celeste')).closest('[role="article"]') as HTMLElement
+    const coverLayer = within(article).getByTestId('archive-card-cover')
+
+    expect(coverLayer).toHaveAttribute('aria-hidden', 'true')
+    expect(coverLayer.firstElementChild).toHaveStyle({
+      backgroundImage: 'url("https://images.example.com/celeste.jpg")',
+    })
+  })
+
   it('keeps the empty state when no archived items exist', async () => {
     render(
       <LocaleProvider initialLocale="en">

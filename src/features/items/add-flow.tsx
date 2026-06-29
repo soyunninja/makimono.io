@@ -11,6 +11,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { TagsInput } from '@/components/ui/tags-input'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { resolveInterestCoverMetadata, type InterestCoverResolver } from '@/features/items/cover-metadata'
 import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import type { Category, InterestItem, InterestRepository } from '@/features/items/types'
@@ -19,6 +20,7 @@ import { useLocale } from '@/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
 type AdaptiveAddFlowProps = {
+  coverResolver?: InterestCoverResolver
   repository?: InterestRepository
   isDesktop?: boolean
   onCreated?: (item: InterestItem) => Promise<void> | void
@@ -27,6 +29,7 @@ type AdaptiveAddFlowProps = {
 
 type AdaptiveEditFlowProps = {
   itemId: string
+  coverResolver?: InterestCoverResolver
   repository?: InterestRepository
   isDesktop?: boolean
   onUpdated?: (item: InterestItem) => Promise<void> | void
@@ -36,6 +39,47 @@ type AdaptiveEditFlowProps = {
 
 function getRemoveTagLabel(template: string, tag: string) {
   return template.replace('{tag}', tag)
+}
+
+const COVER_LOOKUP_TIMEOUT_MS = 3500
+
+const clearedCoverMetadata = {
+  coverImageUrl: undefined,
+  coverMatchedTitle: undefined,
+  coverProvider: undefined,
+} as const
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === 'AbortError'
+}
+
+async function lookupCoverMetadata(
+  coverResolver: InterestCoverResolver,
+  category: Category,
+  title: string,
+) {
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => {
+    controller.abort()
+  }, COVER_LOOKUP_TIMEOUT_MS)
+
+  try {
+    return await coverResolver({
+      category,
+      signal: controller.signal,
+      title,
+    })
+  }
+  catch (error) {
+    if (isAbortError(error)) {
+      return null
+    }
+
+    return null
+  }
+  finally {
+    window.clearTimeout(timeoutId)
+  }
 }
 
 function useDesktopBreakpoint(forcedValue?: boolean) {
@@ -145,6 +189,7 @@ function InterestDetailsFields({ title, tags, notes, surface = 'card', onTitleCh
 }
 
 export function AdaptiveAddFlow({
+  coverResolver = resolveInterestCoverMetadata,
   repository = getAppInterestRepository(),
   isDesktop,
   onCreated,
@@ -171,11 +216,14 @@ export function AdaptiveAddFlow({
     setIsSubmitting(true)
 
     try {
+      const trimmedTitle = title.trim()
+      const coverMetadata = await lookupCoverMetadata(coverResolver, selectedCategory, trimmedTitle)
       const createdItem = await repository.createItem({
         category: selectedCategory,
-        title: title.trim(),
+        title: trimmedTitle,
         notes: notes.trim() ? notes.trim() : undefined,
         tags,
+        ...coverMetadata,
       })
 
       setIsSubmitting(false)
@@ -274,6 +322,7 @@ export function AdaptiveAddFlow({
 
 export function AdaptiveEditFlow({
   itemId,
+  coverResolver = resolveInterestCoverMetadata,
   repository = getAppInterestRepository(),
   isDesktop,
   onUpdated,
@@ -334,10 +383,16 @@ export function AdaptiveEditFlow({
     setIsSubmitting(true)
 
     try {
+      const trimmedTitle = title.trim()
+      const shouldRefreshCover = trimmedTitle !== item.title || !item.coverImageUrl
+      const coverMetadata = shouldRefreshCover
+        ? await lookupCoverMetadata(coverResolver, item.category, trimmedTitle)
+        : null
       const updatedItem = await repository.updateItem(item.id, {
-        title: title.trim(),
+        title: trimmedTitle,
         notes: notes.trim() ? notes.trim() : undefined,
         tags,
+        ...(trimmedTitle !== item.title ? (coverMetadata ?? clearedCoverMetadata) : coverMetadata ?? {}),
       })
 
       setIsSubmitting(false)

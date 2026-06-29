@@ -88,6 +88,43 @@ describe('DashboardScreen', () => {
     expect(within(article).getByText('Books')).toBeInTheDocument()
   })
 
+  it('keeps the fallback category styling when an item has no cached cover image', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    const arrivalCard = (await screen.findByRole('heading', { level: 2, name: 'Arrival' })).closest('[role="article"]') as HTMLElement
+
+    expect(within(arrivalCard).queryByTestId('interest-card-cover')).not.toBeInTheDocument()
+  })
+
+  it('renders a decorative cover background layer when cached cover metadata exists', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen
+          repository={createMockInterestRepository([
+            {
+              ...defaultMockItems[1],
+              coverImageUrl: 'https://images.example.com/arrival.jpg',
+              coverMatchedTitle: 'Arrival',
+              coverProvider: 'tmdb',
+            },
+          ])}
+        />
+      </LocaleProvider>,
+    )
+
+    const arrivalCard = (await screen.findByRole('heading', { level: 2, name: 'Arrival' })).closest('[role="article"]') as HTMLElement
+    const coverLayer = within(arrivalCard).getByTestId('interest-card-cover')
+
+    expect(coverLayer).toHaveAttribute('aria-hidden', 'true')
+    expect(coverLayer.firstElementChild).toHaveStyle({
+      backgroundImage: 'url("https://images.example.com/arrival.jpg")',
+    })
+  })
+
   it('keeps status changes local and advances a pending movie into progress', async () => {
     render(
       <LocaleProvider initialLocale="en">

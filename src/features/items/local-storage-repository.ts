@@ -7,6 +7,7 @@ import {
   cloneInterestItems,
   deleteInterestItem,
   filterInterestItems,
+  hasInvalidCoverMetadata,
   isInterestItem,
   isLegacyWebInterestItem,
   restoreInterestItem,
@@ -102,10 +103,12 @@ function readStoredInterestItems(
     }
   }
 
+  const sanitizedItems = cloneInterestItems(parsedValue.items)
+
   return {
-    items: cloneInterestItems(parsedValue.items),
+    items: sanitizedItems,
     storageAccessible: true,
-    shouldRewrite: false,
+    shouldRewrite: parsedValue.items.some((item) => hasInvalidCoverMetadata(item)),
   }
 }
 

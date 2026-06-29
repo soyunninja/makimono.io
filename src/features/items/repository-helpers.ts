@@ -1,7 +1,9 @@
 import {
+  coverProviders,
   itemCategories,
   itemStatuses,
   type Category,
+  type CoverProvider,
   type CreateInterestItemInput,
   type InterestItem,
   type ItemStatus,
@@ -9,12 +11,61 @@ import {
   type UpdateInterestItemInput,
 } from '@/features/items/types'
 
+const coverProviderSet = new Set<CoverProvider>(coverProviders)
 const itemCategorySet = new Set<Category>(itemCategories)
 const itemStatusSet = new Set<ItemStatus>(itemStatuses)
 const hasOwn = Object.prototype.hasOwnProperty
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
 const isStringArray = (value: unknown): value is string[] => Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+
+function isHttpUrlString(value: unknown): value is string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return false
+  }
+
+  try {
+    const url = new URL(value)
+
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  }
+  catch {
+    return false
+  }
+}
+
+function getSanitizedCoverMetadata(item: Partial<InterestItem>): Pick<InterestItem, 'coverImageUrl' | 'coverProvider' | 'coverMatchedTitle'> {
+  const sanitizedCoverMetadata: Pick<InterestItem, 'coverImageUrl' | 'coverProvider' | 'coverMatchedTitle'> = {}
+
+  if (!isHttpUrlString(item.coverImageUrl)) {
+    return sanitizedCoverMetadata
+  }
+
+  sanitizedCoverMetadata.coverImageUrl = item.coverImageUrl
+
+  if (typeof item.coverProvider === 'string' && coverProviderSet.has(item.coverProvider as CoverProvider)) {
+    sanitizedCoverMetadata.coverProvider = item.coverProvider as CoverProvider
+  }
+
+  if (typeof item.coverMatchedTitle === 'string' && item.coverMatchedTitle.trim().length > 0) {
+    sanitizedCoverMetadata.coverMatchedTitle = item.coverMatchedTitle.trim()
+  }
+
+  return sanitizedCoverMetadata
+}
+
+export function hasInvalidCoverMetadata(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  return (
+    ((hasOwn.call(value, 'coverImageUrl') || hasOwn.call(value, 'coverProvider') || hasOwn.call(value, 'coverMatchedTitle'))
+      && !isHttpUrlString(value.coverImageUrl))
+    || (hasOwn.call(value, 'coverProvider') && !(typeof value.coverProvider === 'string' && coverProviderSet.has(value.coverProvider as CoverProvider)))
+    || (hasOwn.call(value, 'coverMatchedTitle') && !(typeof value.coverMatchedTitle === 'string' && value.coverMatchedTitle.trim().length > 0))
+  )
+}
 
 function isInterestItemShape(value: unknown): value is {
   id: string
@@ -40,7 +91,17 @@ function isInterestItemShape(value: unknown): value is {
   )
 }
 
-export const cloneInterestItem = (item: InterestItem): InterestItem => ({ ...item, tags: [...item.tags] })
+export const cloneInterestItem = (item: InterestItem): InterestItem => ({
+  id: item.id,
+  category: item.category,
+  title: item.title,
+  status: item.status,
+  ...(item.notes !== undefined ? { notes: item.notes } : {}),
+  tags: [...item.tags],
+  createdAt: item.createdAt,
+  ...(item.deletedAt !== undefined ? { deletedAt: item.deletedAt } : {}),
+  ...getSanitizedCoverMetadata(item),
+})
 export const cloneInterestItems = (items: InterestItem[]): InterestItem[] => items.map(cloneInterestItem)
 
 function createItemId(title: string, createdAt: string): string {
@@ -74,6 +135,7 @@ export function buildInterestItem(input: CreateInterestItemInput, createdAt = ne
     notes: input.notes,
     tags: normalizeTags(input.tags),
     createdAt,
+    ...getSanitizedCoverMetadata(input),
   }
 }
 
@@ -87,6 +149,18 @@ export function updateInterestItem(item: InterestItem, input: UpdateInterestItem
 
   if (hasOwn.call(input, 'notes')) {
     nextItem.notes = input.notes
+  }
+
+  if (hasOwn.call(input, 'coverImageUrl') || hasOwn.call(input, 'coverProvider') || hasOwn.call(input, 'coverMatchedTitle')) {
+    const sanitizedCoverMetadata = getSanitizedCoverMetadata({
+      coverImageUrl: hasOwn.call(input, 'coverImageUrl') ? input.coverImageUrl : item.coverImageUrl,
+      coverProvider: hasOwn.call(input, 'coverProvider') ? input.coverProvider : item.coverProvider,
+      coverMatchedTitle: hasOwn.call(input, 'coverMatchedTitle') ? input.coverMatchedTitle : item.coverMatchedTitle,
+    })
+
+    nextItem.coverImageUrl = sanitizedCoverMetadata.coverImageUrl
+    nextItem.coverProvider = sanitizedCoverMetadata.coverProvider
+    nextItem.coverMatchedTitle = sanitizedCoverMetadata.coverMatchedTitle
   }
 
   return nextItem

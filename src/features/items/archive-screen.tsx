@@ -5,6 +5,7 @@ import { AppShell } from '@/components/app/app-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardCoverBackground } from '@/features/items/card-cover-background'
 import { getCategoryMetadata, listCategoryMetadata, type CategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import type { InterestItem, InterestRepository } from '@/features/items/types'
@@ -51,11 +52,12 @@ function ArchiveItemCard({
 
   return (
     <Card
-      className={cn('flex h-full flex-col border-l-4', metadata.cardBorderClassName, metadata.surfaceClassName)}
+      className={cn('relative isolate flex h-full flex-col overflow-hidden border-l-4', metadata.cardBorderClassName, metadata.surfaceClassName)}
       key={item.id}
       role={'article'}
     >
-      <CardContent className={'flex flex-1 items-start !gap-0 p-4 xl:p-6'}>
+      <CardCoverBackground item={item} metadata={metadata} testId="archive-card-cover" />
+      <CardContent className={'relative z-10 flex flex-1 items-start !gap-0 p-4 xl:p-6'}>
         <div className={'shrink-0 self-start !-translate-x-2 !-translate-y-2.5'}>
           <Button
             aria-label={restoreControlLabel}
