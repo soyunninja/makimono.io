@@ -1,6 +1,6 @@
-# Design Brief: "MeInteresa" UI/UX Spec (Tokyo Night Edition)
+# Design Brief: "Kyoumi" UI/UX Spec (Tokyo Night Edition)
 
-This document establishes the visual direction, component layout, and design system tokens for the **MeInteresa** mock-only MVP. Persistence, authentication, backend calls, and real Gemini integration are intentionally out of scope until a later spec adds them.
+This document establishes the visual direction, component layout, and design system tokens for the **Kyoumi** mock-only MVP. Persistence, authentication, backend calls, and real Gemini integration are intentionally out of scope until a later spec adds them.
 
 ---
 
@@ -31,7 +31,7 @@ To capture a premium, developer-centric, and cozy nocturnal vibe, we adopt the p
 The app uses a dual layout structure optimized for both desktop and mobile screens.
 
 ### A. Sidebar / Bottom Navigation
-- **Desktop (Sidebar):** Left navigation panel featuring the "MeInteresa" brand, filter views (All, Music, Movies, Books, Games, Archive), and user profile.
+- **Desktop (Sidebar):** Left navigation panel featuring the "Kyoumi" brand, filter views (All, Series, Movies, Games, Books, Music, Podcasts, Archive), and user profile.
 - **Mobile (Bottom Navigation Bar):** Fills the bottom viewport with custom-styled tabs (Backlog, Suggester, Archive) and a **large, glowing central "+" button** that floats above the bar.
 
 ### B. The Quick Add Action & Adaptive Bottom Sheet
@@ -100,7 +100,7 @@ Here are the details for the specific screens required in the initial MVP build:
 * **Goal:** Introduce the application concept and route users into the mock UI without authentication.
 * **Layout:** Centered, screen-height card layout.
 * **UI Elements:**
-  * **Brand Typography:** Large glowing header "MeInteresa" with a CSS gradient animation.
+  * **Brand Typography:** Large glowing header "Kyoumi" with a CSS gradient animation.
   * **Subtitle:** "Your bilingual personal backlog. Never forget that book, game, or link again."
   * **Navigation CTA:** A primary action that opens `/dashboard`.
 * **State Variant:** No session handling or authentication redirects exist in the MVP.

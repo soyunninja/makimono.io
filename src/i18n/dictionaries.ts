@@ -118,7 +118,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       closeLabel: 'Close',
     },
     landing: {
-      title: 'MeInteresa foundation',
+      title: 'Kyoumi foundation',
       description: 'TanStack Start, Tailwind v4, and shadcn-ready tokens are in place.',
       milestoneBadge: 'Ready',
       nextTitle: 'Next',
@@ -278,7 +278,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       closeLabel: 'Cerrar',
     },
     landing: {
-      title: 'Base de MeInteresa',
+      title: 'Base de Kyoumi',
       description: 'TanStack Start, Tailwind v4 y los tokens compatibles con shadcn ya están listos.',
       milestoneBadge: 'Listo',
       nextTitle: 'Siguiente paso',
@@ -300,7 +300,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
     },
     dashboard: {
       eyebrow: 'Dashboard',
-      title: 'Me interesa',
+      title: 'Kyoumi',
       subtitle: 'Sigue los elementos mock por categoría y muévelos por el backlog.',
       localDataBadge: 'Solo datos locales',
       localDataNote: 'Los cambios de estado se mantienen en memoria hasta que recargues la página.',

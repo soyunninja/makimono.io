@@ -2,7 +2,7 @@
   "name": "meinteresa",
   "version": "0.1.0",
   "private": true,
-  "description": "MeInteresa mock UI foundation built with TanStack Start, React, and Tailwind CSS v4.",
+  "description": "Kyoumi mock UI foundation built with TanStack Start, React, and Tailwind CSS v4.",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "vite dev",

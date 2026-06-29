@@ -1,10 +1,10 @@
-# Design: Implement shadcn/ui MeInteresa UI
+# Design: Implement shadcn/ui Kyoumi UI
 
-Build a TanStack Start + React + TypeScript mock UI with Tailwind CSS v4, shadcn/ui primitives, local mock data, and replaceable service boundaries. This keeps the MVP aligned with `web-app-foundation` and `meinteresa-mock-ui` while explicitly deferring persistence, auth, database, and real Gemini calls.
+Build a TanStack Start + React + TypeScript mock UI with Tailwind CSS v4, shadcn/ui primitives, browser-local mock data, and replaceable service boundaries. This keeps the MVP aligned with `web-app-foundation` and `meinteresa-mock-ui` while explicitly deferring server-side persistence, auth, database, and real Gemini calls.
 
 ## Technical Approach
 
-Use TanStack Start because the intended future stack is TanStack-based, it provides typed file-based routing, Vite integration, SSR/server-function paths for later work, and avoids designing around Next.js-only assumptions. The current change remains mock-only: all user actions mutate local UI state and reset on reload.
+Use TanStack Start because the intended future stack is TanStack-based, it provides typed file-based routing, Vite integration, SSR/server-function paths for later work, and avoids designing around Next.js-only assumptions. The current change remains mock-first: user actions stay inside the browser-local repository boundary and avoid server-side dependencies.
 
 ## Architecture Decisions
 
@@ -55,7 +55,7 @@ mock repositories/services -> feature hooks/state -> TanStack routes -> shadcn-c
 ## Interfaces / Contracts
 
 ```ts
-type Category = "series" | "movies" | "games" | "books" | "webs";
+type Category = "series" | "movies" | "games" | "books" | "music" | "podcasts";
 type Status = "pending" | "in_progress" | "completed";
 type Locale = "es" | "en";
 
@@ -77,7 +77,7 @@ Category metadata drives labels, accent color, completion verb, and add-field gr
 - Turso + Drizzle: replace mock repositories with typed database adapters and migrations.
 - Auth.js/NextAuth-style auth: add session provider, protected routes, user ownership, and Turso-backed auth tables.
 - Vercel AI SDK + Gemini API: replace mock suggester service with streamed/generated recommendations, prompt safety, and error states.
-- Persistence and archive analytics: add durable status transitions, restore behavior, and history summaries.
+- Server-backed persistence and archive analytics: add durable cross-device status transitions, restore behavior, and history summaries.
 
 ## Testing Strategy
 
@@ -90,7 +90,7 @@ Category metadata drives labels, accent color, completion verb, and add-field gr
 
 ## Migration / Rollout
 
-No migration required. This is a new mock-only app scaffold with no persisted data.
+No migration required. The existing browser-local repository and storage namespace remain in place.
 
 ## Risks and Tradeoffs
 

@@ -8,7 +8,7 @@ describe('AppShell', () => {
     render(
       <AppShell
         eyebrow="Foundation slice"
-        title="MeInteresa is ready for the next mock UI work unit"
+        title="Kyoumi is ready for the next mock UI work unit"
         description="Mock-first UI shell for the first reviewable slice."
         actions={<button type="button">Review next slice</button>}
       >
@@ -21,7 +21,7 @@ describe('AppShell', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: 'MeInteresa is ready for the next mock UI work unit',
+        name: 'Kyoumi is ready for the next mock UI work unit',
       }),
     ).toBeInTheDocument()
     expect(screen.getByText('Mock-first UI shell for the first reviewable slice.')).toBeInTheDocument()

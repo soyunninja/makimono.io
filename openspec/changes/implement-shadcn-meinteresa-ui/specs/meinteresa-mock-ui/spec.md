@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define the user-facing mock dashboard, add flow, language switching, and Smart Suggester behavior for the MeInteresa MVP.
+Define the user-facing mock dashboard, add flow, language switching, and Smart Suggester behavior for the Kyoumi MVP.
 
 ## Requirements
 
@@ -24,13 +24,13 @@ The system SHALL present a responsive dashboard with equal desktop and mobile pr
 
 ### Requirement: First-class categories
 
-The system SHALL treat series, movies/películas, games/juegos, books/libros, and webs/websites as first-class categories with localized labels.
+The system SHALL treat series, movies/películas, games/juegos, books/libros, music/música, and podcasts/podcasts as first-class categories with localized labels.
 
 #### Scenario: Category coverage
 
 - GIVEN the dashboard is open
 - WHEN the user switches categories
-- THEN each of the five categories is available and visually distinct
+- THEN each of the six categories is available and visually distinct
 
 #### Scenario: Localized labels
 

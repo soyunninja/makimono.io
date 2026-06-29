@@ -1,21 +1,21 @@
-# Proposal: Implement shadcn/ui MeInteresa UI
+# Proposal: Implement shadcn/ui Kyoumi UI
 
 ## Intent
 
-Build the first reviewable MeInteresa web UI: a responsive, bilingual, mock-data-only app that translates the OpenPencil/design brief direction into shadcn/ui components. The repo has no app scaffold, so this change must establish the UI foundation before persistence, auth, or real AI work.
+Build the first reviewable Kyoumi web UI: a responsive, bilingual, mock-data-only app that translates the OpenPencil/design brief direction into shadcn/ui components. The repo has no app scaffold, so this change must establish the UI foundation before server persistence, auth, or real AI work.
 
 ## Scope
 
 ### In Scope
 - Bootstrap a React/TypeScript UI foundation with Tailwind and shadcn/ui.
-- Mock dashboard for `series`, `movies`, `games`, `books`, and `webs` with adaptive content cards and status actions.
+- Mock dashboard for `series`, `movies`, `games`, `books`, `music`, and `podcasts` with adaptive content cards and status actions.
 - Add flow with category selector and category-specific fields.
 - Real ES/EN text toggle within the mock app.
 - Smart Suggester mock with time/mood controls and exactly 3 mock recommendations.
 - Equal desktop and mobile priority.
 
 ### Out of Scope
-- Persistence, auth, backend APIs, real Gemini calls, analytics, archive reporting, deployment.
+- Server-side persistence, auth, backend APIs, real Gemini calls, analytics, archive reporting, deployment.
 
 ## Capabilities
 
@@ -32,7 +32,7 @@ Use local mock data behind a replaceable boundary. Map shadcn dark neutral token
 
 ## User-Facing Behavior
 
-- Users see a backlog dashboard with category filters and status-aware action labels: read, watched, played, or in-progress.
+- Users see a backlog dashboard with category filters and status-aware action labels: read, watched, played, listened, or in-progress.
 - The add trigger opens a mobile Sheet and desktop Dialog or routed modal; fields adapt after category selection.
 - ES/EN toggle switches visible mock UI text without routing or persistence.
 - Smart Suggester lets users choose time and mood, then displays exactly 3 mock recommendations with a reason and CTA.
@@ -56,7 +56,7 @@ Use local mock data behind a replaceable boundary. Map shadcn dark neutral token
 
 ## Rollback Plan
 
-Remove the generated app scaffold, shadcn files, package manifests, and this change's OpenSpec artifacts; no persisted user data exists.
+Remove the generated app scaffold, shadcn files, package manifests, and this change's OpenSpec artifacts; any browser-local data can be cleared by removing the existing storage entry.
 
 ## Dependencies
 
@@ -65,8 +65,8 @@ Remove the generated app scaffold, shadcn files, package manifests, and this cha
 
 ## Success Criteria
 
-- [ ] Mock UI covers all five categories on desktop and mobile.
-- [ ] Add form adapts per category without persistence.
+- [ ] Mock UI covers all six categories on desktop and mobile.
+- [ ] Add form adapts per category while keeping saves browser-local only.
 - [ ] ES/EN toggle changes visible copy.
 - [ ] Smart Suggester returns exactly 3 mock recommendations.
 - [ ] shadcn components/tokens are used consistently.

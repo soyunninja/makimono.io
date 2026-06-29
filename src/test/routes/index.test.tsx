@@ -16,7 +16,7 @@ describe('FoundationLandingScreen', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: 'MeInteresa foundation',
+        name: 'Kyoumi foundation',
       }),
     ).toBeInTheDocument()
     expect(screen.getByText('TanStack Start, Tailwind v4, and shadcn-ready tokens are in place.')).toBeInTheDocument()
@@ -41,7 +41,7 @@ describe('FoundationLandingScreen', () => {
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: 'Base de MeInteresa',
+        name: 'Base de Kyoumi',
       }),
     ).toBeInTheDocument()
     expect(screen.queryByText('Listo')).not.toBeInTheDocument()

@@ -1,4 +1,4 @@
-# Tasks: Implement shadcn/ui MeInteresa UI
+# Tasks: Implement shadcn/ui Kyoumi UI
 
 ## Review Workload Forecast
 
