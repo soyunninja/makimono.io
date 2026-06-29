@@ -228,7 +228,7 @@ describe('DashboardScreen', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Tus intereses' }),
+      await screen.findByRole('heading', { level: 1, name: 'Me interesa' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Añadir interés' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Pedir sugerencias' })).toBeInTheDocument()

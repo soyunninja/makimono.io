@@ -48,7 +48,7 @@ describe('LocaleProvider', () => {
     )
 
     expect(screen.getByText('es')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Tus intereses' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Me interesa' })).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('es')
 
     fireEvent.click(screen.getByRole('button', { name: 'toggle locale' }))
@@ -71,7 +71,7 @@ describe('LocaleProvider', () => {
       expect(screen.getByText('es')).toBeInTheDocument()
     })
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Tus intereses' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Me interesa' })).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('es')
   })
 
@@ -105,7 +105,7 @@ describe('LocaleProvider', () => {
       expect(screen.getByText('es')).toBeInTheDocument()
     })
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Tus intereses' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Me interesa' })).toBeInTheDocument()
     expect(document.documentElement.lang).toBe('es')
   })
 })
