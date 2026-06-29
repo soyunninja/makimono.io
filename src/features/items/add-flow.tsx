@@ -43,6 +43,12 @@ function getRemoveTagLabel(template: string, tag: string) {
 
 const COVER_LOOKUP_TIMEOUT_MS = 3500
 
+const defaultCoverResolver: InterestCoverResolver = (input) => {
+  // Approved by openspec/changes/add-cover-metadata-cache: optional client-side
+  // cover lookups are allowed for this mock-only MVP as long as saves remain local.
+  return resolveInterestCoverMetadata(input)
+}
+
 const clearedCoverMetadata = {
   coverImageUrl: undefined,
   coverMatchedTitle: undefined,
@@ -164,6 +170,7 @@ type InterestDetailsFieldsProps = {
   title: string
   tags: string[]
   notes: string
+  categoryFields?: ReactNode
   coverFields?: ReactNode
   surface?: 'card' | 'plain'
   onTitleChange: (value: string) => void
@@ -258,11 +265,13 @@ function CoverPreviewFields({ category, title, coverMetadata, lookupStatus, onLo
   )
 }
 
-function InterestDetailsFields({ title, tags, notes, coverFields, surface = 'card', onTitleChange, onTagsChange, onNotesChange }: InterestDetailsFieldsProps) {
+function InterestDetailsFields({ title, tags, notes, categoryFields, coverFields, surface = 'card', onTitleChange, onTagsChange, onNotesChange }: InterestDetailsFieldsProps) {
   const { t } = useLocale()
 
   const fields = (
     <div className="space-y-4">
+      {categoryFields}
+
       <div className="space-y-2">
         <Label htmlFor="add-interest-title">{t('addFlow.titleLabel')}</Label>
         <Input
@@ -314,7 +323,7 @@ function InterestDetailsFields({ title, tags, notes, coverFields, surface = 'car
 }
 
 export function AdaptiveAddFlow({
-  coverResolver = resolveInterestCoverMetadata,
+  coverResolver = defaultCoverResolver,
   repository = getAppInterestRepository(),
   isDesktop,
   onCreated,
@@ -394,36 +403,35 @@ export function AdaptiveAddFlow({
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
-        <Card className="bg-background/40">
-          <CardHeader>
-            <CardTitle>{t('addFlow.categoryLabel')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ToggleGroup
-              className="flex flex-wrap gap-2"
-              onValueChange={(value) => {
-                setCoverMetadata(toEditableCoverMetadata())
-                setCoverLookupStatus('idle')
-                setSelectedCategory((value as Category) || null)
-              }}
-              type="single"
-              value={selectedCategory ?? ''}
-            >
-              {categories.map((category) => (
-                <ToggleGroupItem
-                  className={cn('data-[state=on]:border-current data-[state=on]:bg-current/15', category.controlClassName)}
-                  key={category.key}
-                  value={category.key}
-                  variant="outline"
-                >
-                  {category.label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </CardContent>
-        </Card>
-
         <InterestDetailsFields
+          categoryFields={(
+            <div className="space-y-2">
+              <Label>{t('addFlow.categoryLabel')}</Label>
+              <p className="text-sm text-muted-foreground">{t('addFlow.categoryHint')}</p>
+              <ToggleGroup
+                aria-label={t('addFlow.categoryLabel')}
+                className="flex flex-wrap gap-2"
+                onValueChange={(value) => {
+                  setCoverMetadata(toEditableCoverMetadata())
+                  setCoverLookupStatus('idle')
+                  setSelectedCategory((value as Category) || null)
+                }}
+                type="single"
+                value={selectedCategory ?? ''}
+              >
+                {categories.map((category) => (
+                  <ToggleGroupItem
+                    className={cn('data-[state=on]:border-current data-[state=on]:bg-current/15', category.controlClassName)}
+                    key={category.key}
+                    value={category.key}
+                    variant="outline"
+                  >
+                    {category.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+          )}
           coverFields={(
             <CoverPreviewFields
               category={selectedCategory}
@@ -488,7 +496,7 @@ export function AdaptiveAddFlow({
 
 export function AdaptiveEditFlow({
   itemId,
-  coverResolver = resolveInterestCoverMetadata,
+  coverResolver = defaultCoverResolver,
   repository = getAppInterestRepository(),
   isDesktop,
   onUpdated,

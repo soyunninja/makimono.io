@@ -56,7 +56,7 @@
 ## Verification Evidence
 
 - ✅ `npx pnpm typecheck`
-- ✅ `npx pnpm test` — 13 test files / 64 tests
+- ✅ `npx pnpm test` — 14 test files / 83 tests
 - ✅ `npx pnpm build`
 - ✅ `git diff --cached --check`
 - ✅ `git log --oneline --reverse --no-merges`
@@ -105,6 +105,8 @@ The mobile/desktop assertions are runtime DOM/class contract checks in jsdom, no
 - ✅ Converted normal `/dashboard` add, suggest, and edit interactions into true local modal state inside `src/features/items/dashboard-route-shell.tsx`, so opening and closing those flows no longer navigates away from `/dashboard` or uses the pathname as a reload key while `src/routes/dashboard.tsx` stays thin.
 - ✅ Kept `/dashboard/add`, `/dashboard/suggest`, and `/dashboard/edit/$itemId` as routed overlay fallbacks for direct links, while refreshing dashboard items after routed overlay close by detecting overlay-path returns to `/dashboard`.
 - ✅ Updated `DashboardScreen`, `SmartSuggesterFlow`, and nested-route tests so dashboard header actions become local buttons on the live dashboard, the suggester CTA can open the add flow locally, and route coverage now asserts local add/suggest/edit flows keep the pathname stable before re-running `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
+- ✅ Simplified the add modal by shortening the visible modal heading to `Add` / `Añadir`, moving the category selector and hint into the existing `Details` / `Detalles` card before the title field, keeping edit mode on the plain details surface, and preserving the category-driven cover reset + lookup gating behavior.
+- ✅ Updated add-flow and nested-route tests to assert the new modal title plus in-details category selector structure, then re-ran `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
 
 ## Status
 

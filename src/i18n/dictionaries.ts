@@ -188,7 +188,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       backAction: 'Back to dashboard',
     },
     addFlow: {
-      title: 'Add interest',
+      title: 'Add',
       description: 'Choose a category and save the basics.',
       localOnlyBadge: 'Mock add flow',
       desktopMode: 'Desktop dialog',
@@ -356,7 +356,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       backAction: 'Volver al dashboard',
     },
     addFlow: {
-      title: 'Añadir interés',
+      title: 'Añadir',
       description: 'Elige una categoría y guarda lo básico.',
       localOnlyBadge: 'Alta mock',
       desktopMode: 'Diálogo de escritorio',

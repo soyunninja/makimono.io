@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AdaptiveAddFlow, AdaptiveEditFlow } from '@/features/items/add-flow'
@@ -30,9 +30,15 @@ describe('AdaptiveAddFlow', () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Add interest' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Add' })).toBeInTheDocument()
     expect(screen.queryByText('Choose a category and save the basics.')).not.toBeInTheDocument()
-    expect(screen.queryByText('Choose a category for this item.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Category details')).not.toBeInTheDocument()
+
+    const detailsCard = screen.getByText('Details').closest('[data-slot="card"]') as HTMLElement
+
+    expect(within(detailsCard).getByText('Category')).toBeInTheDocument()
+    expect(within(detailsCard).getByText('Choose a category for this item.')).toBeInTheDocument()
+    expect(within(detailsCard).getByRole('radiogroup', { name: 'Category' })).toBeInTheDocument()
 
     const seriesOption = screen.getByRole('radio', { name: 'Series' })
 
@@ -70,7 +76,7 @@ describe('AdaptiveAddFlow', () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Add interest' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Add' })).toBeInTheDocument()
 
     const podcastOption = screen.getByRole('radio', { name: 'Podcasts' })
 
