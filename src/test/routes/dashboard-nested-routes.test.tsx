@@ -181,6 +181,7 @@ describe('dashboard nested routes', () => {
       expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
     })
     expect(screen.queryByText('Update the saved details and keep the item on your dashboard.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Details' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Delete interest' })).toBeInTheDocument()
@@ -191,6 +192,7 @@ describe('dashboard nested routes', () => {
 
     await screen.findByRole('heading', { level: 1, name: 'Your interests', hidden: true })
     expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Details' })).not.toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Arrival (Director Cut)' } })
     fireEvent.change(screen.getByLabelText('Tags'), { target: { value: 'drama, revisit' } })
@@ -211,6 +213,7 @@ describe('dashboard nested routes', () => {
     await waitFor(() => {
       expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
     })
+    expect(screen.queryByRole('heading', { name: 'Details' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete interest' }))
 

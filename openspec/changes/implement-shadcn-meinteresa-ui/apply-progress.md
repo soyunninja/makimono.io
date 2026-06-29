@@ -98,6 +98,7 @@ The mobile/desktop assertions are runtime DOM/class contract checks in jsdom, no
 - ✅ Updated edit-flow and nested-route tests to assert the visible title/description are gone while the category badge and icon-only save/delete controls remain, then re-ran `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
 - ✅ Made the dashboard shell use a plain/transparent header and content surface by adding `AppShell` surface variants, leaving only the localized title plus right-side actions visible on the dashboard while preserving default card styling for the home and archive screens.
 - ✅ Updated `AppShell` and dashboard tests to assert the dashboard no longer renders the eyebrow/subtitle or card-like shell classes, then re-ran `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
+- ✅ Removed the edit-flow `Detalles` / `Details` heading card by adding a plain details-fields surface for edit mode only, keeping add-flow card styling intact while preserving the individual field labels and edit save/delete behavior under test, then re-ran `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`.
 
 ## Status
 

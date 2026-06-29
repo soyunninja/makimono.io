@@ -156,24 +156,32 @@ describe('AdaptiveAddFlow', () => {
     expect(submitButton).not.toHaveTextContent('Add interest')
   })
 
-  it('hides the edit title and description visually while keeping the category badge and icon footer actions', async () => {
+  it('renders plain edit detail fields without the Detalles card heading while keeping labels and icon footer actions', async () => {
     render(
-      <LocaleProvider initialLocale="en">
+      <LocaleProvider initialLocale="es">
         <AdaptiveEditFlow isDesktop itemId="movie-arrival" repository={createMockInterestRepository()} />
       </LocaleProvider>,
     )
 
-    const categoryBadge = await screen.findByText('Movies')
+    const categoryBadge = await screen.findByText('Películas')
+    const titleInput = screen.getByLabelText('Título')
+    const tagsInput = screen.getByLabelText('Etiquetas')
+    const notesInput = screen.getByLabelText('Notas')
 
-    const deleteButton = screen.getByRole('button', { name: 'Delete interest' })
-    const saveButton = screen.getByRole('button', { name: 'Save changes' })
+    const deleteButton = screen.getByRole('button', { name: 'Eliminar interés' })
+    const saveButton = screen.getByRole('button', { name: 'Guardar cambios' })
 
     await waitFor(() => {
-      expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'Editar interés' })).not.toBeInTheDocument()
     })
-    expect(screen.queryByText('Update the saved details and keep the item on your dashboard.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Actualiza los detalles guardados y mantén el elemento en tu dashboard.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Detalles')).not.toBeInTheDocument()
+    expect(titleInput.closest('[class*="bg-background/40"]')).toBeNull()
+    expect(titleInput).toBeVisible()
+    expect(tagsInput).toBeVisible()
+    expect(notesInput).toBeVisible()
     expect(categoryBadge).toBeVisible()
-    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument()
     expect(deleteButton).toBeEnabled()
     expect(saveButton).toBeEnabled()
     expect(deleteButton.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()

@@ -91,51 +91,60 @@ type InterestDetailsFieldsProps = {
   title: string
   tags: string
   notes: string
+  surface?: 'card' | 'plain'
   onTitleChange: (value: string) => void
   onTagsChange: (value: string) => void
   onNotesChange: (value: string) => void
 }
 
-function InterestDetailsFields({ title, tags, notes, onTitleChange, onTagsChange, onNotesChange }: InterestDetailsFieldsProps) {
+function InterestDetailsFields({ title, tags, notes, surface = 'card', onTitleChange, onTagsChange, onNotesChange }: InterestDetailsFieldsProps) {
   const { t } = useLocale()
+
+  const fields = (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="add-interest-title">{t('addFlow.titleLabel')}</Label>
+        <Input
+          id="add-interest-title"
+          onChange={(event) => onTitleChange(event.target.value)}
+          placeholder={t('addFlow.titlePlaceholder')}
+          required
+          value={title}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="add-interest-tags">{t('addFlow.tagsLabel')}</Label>
+        <Input
+          id="add-interest-tags"
+          onChange={(event) => onTagsChange(event.target.value)}
+          placeholder={t('addFlow.tagsPlaceholder')}
+          value={tags}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="add-interest-notes">{t('addFlow.notesLabel')}</Label>
+        <Textarea
+          id="add-interest-notes"
+          onChange={(event) => onNotesChange(event.target.value)}
+          placeholder={t('addFlow.notesPlaceholder')}
+          value={notes}
+        />
+      </div>
+    </div>
+  )
+
+  if (surface === 'plain') {
+    return fields
+  }
 
   return (
     <Card className="bg-background/40">
       <CardHeader>
         <CardTitle>{t('addFlow.commonDetailsHeading')}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="add-interest-title">{t('addFlow.titleLabel')}</Label>
-          <Input
-            id="add-interest-title"
-            onChange={(event) => onTitleChange(event.target.value)}
-            placeholder={t('addFlow.titlePlaceholder')}
-            required
-            value={title}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="add-interest-tags">{t('addFlow.tagsLabel')}</Label>
-          <Input
-            id="add-interest-tags"
-            onChange={(event) => onTagsChange(event.target.value)}
-            placeholder={t('addFlow.tagsPlaceholder')}
-            value={tags}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="add-interest-notes">{t('addFlow.notesLabel')}</Label>
-          <Textarea
-            id="add-interest-notes"
-            onChange={(event) => onNotesChange(event.target.value)}
-            placeholder={t('addFlow.notesPlaceholder')}
-            value={notes}
-          />
-        </div>
-      </CardContent>
+      <CardContent>{fields}</CardContent>
     </Card>
   )
 }
@@ -398,6 +407,7 @@ export function AdaptiveEditFlow({
           onNotesChange={setNotes}
           onTagsChange={setTags}
           onTitleChange={setTitle}
+          surface="plain"
           tags={tags}
           title={title}
         />
