@@ -80,6 +80,78 @@ describe('ArchiveScreen', () => {
     expect(screen.getByRole('button', { name: 'Restore: Refactoring' })).toBeInTheDocument()
   })
 
+  it('filters archived items by title, tag, and notes without changing category summaries', async () => {
+    const repository = createMockInterestRepository([])
+    const completedGame = await repository.createItem({
+      category: 'games',
+      title: 'Return of the Obra Dinn',
+      notes: 'Insurance mysteries aboard the ship.',
+      tags: ['deduction'],
+    })
+    const completedBook = await repository.createItem({
+      category: 'books',
+      title: 'Refactoring',
+      notes: 'Revisit the code smells chapter.',
+      tags: ['craft'],
+    })
+    const deletedAlbum = await repository.createItem({
+      category: 'music',
+      title: 'Promises',
+      notes: 'Keep this for the ambient mornings.',
+      tags: ['ambient'],
+    })
+
+    await repository.updateStatus(completedGame.id, 'completed')
+    await repository.updateStatus(completedBook.id, 'completed')
+    await repository.deleteItem(deletedAlbum.id)
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <ArchiveScreen repository={repository} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
+
+    const searchInput = screen.getByRole('searchbox', { name: 'Search archived items by title, tag, or notes' })
+
+    fireEvent.change(searchInput, { target: { value: 'deduction' } })
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Restore: Return of the Obra Dinn' })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByRole('button', { name: 'Restore: Refactoring' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Restore: Promises' })).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Games: 1' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Books: 1' })).toBeInTheDocument()
+
+    fireEvent.change(searchInput, { target: { value: 'code smells' } })
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Restore: Refactoring' })).toBeInTheDocument()
+    })
+
+    fireEvent.change(searchInput, { target: { value: 'promises' } })
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Restore: Promises' })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByRole('button', { name: 'Restore: Return of the Obra Dinn' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Restore: Refactoring' })).not.toBeInTheDocument()
+
+    fireEvent.change(searchInput, { target: { value: 'no-match-query' } })
+
+    await waitFor(() => {
+      expect(screen.getByText('No archived items match this search')).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('Try a different title, tag, or note.')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Games: 1' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Books: 1' })).toBeInTheDocument()
+  })
+
   it('shows completed items from the recreated app repository after reload', async () => {
     const repository = resetAppInterestRepository([])
     const created = await repository.createItem({

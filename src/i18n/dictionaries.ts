@@ -37,6 +37,8 @@ export type Dictionary = {
     loading: string
     emptyTitle: string
     emptyDescription: string
+    emptySearchTitle: string
+    emptySearchDescription: string
     startAction: string
     addAction: string
     suggestAction: string
@@ -48,6 +50,8 @@ export type Dictionary = {
     editDescription: string
     saveAction: string
     completeWarning: string
+    searchLabel: string
+    searchPlaceholder: string
   }
   archive: {
     eyebrow: string
@@ -58,6 +62,8 @@ export type Dictionary = {
     loading: string
     emptyTitle: string
     emptyDescription: string
+    emptySearchTitle: string
+    emptySearchDescription: string
     completedSectionTitle: string
     completedSectionDescription: string
     deletedSectionTitle: string
@@ -66,6 +72,8 @@ export type Dictionary = {
     deletedOnLabel: string
     restoreAction: string
     backAction: string
+    searchLabel: string
+    searchPlaceholder: string
   }
   addFlow: {
     title: string
@@ -157,6 +165,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       loading: 'Loading your mock backlog…',
       emptyTitle: 'No items match this category yet',
       emptyDescription: 'Try another category.',
+      emptySearchTitle: 'No items match this search',
+      emptySearchDescription: 'Try a different title, tag, note, or category.',
       startAction: 'Start now',
       addAction: 'Add interest',
       suggestAction: 'Get suggestions',
@@ -168,6 +178,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editDescription: 'Update the saved details and keep the item on your dashboard.',
       saveAction: 'Save changes',
       completeWarning: 'This will remove the item from your dashboard and move it to the archive.',
+      searchLabel: 'Search by title, tag, or notes',
+      searchPlaceholder: 'Search title, tag, or notes',
     },
     archive: {
       eyebrow: 'Archive',
@@ -178,6 +190,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       loading: 'Loading your archived mock items…',
       emptyTitle: 'Nothing is archived yet',
       emptyDescription: 'Complete or delete an item on the dashboard to see it here.',
+      emptySearchTitle: 'No archived items match this search',
+      emptySearchDescription: 'Try a different title, tag, or note.',
       completedSectionTitle: 'Completed items',
       completedSectionDescription: 'Restore a completed item to move it back to the pending backlog.',
       deletedSectionTitle: 'Deleted items',
@@ -186,6 +200,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       deletedOnLabel: 'Deleted',
       restoreAction: 'Restore',
       backAction: 'Back to dashboard',
+      searchLabel: 'Search archived items by title, tag, or notes',
+      searchPlaceholder: 'Search title, tag, or notes',
     },
     addFlow: {
       title: 'Add',
@@ -325,6 +341,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       loading: 'Cargando tu backlog mock…',
       emptyTitle: 'Todavía no hay elementos para esta categoría',
       emptyDescription: 'Prueba otra categoría.',
+      emptySearchTitle: 'Ningún elemento coincide con esta búsqueda',
+      emptySearchDescription: 'Prueba con otro título, etiqueta, nota o categoría.',
       startAction: 'Empezar ahora',
       addAction: 'Añadir interés',
       suggestAction: 'Pedir sugerencias',
@@ -336,6 +354,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editDescription: 'Actualiza los detalles guardados y mantén el elemento en tu dashboard.',
       saveAction: 'Guardar cambios',
       completeWarning: 'Esto quitará el elemento de tu dashboard y lo moverá al archivo.',
+      searchLabel: 'Buscar por título, etiqueta o notas',
+      searchPlaceholder: 'Buscar por título, etiqueta o notas',
     },
     archive: {
       eyebrow: 'Archivo',
@@ -346,6 +366,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       loading: 'Cargando tus elementos archivados…',
       emptyTitle: 'Todavía no hay elementos archivados',
       emptyDescription: 'Completa o elimina un elemento en el dashboard para verlo aquí.',
+      emptySearchTitle: 'Ningún elemento archivado coincide con esta búsqueda',
+      emptySearchDescription: 'Prueba con otro título, etiqueta o nota.',
       completedSectionTitle: 'Elementos completados',
       completedSectionDescription: 'Restaura un elemento completado para devolverlo al backlog pendiente.',
       deletedSectionTitle: 'Elementos eliminados',
@@ -354,6 +376,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       deletedOnLabel: 'Eliminado',
       restoreAction: 'Restaurar',
       backAction: 'Volver al dashboard',
+      searchLabel: 'Buscar archivados por título, etiqueta o notas',
+      searchPlaceholder: 'Buscar por título, etiqueta o notas',
     },
     addFlow: {
       title: 'Añadir',

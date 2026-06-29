@@ -82,6 +82,91 @@ describe('DashboardScreen', () => {
     expect(within(article).getByText('Books')).toBeInTheDocument()
   })
 
+  it('filters visible items by title search', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })
+
+    fireEvent.change(
+      screen.getByRole('searchbox', { name: 'Search by title, tag, or notes' }),
+      { target: { value: 'arrival' } },
+    )
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('article')).toHaveLength(1)
+    })
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Arrival' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 2, name: 'Atomic Habits' })).not.toBeInTheDocument()
+  })
+
+  it('filters visible items by tag or notes search', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    await screen.findByRole('heading', { level: 2, name: 'Arrival' })
+
+    const searchInput = screen.getByRole('searchbox', { name: 'Search by title, tag, or notes' })
+
+    fireEvent.change(searchInput, { target: { value: 'spotify' } })
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('article')).toHaveLength(1)
+    })
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Nujabes — Modal Soul' })).toBeInTheDocument()
+
+    fireEvent.change(searchInput, { target: { value: 'focused evening' } })
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('article')).toHaveLength(1)
+    })
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Arrival' })).toBeInTheDocument()
+  })
+
+  it('combines category and search filters', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Books (1)' }))
+    fireEvent.change(
+      screen.getByRole('searchbox', { name: 'Search by title, tag, or notes' }),
+      { target: { value: 'chapters' } },
+    )
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('article')).toHaveLength(1)
+    })
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Atomic Habits' })).toBeInTheDocument()
+
+    fireEvent.change(
+      screen.getByRole('searchbox', { name: 'Search by title, tag, or notes' }),
+      { target: { value: 'arrival' } },
+    )
+
+    await waitFor(() => {
+      expect(screen.queryByRole('article')).not.toBeInTheDocument()
+    })
+
+    expect(screen.getByText('No items match this search')).toBeInTheDocument()
+    expect(screen.getByText('Try a different title, tag, note, or category.')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Books (1)' })).toBeInTheDocument()
+  })
+
   it('keeps status changes local and advances a pending movie into progress', async () => {
     render(
       <LocaleProvider initialLocale="en">

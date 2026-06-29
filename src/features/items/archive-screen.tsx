@@ -5,7 +5,9 @@ import { AppShell } from '@/components/app/app-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { CardCoverBackground } from '@/features/items/card-cover-background'
+import { filterItemsBySearchQuery } from '@/features/items/item-search'
 import { getCategoryMetadata, listCategoryMetadata, type CategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import type { InterestItem, InterestRepository } from '@/features/items/types'
@@ -114,6 +116,7 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     let isMounted = true
@@ -144,6 +147,16 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
     [items],
   )
 
+  const filteredCompletedItems = useMemo(
+    () => filterItemsBySearchQuery(completedItems, searchQuery),
+    [completedItems, searchQuery],
+  )
+
+  const filteredDeletedItems = useMemo(
+    () => filterItemsBySearchQuery(deletedItems, searchQuery),
+    [deletedItems, searchQuery],
+  )
+
   const categorySummaries = useMemo(
     () =>
       listCategoryMetadata(locale).map((category) => ({
@@ -154,6 +167,8 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
   )
 
   const hasArchivedItems = completedItems.length > 0 || deletedItems.length > 0
+  const hasVisibleArchivedItems = filteredCompletedItems.length > 0 || filteredDeletedItems.length > 0
+  const hasSearchQuery = searchQuery.trim().length > 0
 
   async function handleRestore(item: InterestItem) {
     const updatedItem = item.deletedAt !== undefined
@@ -201,7 +216,7 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
         ) : null}
 
         {!isLoading && completedItems.length > 0 ? (
-          <div className={'grid gap-4 sm:grid-cols-2 xl:grid-cols-5'}>
+          <div className={'grid gap-4 md:grid-cols-3 xl:grid-cols-6'}>
             {categorySummaries.map(({ category, count }) => (
               <Card
                 aria-label={`${category.label}: ${count}`}
@@ -218,15 +233,35 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
           </div>
         ) : null}
 
-        {!isLoading && completedItems.length > 0 ? (
+        {!isLoading && hasArchivedItems ? (
+          <Input
+            aria-label={t('archive.searchLabel')}
+            className={'w-full'}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t('archive.searchPlaceholder')}
+            type={'search'}
+            value={searchQuery}
+          />
+        ) : null}
+
+        {!isLoading && hasArchivedItems && !hasVisibleArchivedItems ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>{hasSearchQuery ? t('archive.emptySearchTitle') : t('archive.emptyTitle')}</CardTitle>
+              <CardDescription>{hasSearchQuery ? t('archive.emptySearchDescription') : t('archive.emptyDescription')}</CardDescription>
+            </CardHeader>
+          </Card>
+        ) : null}
+
+        {!isLoading && filteredCompletedItems.length > 0 ? (
           <section className={'space-y-4'}>
             <div className={'flex flex-wrap items-center gap-3'}>
               <h2 className={'text-2xl font-semibold tracking-tight text-foreground'}>{t('archive.completedSectionTitle')}</h2>
-              <Badge variant={'outline'}>{completedItems.length}</Badge>
+              <Badge variant={'outline'}>{filteredCompletedItems.length}</Badge>
             </div>
 
             <div className={'grid gap-4 md:grid-cols-2 2xl:grid-cols-3'}>
-              {completedItems.map((item) => {
+              {filteredCompletedItems.map((item) => {
                 const metadata = getCategoryMetadata(item.category, locale)
 
                 return (
@@ -246,15 +281,15 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
           </section>
         ) : null}
 
-        {!isLoading && deletedItems.length > 0 ? (
+        {!isLoading && filteredDeletedItems.length > 0 ? (
           <section className={'space-y-4'}>
             <div className={'flex flex-wrap items-center gap-3'}>
               <h2 className={'text-2xl font-semibold tracking-tight text-foreground'}>{t('archive.deletedSectionTitle')}</h2>
-              <Badge variant={'outline'}>{deletedItems.length}</Badge>
+              <Badge variant={'outline'}>{filteredDeletedItems.length}</Badge>
             </div>
 
             <div className={'grid gap-4 md:grid-cols-2 2xl:grid-cols-3'}>
-              {deletedItems.map((item) => {
+              {filteredDeletedItems.map((item) => {
                 const metadata = getCategoryMetadata(item.category, locale)
 
                 return (

@@ -4,8 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AppShell } from '@/components/app/app-shell'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { CategoryFilters } from '@/features/items/category-filters'
 import { InterestCard } from '@/features/items/interest-card'
+import { filterItemsBySearchQuery } from '@/features/items/item-search'
 import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import { getNextStatus } from '@/features/items/status-flow'
@@ -38,6 +40,7 @@ export function DashboardScreen({
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilterValue>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -80,10 +83,14 @@ export function DashboardScreen({
   )
 
   const filteredItems = useMemo(
-    () =>
+    () => filterItemsBySearchQuery(
       activeItems.filter((item) => selectedCategory === 'all' || item.category === selectedCategory),
-    [activeItems, selectedCategory],
+      searchQuery,
+    ),
+    [activeItems, searchQuery, selectedCategory],
   )
+
+  const hasSearchQuery = searchQuery.trim().length > 0
 
   async function handleAdvanceStatus(item: InterestItem) {
     const nextStatus = getNextStatus(item.status)
@@ -149,13 +156,24 @@ export function DashboardScreen({
     >
       <div className={'space-y-6'}>
         <div className={'flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between'}>
-          <CategoryFilters
-            allLabel={t('dashboard.allCategories')}
-            categories={categoriesWithCounts}
-            label={t('dashboard.filtersLabel')}
-            onValueChange={setSelectedCategory}
-            totalCount={activeItems.length}
-            value={selectedCategory}
+          <div className={'flex-1'}>
+            <CategoryFilters
+              allLabel={t('dashboard.allCategories')}
+              categories={categoriesWithCounts}
+              label={t('dashboard.filtersLabel')}
+              onValueChange={setSelectedCategory}
+              totalCount={activeItems.length}
+              value={selectedCategory}
+            />
+          </div>
+
+          <Input
+            aria-label={t('dashboard.searchLabel')}
+            className={'w-full lg:max-w-sm'}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t('dashboard.searchPlaceholder')}
+            type={'search'}
+            value={searchQuery}
           />
         </div>
 
@@ -170,8 +188,8 @@ export function DashboardScreen({
         {!isLoading && filteredItems.length === 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle>{t('dashboard.emptyTitle')}</CardTitle>
-              <CardDescription>{t('dashboard.emptyDescription')}</CardDescription>
+              <CardTitle>{hasSearchQuery ? t('dashboard.emptySearchTitle') : t('dashboard.emptyTitle')}</CardTitle>
+              <CardDescription>{hasSearchQuery ? t('dashboard.emptySearchDescription') : t('dashboard.emptyDescription')}</CardDescription>
             </CardHeader>
           </Card>
         ) : null}
