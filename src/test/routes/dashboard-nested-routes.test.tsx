@@ -224,7 +224,7 @@ describe('dashboard nested routes', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
-    expect(screen.getByText('v0.3')).toBeInTheDocument()
+    expect(screen.getByText('v0.4')).toBeInTheDocument()
   })
 
   it('requires PocketBase auth before rendering the settings route content', async () => {
@@ -234,7 +234,7 @@ describe('dashboard nested routes', () => {
 
     expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Settings' })).not.toBeInTheDocument()
-    expect(screen.queryByText('v0.3')).not.toBeInTheDocument()
+    expect(screen.queryByText('v0.4')).not.toBeInTheDocument()
   })
 
   it('does not expose a logout action on the authenticated dashboard route', async () => {

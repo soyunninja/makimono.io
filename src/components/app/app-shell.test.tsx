@@ -1,11 +1,17 @@
 import { render, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { describe, expect, it } from 'vitest'
 
 import { AppShell } from '@/components/app/app-shell'
+import { LocaleProvider } from '@/i18n/locale-provider'
+
+function renderAppShell(ui: ReactElement) {
+  return render(<LocaleProvider initialLocale="en">{ui}</LocaleProvider>)
+}
 
 describe('AppShell', () => {
   it('renders the branded shell content and children', () => {
-    render(
+    renderAppShell(
       <AppShell
         eyebrow="Foundation slice"
         title="Makimono is ready for the next mock UI work unit"
@@ -30,7 +36,7 @@ describe('AppShell', () => {
   })
 
   it('supports plain header and content surfaces for screen-specific layouts', () => {
-    render(
+    renderAppShell(
       <AppShell
         actions={<button type="button">Open actions</button>}
         contentVariant="plain"

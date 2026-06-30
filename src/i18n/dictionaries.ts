@@ -21,6 +21,9 @@ export type Dictionary = {
     languageLabel: string
     foundationStatus: string
     closeLabel: string
+    footerRights: string
+    footerCaboPrefix: string
+    footerCaboSuffix: string
   }
   auth: {
     title: string
@@ -177,6 +180,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
       languageLabel: 'Language',
       foundationStatus: 'Foundation slice',
       closeLabel: 'Close',
+      footerRights: 'All rights reserved',
+      footerCaboPrefix: 'Made under the',
+      footerCaboSuffix: 'of the Cabo de Gata beaches.',
     },
     auth: {
       title: 'Sign in to your backlog',
@@ -399,6 +405,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
       languageLabel: 'Idioma',
       foundationStatus: 'Base inicial',
       closeLabel: 'Cerrar',
+      footerRights: 'Todos los derechos reservados',
+      footerCaboPrefix: 'Creado bajo el',
+      footerCaboSuffix: 'de las playas del Cabo de Gata.',
     },
     auth: {
       title: 'Accede a tu backlog',

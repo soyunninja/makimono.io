@@ -84,6 +84,9 @@
   --color-accent-red: #f7768e;
   --color-accent-green: #9ece6a;
   --color-accent-yellow: #e0af68;
+  --color-brand-sun: #fba87a;
+  --color-paper: #ffffff;
+  --color-paper-foreground: #16161e;
 }
 
 @layer base {

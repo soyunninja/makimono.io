@@ -55,7 +55,7 @@ type DashboardLogoTitleProps = {
 
 function DashboardLogoTitle({ preference, title }: DashboardLogoTitleProps) {
   return (
-    <span className={'relative block h-12 w-48 sm:h-14 sm:w-56'}>
+    <span className={'relative block h-10 w-10 sm:h-14 sm:w-14'}>
       <span className={'sr-only'}>{title}</span>
       {Object.entries(dashboardLogoSources).map(([logoPreference, src]) => (
         <img
@@ -215,12 +215,12 @@ export function DashboardScreen({
       actions={(
         <div className={'flex flex-nowrap items-center justify-end gap-3'}>
           {onAddItem ? (
-            <Button className={'bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90 [&_svg]:size-6'} onClick={onAddItem} size={'icon'} type={'button'}>
+            <Button className={'bg-brand-sun text-night hover:bg-brand-sun/90 [&_svg]:size-6'} onClick={onAddItem} size={'icon'} type={'button'}>
               <Plus aria-hidden={'true'} className={'size-6'} />
               <span className={'sr-only'}>{addActionLabel}</span>
             </Button>
           ) : (
-            <Button asChild className={'bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90 [&_svg]:size-6'} size={'icon'}>
+            <Button asChild className={'bg-brand-sun text-night hover:bg-brand-sun/90 [&_svg]:size-6'} size={'icon'}>
               <a href={'/dashboard/add'} title={addActionLabel}>
                 <Plus aria-hidden={'true'} className={'size-6'} />
                 <span className={'sr-only'}>{addActionLabel}</span>
@@ -255,6 +255,7 @@ export function DashboardScreen({
       title={<DashboardLogoTitle preference={dashboardDisplayPreference} title={t('dashboard.title')} />}
       titleActions={(
         <DashboardDisplayPreferenceControl
+          className={'-ml-1 gap-1 sm:ml-0 sm:gap-2'}
           name={'dashboard-display-preference-header'}
           onChange={setDashboardDisplayPreference}
           value={dashboardDisplayPreference}

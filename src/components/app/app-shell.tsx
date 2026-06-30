@@ -1,5 +1,6 @@
 import type { PropsWithChildren, ReactNode } from 'react'
 
+import { AppFooter } from '@/components/app/app-footer'
 import { cn } from '@/lib/utils'
 
 type AppShellSurfaceVariant = 'card' | 'plain'
@@ -27,12 +28,12 @@ export function AppShell({
   children,
 }: AppShellProps) {
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
+    <main className="flex min-h-screen flex-col px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8">
         <header
           className={cn(
             headerVariant === 'card'
-              ? 'rounded-3xl border border-border/70 bg-card/80 p-6 shadow-2xl shadow-black/20 backdrop-blur sm:p-8'
+              ? 'rounded-3xl border border-border/70 bg-card/80 p-6 shadow-2xl shadow-night/20 backdrop-blur sm:p-8'
               : undefined,
           )}
           data-variant={headerVariant}
@@ -66,7 +67,7 @@ export function AppShell({
         <section
           className={cn(
             contentVariant === 'card'
-              ? 'rounded-3xl border border-border/70 bg-card/65 p-6 shadow-xl shadow-black/20 backdrop-blur sm:p-8'
+              ? 'rounded-3xl border border-border/70 bg-card/65 p-6 shadow-xl shadow-night/20 backdrop-blur sm:p-8'
               : 'min-w-0',
             className,
           )}
@@ -75,6 +76,7 @@ export function AppShell({
           {children}
         </section>
       </div>
+      <AppFooter className="mx-auto mt-14 w-full max-w-6xl sm:mt-16" />
     </main>
   )
 }

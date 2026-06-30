@@ -36,7 +36,7 @@ describe('SettingsScreen', () => {
     expect(screen.getByRole('radio', { name: 'List' })).not.toBeChecked()
     expect(screen.getByRole('radio', { name: 'Covers' })).not.toBeChecked()
     expect(screen.getByText('Version')).toBeInTheDocument()
-    expect(screen.getByText('v0.3')).toBeInTheDocument()
+    expect(screen.getByText('v0.4')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Logout' }))
 
