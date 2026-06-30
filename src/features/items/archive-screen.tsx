@@ -229,17 +229,17 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
         ) : null}
 
         {!isLoading && completedItems.length > 0 ? (
-          <div className={'grid gap-4 md:grid-cols-3 xl:grid-cols-6'}>
+          <div className={'grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-6'} data-testid={'archive-category-summary-grid'}>
             {categorySummaries.map(({ category, count }) => (
               <Card
                 aria-label={`${category.label}: ${count}`}
-                className={cn('bg-background/40', category.surfaceClassName)}
+                className={cn('rounded-2xl bg-background/40 sm:rounded-3xl', category.surfaceClassName)}
                 key={category.key}
                 role={'group'}
               >
-                <CardHeader>
-                  <CardDescription className={category.textClassName}>{category.label}</CardDescription>
-                  <CardTitle className={'text-3xl'}>{count}</CardTitle>
+                <CardHeader className={'gap-1 p-3 sm:gap-2 sm:p-6'}>
+                  <CardDescription className={cn('text-xs leading-4 sm:text-sm sm:leading-6', category.textClassName)}>{category.label}</CardDescription>
+                  <CardTitle className={'text-xl sm:text-3xl'}>{count}</CardTitle>
                 </CardHeader>
               </Card>
             ))}

@@ -237,7 +237,7 @@ describe('dashboard nested routes', () => {
     expect(screen.queryByText('Sign out of the current PocketBase session.')).not.toBeInTheDocument()
     expect(screen.queryByRole('radiogroup', { name: 'Dashboard display' })).not.toBeInTheDocument()
     expect(screen.queryByText('Current app version.')).not.toBeInTheDocument()
-    expect(screen.getByText('v0.5')).toBeInTheDocument()
+    expect(screen.getByText('v0.6')).toBeInTheDocument()
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
@@ -253,7 +253,7 @@ describe('dashboard nested routes', () => {
 
     expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Settings' })).not.toBeInTheDocument()
-    expect(screen.queryByText('v0.5')).not.toBeInTheDocument()
+    expect(screen.queryByText('v0.6')).not.toBeInTheDocument()
   })
 
   it('does not expose a logout action on the authenticated dashboard route', async () => {

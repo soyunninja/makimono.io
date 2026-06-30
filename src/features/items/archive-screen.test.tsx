@@ -77,6 +77,8 @@ describe('ArchiveScreen', () => {
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
 
+    expect(screen.getByTestId('archive-category-summary-grid')).toHaveClass('grid-cols-2', 'gap-2', 'md:grid-cols-3', 'xl:grid-cols-6')
+
     expect(screen.getByRole('group', { name: 'Series: 0' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Movies: 0' })).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Games: 1' })).toBeInTheDocument()

@@ -141,7 +141,7 @@ describe('FoundationLandingScreen', () => {
         name: 'Makimono',
       }),
     ).toBeInTheDocument()
-    expect(screen.getByText('v0.5')).toBeInTheDocument()
+    expect(screen.getByText('v0.6')).toBeInTheDocument()
     expect(screen.getByText(/personalized suggestions/i)).toBeInTheDocument()
     expect(screen.getByText(/list subscriptions/i)).toBeInTheDocument()
   })
@@ -155,7 +155,7 @@ describe('FoundationLandingScreen', () => {
         name: 'Makimono',
       }),
     ).toBeInTheDocument()
-    expect(screen.getByText('v0.5')).toBeInTheDocument()
+    expect(screen.getByText('v0.6')).toBeInTheDocument()
     expect(screen.getByText(/listas compartidas/i)).toBeInTheDocument()
   })
 

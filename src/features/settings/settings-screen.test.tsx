@@ -39,7 +39,7 @@ describe('SettingsScreen', () => {
     expect(screen.queryByRole('radiogroup', { name: 'Dashboard display' })).not.toBeInTheDocument()
     expect(screen.getByText('Version')).toBeInTheDocument()
     expect(screen.queryByText('Current app version.')).not.toBeInTheDocument()
-    expect(screen.getByText('v0.5')).toBeInTheDocument()
+    expect(screen.getByText('v0.6')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Logout' }))
 

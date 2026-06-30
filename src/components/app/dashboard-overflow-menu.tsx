@@ -42,7 +42,7 @@ export function DashboardOverflowMenu({ currentView }: DashboardOverflowMenuProp
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button aria-label={t('dashboard.moreActions')} className={'text-white/80 hover:text-white'} size={'icon'} type={'button'} variant={'outline'}>
+        <Button aria-label={t('dashboard.moreActions')} className={'size-9 text-white/80 hover:text-white sm:size-11'} size={'icon'} type={'button'} variant={'outline'}>
           <EllipsisVertical aria-hidden={'true'} />
         </Button>
       </DropdownMenuTrigger>

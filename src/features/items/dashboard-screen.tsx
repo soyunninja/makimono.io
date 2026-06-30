@@ -210,16 +210,16 @@ export function DashboardScreen({
   return (
     <AppShell
       actions={(
-        <div className={'flex flex-nowrap items-center justify-end gap-3'}>
+        <div className={'flex flex-nowrap items-center justify-end gap-2 sm:gap-3'}>
           {onAddItem ? (
-            <Button className={'bg-brand-sun text-night hover:bg-brand-sun/90 [&_svg]:size-6'} onClick={onAddItem} size={'icon'} type={'button'}>
-              <Plus aria-hidden={'true'} className={'size-6'} />
+            <Button className={'size-9 bg-brand-sun text-night hover:bg-brand-sun/90 sm:size-11 [&_svg]:size-5 sm:[&_svg]:size-6'} onClick={onAddItem} size={'icon'} type={'button'}>
+              <Plus aria-hidden={'true'} className={'size-5 sm:size-6'} />
               <span className={'sr-only'}>{addActionLabel}</span>
             </Button>
           ) : (
-            <Button asChild className={'bg-brand-sun text-night hover:bg-brand-sun/90 [&_svg]:size-6'} size={'icon'}>
+            <Button asChild className={'size-9 bg-brand-sun text-night hover:bg-brand-sun/90 sm:size-11 [&_svg]:size-5 sm:[&_svg]:size-6'} size={'icon'}>
               <a href={'/dashboard/add'} title={addActionLabel}>
-                <Plus aria-hidden={'true'} className={'size-6'} />
+                <Plus aria-hidden={'true'} className={'size-5 sm:size-6'} />
                 <span className={'sr-only'}>{addActionLabel}</span>
               </a>
             </Button>
