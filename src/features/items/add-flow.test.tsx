@@ -31,6 +31,10 @@ describe('AdaptiveAddFlow', () => {
     )
 
     expect(screen.getByRole('heading', { level: 1, name: 'Add' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Add' })).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="drawer-content"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="dialog-content"]')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-slot="sheet-content"]')).not.toBeInTheDocument()
     expect(screen.queryByText('Choose a category and save the basics.')).not.toBeInTheDocument()
     expect(screen.queryByText('Category details')).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Details' })).not.toBeInTheDocument()

@@ -7,6 +7,7 @@ type AppShellSurfaceVariant = 'card' | 'plain'
 type AppShellProps = PropsWithChildren<{
   eyebrow?: string
   title: string
+  titleActions?: ReactNode
   description?: string
   actions?: ReactNode
   headerVariant?: AppShellSurfaceVariant
@@ -17,6 +18,7 @@ type AppShellProps = PropsWithChildren<{
 export function AppShell({
   eyebrow,
   title,
+  titleActions,
   description,
   actions,
   headerVariant = 'card',
@@ -43,9 +45,12 @@ export function AppShell({
                 </span>
               ) : null}
               <div className={cn(description ? 'space-y-3' : undefined)}>
-                <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-                  {title}
-                </h1>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+                    {title}
+                  </h1>
+                  {titleActions ? <div className="flex shrink-0 items-center">{titleActions}</div> : null}
+                </div>
                 {description ? (
                   <p className="max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
                     {description}

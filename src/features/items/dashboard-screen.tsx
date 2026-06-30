@@ -6,17 +6,26 @@ import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { CategoryFilters } from '@/features/items/category-filters'
+import { DashboardCoverItem } from '@/features/items/dashboard-cover-item'
+import { DashboardDisplayPreferenceControl } from '@/features/items/dashboard-display-preference-control'
+import { useDashboardDisplayPreference } from '@/features/items/dashboard-display-preference'
+import {
+  groupActiveDashboardItemsByStatus,
+  groupOrderedDashboardItemsByCategorySections,
+  orderActiveDashboardItems,
+} from '@/features/items/dashboard-item-ordering'
+import type { DashboardItemInteractionProps } from '@/features/items/dashboard-item-interactions'
+import { DashboardListItem } from '@/features/items/dashboard-list-item'
 import { InterestCard } from '@/features/items/interest-card'
 import { filterItemsBySearchQuery } from '@/features/items/item-search'
-import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
+import { listCategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import { getNextStatus } from '@/features/items/status-flow'
-import type { Category, InterestItem, InterestRepository, ItemStatus } from '@/features/items/types'
+import type { Category, InterestItem, InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
+import { cn } from '@/lib/utils'
 
 type CategoryFilterValue = Category | 'all'
-
-const activeDashboardStatuses = new Set<ItemStatus>(['pending', 'in_progress'])
 
 type DashboardScreenProps = {
   reloadKey?: string | number
@@ -43,6 +52,7 @@ export function DashboardScreen({
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilterValue>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [dashboardDisplayPreference, setDashboardDisplayPreference] = useDashboardDisplayPreference()
 
   useEffect(() => {
     repositoryRef.current = repository
@@ -56,7 +66,7 @@ export function DashboardScreen({
       const nextItems = await repositoryRef.current.listItems()
 
       if (isMounted) {
-        setItems(nextItems)
+        setItems(orderActiveDashboardItems(nextItems))
         setIsLoading(false)
       }
     }
@@ -70,10 +80,7 @@ export function DashboardScreen({
 
   const categories = useMemo(() => listCategoryMetadata(locale), [locale])
 
-  const activeItems = useMemo(
-    () => items.filter((item) => activeDashboardStatuses.has(item.status)),
-    [items],
-  )
+  const activeItems = items
 
   const categoriesWithCounts = useMemo(
     () => categories.map((category) => ({
@@ -91,6 +98,16 @@ export function DashboardScreen({
     [activeItems, searchQuery, selectedCategory],
   )
 
+  const categoryMetadataByKey = useMemo(
+    () => new Map(categories.map((category) => [category.key, category])),
+    [categories],
+  )
+
+  const groupedFilteredItems = useMemo(
+    () => groupOrderedDashboardItemsByCategorySections(filteredItems),
+    [filteredItems],
+  )
+
   const hasSearchQuery = searchQuery.trim().length > 0
 
   async function handleAdvanceStatus(item: InterestItem) {
@@ -106,11 +123,31 @@ export function DashboardScreen({
       return
     }
 
-    setItems((currentItems) => (
-      updatedItem.status === 'completed'
+    setItems((currentItems) => {
+      const nextItems = updatedItem.status === 'completed'
         ? currentItems.filter((currentItem) => currentItem.id !== updatedItem.id)
         : currentItems.map((currentItem) => (currentItem.id === updatedItem.id ? updatedItem : currentItem))
-    ))
+
+      return groupActiveDashboardItemsByStatus(nextItems)
+    })
+  }
+
+  function getDashboardItemInteractionProps(
+    item: InterestItem,
+    metadata: DashboardItemInteractionProps['metadata'],
+  ): DashboardItemInteractionProps {
+    return {
+      item,
+      metadata,
+      onAdvance: handleAdvanceStatus,
+      onEdit: onEditItem ? () => onEditItem(item.id) : undefined,
+      cancelLabel: t('addFlow.cancel'),
+      closeLabel: t('app.closeLabel'),
+      completeWarningLabel: t('dashboard.completeWarning'),
+      editHref: `/dashboard/edit/${item.id}`,
+      editLabel: t('dashboard.editAction'),
+      startLabel: t('dashboard.startAction'),
+    }
   }
 
   return (
@@ -160,6 +197,14 @@ export function DashboardScreen({
       contentVariant={'plain'}
       headerVariant={'plain'}
       title={t('dashboard.title')}
+      titleActions={(
+        <DashboardDisplayPreferenceControl
+          name={'dashboard-display-preference-header'}
+          onChange={setDashboardDisplayPreference}
+          value={dashboardDisplayPreference}
+          variant={'icon'}
+        />
+      )}
     >
       <div className={'space-y-6'}>
         <div className={'flex flex-col gap-4 lg:flex-row lg:items-end'}>
@@ -205,23 +250,67 @@ export function DashboardScreen({
           </Card>
         ) : null}
 
-        {!isLoading && filteredItems.length > 0 ? (
-          <div className={'grid gap-4 md:grid-cols-2 2xl:grid-cols-3'}>
-            {filteredItems.map((item) => (
-              <InterestCard
-                item={item}
-                key={item.id}
-                metadata={getCategoryMetadata(item.category, locale)}
-                onAdvance={handleAdvanceStatus}
-                onEdit={onEditItem ? () => onEditItem(item.id) : undefined}
-                cancelLabel={t('addFlow.cancel')}
-                closeLabel={t('app.closeLabel')}
-                completeWarningLabel={t('dashboard.completeWarning')}
-                editHref={`/dashboard/edit/${item.id}`}
-                editLabel={t('dashboard.editAction')}
-                startLabel={t('dashboard.startAction')}
-              />
-            ))}
+        {!isLoading && filteredItems.length > 0 && dashboardDisplayPreference === 'cards' ? (
+          <div className={'grid gap-4 md:grid-cols-2 2xl:grid-cols-3'} data-testid={'dashboard-cards-grid'}>
+            {filteredItems.map((item) => {
+              const metadata = categoryMetadataByKey.get(item.category)
+
+              if (!metadata) {
+                return null
+              }
+
+              return (
+                <InterestCard
+                  key={item.id}
+                  {...getDashboardItemInteractionProps(item, metadata)}
+                />
+              )
+            })}
+          </div>
+        ) : null}
+
+        {!isLoading && filteredItems.length > 0 && dashboardDisplayPreference === 'list' ? (
+          <div className={'space-y-8'} data-testid={'dashboard-list'}>
+            {groupedFilteredItems.map(({ key, category, items: categoryItems }) => {
+              const metadata = categoryMetadataByKey.get(category)
+
+              if (!metadata) {
+                return null
+              }
+
+              return (
+                <section className={'space-y-3'} key={key}>
+                  <h2 className={cn('text-xl font-semibold tracking-tight', metadata.textClassName)}>{metadata.label}</h2>
+                  <div className={'grid gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-3'}>
+                    {categoryItems.map((item) => (
+                      <DashboardListItem
+                        key={item.id}
+                        {...getDashboardItemInteractionProps(item, metadata)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        ) : null}
+
+        {!isLoading && filteredItems.length > 0 && dashboardDisplayPreference === 'covers' ? (
+          <div className={'columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4'} data-testid={'dashboard-covers-grid'}>
+            {filteredItems.map((item) => {
+              const metadata = categoryMetadataByKey.get(item.category)
+
+              if (!metadata) {
+                return null
+              }
+
+              return (
+                <DashboardCoverItem
+                  key={item.id}
+                  {...getDashboardItemInteractionProps(item, metadata)}
+                />
+              )
+            })}
           </div>
         ) : null}
       </div>

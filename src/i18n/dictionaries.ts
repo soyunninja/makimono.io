@@ -100,6 +100,12 @@ export type Dictionary = {
     description: string
     languageTitle: string
     languageDescription: string
+    dashboardDisplayTitle: string
+    dashboardDisplayDescription: string
+    dashboardDisplayLabel: string
+    dashboardDisplayCards: string
+    dashboardDisplayList: string
+    dashboardDisplayCovers: string
     sessionTitle: string
     sessionDescription: string
     versionTitle: string
@@ -259,6 +265,12 @@ export const dictionaries: Record<Locale, Dictionary> = {
       description: 'Manage language, session, and app details.',
       languageTitle: 'Language',
       languageDescription: 'Choose the interface language.',
+      dashboardDisplayTitle: 'Dashboard display',
+      dashboardDisplayDescription: 'Choose how dashboard cards are shown.',
+      dashboardDisplayLabel: 'Dashboard display',
+      dashboardDisplayCards: 'Cards',
+      dashboardDisplayList: 'List',
+      dashboardDisplayCovers: 'Covers',
       sessionTitle: 'Session',
       sessionDescription: 'Sign out of the current PocketBase session.',
       versionTitle: 'Version',
@@ -466,6 +478,12 @@ export const dictionaries: Record<Locale, Dictionary> = {
       description: 'Gestiona el idioma, la sesión y los detalles de la app.',
       languageTitle: 'Idioma',
       languageDescription: 'Elige el idioma de la interfaz.',
+      dashboardDisplayTitle: 'Visualización del dashboard',
+      dashboardDisplayDescription: 'Elige cómo se muestran las tarjetas del dashboard.',
+      dashboardDisplayLabel: 'Visualización del dashboard',
+      dashboardDisplayCards: 'Tarjetas',
+      dashboardDisplayList: 'Listado',
+      dashboardDisplayCovers: 'Carátulas',
       sessionTitle: 'Sesión',
       sessionDescription: 'Cierra la sesión actual de PocketBase.',
       versionTitle: 'Versión',

@@ -4,6 +4,7 @@ import { Plus, Save, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -317,7 +318,6 @@ export function AdaptiveAddFlow({
   onRequestClose,
 }: AdaptiveAddFlowProps) {
   const { locale, t } = useLocale()
-  const resolvedIsDesktop = useDesktopBreakpoint(isDesktop)
   const categories = useMemo(() => listCategoryMetadata(locale), [locale])
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [title, setTitle] = useState('')
@@ -385,9 +385,11 @@ export function AdaptiveAddFlow({
 
   const formContent = (
     <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('addFlow.title')}</h1>
-      </div>
+      <DrawerHeader className="p-0 text-left">
+        <DrawerTitle asChild className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1>{t('addFlow.title')}</h1>
+        </DrawerTitle>
+      </DrawerHeader>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
         <InterestDetailsFields
@@ -447,25 +449,8 @@ export function AdaptiveAddFlow({
     </div>
   )
 
-  if (resolvedIsDesktop) {
-    return (
-      <Dialog
-        onOpenChange={(open) => {
-          if (!open) {
-            onRequestClose?.()
-          }
-        }}
-        open
-      >
-        <DialogContent className="max-h-[90vh] overflow-hidden" closeLabel={t('app.closeLabel')}>
-          {formContent}
-        </DialogContent>
-      </Dialog>
-    )
-  }
-
   return (
-    <Sheet
+    <Drawer
       onOpenChange={(open) => {
         if (!open) {
           onRequestClose?.()
@@ -473,10 +458,10 @@ export function AdaptiveAddFlow({
       }}
       open
     >
-      <SheetContent className="rounded-t-3xl border-x border-t border-border/70" closeLabel={t('app.closeLabel')} side="bottom">
+      <DrawerContent closeLabel={t('app.closeLabel')}>
         {formContent}
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   )
 }
 

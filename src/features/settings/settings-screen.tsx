@@ -3,6 +3,8 @@ import { LanguageToggle } from '@/components/app/language-toggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provider'
+import { DashboardDisplayPreferenceControl } from '@/features/items/dashboard-display-preference-control'
+import { useDashboardDisplayPreference } from '@/features/items/dashboard-display-preference'
 import { useLocale } from '@/i18n/locale-provider'
 
 const appVersion = 'v0.3'
@@ -10,6 +12,7 @@ const appVersion = 'v0.3'
 export function SettingsScreen() {
   const { t } = useLocale()
   const { isAuthenticated, logout } = useOptionalPocketBaseAuth()
+  const [dashboardDisplayPreference, setDashboardDisplayPreference] = useDashboardDisplayPreference()
 
   return (
     <AppShell
@@ -31,6 +34,19 @@ export function SettingsScreen() {
           </CardHeader>
           <CardContent>
             <LanguageToggle />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settings.dashboardDisplayTitle')}</CardTitle>
+            <CardDescription>{t('settings.dashboardDisplayDescription')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DashboardDisplayPreferenceControl
+              onChange={setDashboardDisplayPreference}
+              value={dashboardDisplayPreference}
+            />
           </CardContent>
         </Card>
 

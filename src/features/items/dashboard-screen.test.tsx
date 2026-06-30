@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DashboardScreen } from '@/features/items/dashboard-screen'
+import { writeDashboardDisplayPreference } from '@/features/items/dashboard-display-preference'
 import {
   createMockInterestRepository,
   defaultMockItems,
@@ -25,6 +26,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.restoreAllMocks()
   window.localStorage.clear()
   resetAppInterestRepository()
 })
@@ -40,6 +42,9 @@ describe('DashboardScreen', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Your interests' }),
     ).toBeInTheDocument()
+    expect(await screen.findByTestId('dashboard-cards-grid')).toBeInTheDocument()
+    expect(screen.queryByTestId('dashboard-list')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('dashboard-covers-grid')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(await screen.findAllByRole('article')).toHaveLength(4)
@@ -56,6 +61,252 @@ describe('DashboardScreen', () => {
 
     expect(screen.queryByText('Track mock items by category and move them through the backlog.')).not.toBeInTheDocument()
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+  })
+
+  it('groups list display items by category and renders only the colored action icon plus title', async () => {
+    writeDashboardDisplayPreference('list')
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    const list = await screen.findByTestId('dashboard-list')
+
+    expect(list).toBeInTheDocument()
+    expect(screen.queryByTestId('dashboard-cards-grid')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('dashboard-covers-grid')).not.toBeInTheDocument()
+    expect(await screen.findAllByRole('article')).toHaveLength(4)
+
+    const seriesHeading = within(list).getByRole('heading', { level: 2, name: 'Series' })
+    const moviesHeading = within(list).getByRole('heading', { level: 2, name: 'Movies' })
+    const booksHeading = within(list).getByRole('heading', { level: 2, name: 'Books' })
+    const musicHeading = within(list).getByRole('heading', { level: 2, name: 'Music' })
+    const severanceLink = within(list).getByRole('link', { name: 'Edit: Severance' })
+    const arrivalLink = within(list).getByRole('link', { name: 'Edit: Arrival' })
+    const arrivalArticle = arrivalLink.closest('article') as HTMLElement
+    const arrivalAction = within(arrivalArticle).getByRole('button', { name: 'Start now: Arrival' })
+
+    expect(seriesHeading.compareDocumentPosition(severanceLink)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(moviesHeading.compareDocumentPosition(arrivalLink)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(booksHeading).toBeInTheDocument()
+    expect(musicHeading).toBeInTheDocument()
+    expect(moviesHeading.nextElementSibling).toHaveClass('xl:grid-cols-3')
+    expect(arrivalAction).toHaveClass('text-accent-red')
+    expect(arrivalLink).toHaveClass('text-accent-red')
+    expect(arrivalArticle.textContent?.trim()).toBe('Arrival')
+    expect(within(arrivalArticle).queryByText('Movies')).not.toBeInTheDocument()
+    expect(within(arrivalArticle).queryByText('Planned')).not.toBeInTheDocument()
+    expect(within(arrivalArticle).queryByText('Keep for a focused evening.')).not.toBeInTheDocument()
+    expect(within(arrivalArticle).queryByText('drama')).not.toBeInTheDocument()
+
+    fireEvent.click(arrivalAction)
+
+    await waitFor(() => {
+      expect(within(list).getByRole('button', { name: 'Mark as watched: Arrival' })).toBeInTheDocument()
+    })
+
+    expect(within(list).queryByText('In progress')).not.toBeInTheDocument()
+  })
+
+  it('renders cards with started items before pending items and keeps the loaded random order while filtering', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0)
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    const cardsGrid = await screen.findByTestId('dashboard-cards-grid')
+
+    expect(within(cardsGrid).getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      'Atomic Habits',
+      'Severance',
+      'Nujabes — Modal Soul',
+      'Arrival',
+    ])
+    expect(screen.queryByRole('heading', { level: 2, name: 'Celeste' })).not.toBeInTheDocument()
+    expect(random).toHaveBeenCalledTimes(2)
+
+    fireEvent.change(
+      screen.getByRole('searchbox', { name: 'Search by title, tag, or notes' }),
+      { target: { value: 'arrival' } },
+    )
+
+    await waitFor(() => {
+      expect(within(cardsGrid).getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual([
+        'Arrival',
+      ])
+    })
+    expect(random).toHaveBeenCalledTimes(2)
+  })
+
+  it('renders list display with one section per category and started items before pending items inside it', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.99)
+    writeDashboardDisplayPreference('list')
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen
+          repository={createMockInterestRepository([
+            {
+              ...defaultMockItems[3],
+              id: 'book-first',
+              title: 'Book First',
+            },
+            {
+              ...defaultMockItems[0],
+              id: 'series-middle',
+              title: 'Series Middle',
+            },
+            {
+              ...defaultMockItems[3],
+              id: 'book-second',
+              title: 'Book Second',
+            },
+            {
+              ...defaultMockItems[3],
+              id: 'book-pending',
+              title: 'Book Pending',
+              status: 'pending',
+            },
+            {
+              ...defaultMockItems[1],
+              id: 'movie-pending',
+              title: 'Movie Pending',
+            },
+          ])}
+        />
+      </LocaleProvider>,
+    )
+
+    const list = await screen.findByTestId('dashboard-list')
+    const booksHeading = within(list).getByRole('heading', { level: 2, name: 'Books' })
+    const booksSection = booksHeading.closest('section') as HTMLElement
+
+    expect(within(list).getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'Book First',
+      'Book Second',
+      'Book Pending',
+      'Series Middle',
+      'Movie Pending',
+    ])
+    expect(within(list).getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      'Books',
+      'Series',
+      'Movies',
+    ])
+    expect(within(list).getAllByRole('heading', { level: 2, name: 'Books' })).toHaveLength(1)
+    expect(within(booksSection).getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'Book First',
+      'Book Second',
+      'Book Pending',
+    ])
+  })
+
+  it('renders cover display in the same started-before-pending loaded order', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    writeDashboardDisplayPreference('covers')
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    const coversGrid = await screen.findByTestId('dashboard-covers-grid')
+
+    expect(within(coversGrid).getAllByRole('link').map((link) => link.getAttribute('aria-label'))).toEqual([
+      'Edit: Atomic Habits',
+      'Edit: Severance',
+      'Edit: Nujabes — Modal Soul',
+      'Edit: Arrival',
+    ])
+  })
+
+  it('renders cover display as cover-only tiles with top-left action controls and accessible fallbacks', async () => {
+    writeDashboardDisplayPreference('covers')
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen
+          repository={createMockInterestRepository([
+            {
+              ...defaultMockItems[0],
+              coverImageUrl: 'https://example.test/severance.jpg',
+            },
+            {
+              ...defaultMockItems[1],
+              coverImageUrl: 'https://example.test/arrival.jpg',
+            },
+            {
+              ...defaultMockItems[3],
+              coverImageUrl: undefined,
+            },
+          ])}
+        />
+      </LocaleProvider>,
+    )
+
+    const coversGrid = await screen.findByTestId('dashboard-covers-grid')
+
+    expect(coversGrid).toBeInTheDocument()
+    expect(coversGrid).toHaveClass('columns-1', 'sm:columns-2', 'lg:columns-3', 'xl:columns-4')
+    expect(coversGrid).not.toHaveClass('grid', 'xl:grid-cols-3')
+    expect(screen.queryByTestId('dashboard-cards-grid')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('dashboard-list')).not.toBeInTheDocument()
+    expect(await screen.findAllByRole('article')).toHaveLength(3)
+
+    const coverImages = screen.getAllByTestId('dashboard-cover-image')
+    const severanceAction = screen.getByRole('button', { name: 'Mark as watched: Severance' })
+    const arrivalAction = screen.getByRole('button', { name: 'Start now: Arrival' })
+
+    expect(coverImages).toHaveLength(2)
+    expect(coverImages[0]).toHaveClass('block', 'h-auto', 'w-full')
+    expect(coverImages[0]).not.toHaveClass('max-h-[32rem]')
+    expect(coverImages[0]).not.toHaveClass('object-contain')
+    expect(coverImages[0]).not.toHaveClass('object-cover')
+    expect(coverImages[0].closest('article')).toHaveClass('break-inside-avoid')
+    expect(screen.getByTestId('dashboard-cover-fallback')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Edit: Severance' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Edit: Atomic Habits' })).toBeInTheDocument()
+    expect(severanceAction).toHaveClass('absolute', 'left-3', 'top-3', 'text-accent-purple')
+    expect(arrivalAction).toHaveClass('absolute', 'left-3', 'top-3', 'text-accent-red')
+    expect(screen.queryByRole('heading', { level: 2, name: 'Severance' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Severance')).not.toBeInTheDocument()
+    expect(screen.queryByText('Season 2 is next in the queue.')).not.toBeInTheDocument()
+    expect(screen.queryByText('sci-fi')).not.toBeInTheDocument()
+    expect(screen.queryByText('In progress')).not.toBeInTheDocument()
+
+    fireEvent.click(arrivalAction)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Mark as watched: Arrival' })).toBeInTheDocument()
+    })
+
+    expect(screen.queryByText('Arrival')).not.toBeInTheDocument()
+    expect(screen.queryByText('In progress')).not.toBeInTheDocument()
+
+    fireEvent.click(severanceAction)
+
+    expect(await screen.findByRole('heading', { name: 'Mark as watched' })).toBeInTheDocument()
+    expect(screen.getByText('This will remove the item from your dashboard and move it to the archive.')).toBeInTheDocument()
+  })
+
+  it('falls back to cards when the stored dashboard preference is invalid', async () => {
+    window.localStorage.setItem('meinteresa.dashboardDisplayPreference', 'invalid-layout')
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByTestId('dashboard-cards-grid')).toBeInTheDocument()
+    expect(screen.queryByTestId('dashboard-list')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('dashboard-covers-grid')).not.toBeInTheDocument()
   })
 
   it('filters the visible cards by category', async () => {
@@ -311,6 +562,41 @@ describe('DashboardScreen', () => {
     expect(screen.queryByRole('group', { name: 'Idioma' })).not.toBeInTheDocument()
     expect(screen.queryByText('Sigue los elementos mock por categoría y muévelos por el backlog.')).not.toBeInTheDocument()
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+  })
+
+  it('renders icon-only display controls next to the dashboard title and updates the display mode', async () => {
+    render(
+      <LocaleProvider initialLocale="es">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    const title = await screen.findByRole('heading', { level: 1, name: 'Kyoumi' })
+    const titleRow = title.closest('div') as HTMLElement
+    const displayControls = within(titleRow).getByRole('radiogroup', { name: 'Visualización del dashboard' })
+    const cardsRadio = within(displayControls).getByRole('radio', { name: 'Tarjetas' })
+    const listRadio = within(displayControls).getByRole('radio', { name: 'Listado' })
+    const coversRadio = within(displayControls).getByRole('radio', { name: 'Carátulas' })
+
+    expect(await screen.findByTestId('dashboard-cards-grid')).toBeInTheDocument()
+    expect(cardsRadio).toBeChecked()
+    expect(cardsRadio.closest('label')).toHaveAttribute('title', 'Tarjetas')
+    expect(cardsRadio.closest('label')).toHaveClass('bg-primary')
+    expect(within(displayControls).queryByText('Tarjetas')).not.toBeInTheDocument()
+    expect(within(displayControls).queryByText('Listado')).not.toBeInTheDocument()
+    expect(within(displayControls).queryByText('Carátulas')).not.toBeInTheDocument()
+
+    fireEvent.click(listRadio)
+
+    expect(await screen.findByTestId('dashboard-list')).toBeInTheDocument()
+    expect(listRadio).toBeChecked()
+    expect(screen.queryByTestId('dashboard-cards-grid')).not.toBeInTheDocument()
+
+    fireEvent.click(coversRadio)
+
+    expect(await screen.findByTestId('dashboard-covers-grid')).toBeInTheDocument()
+    expect(coversRadio).toBeChecked()
+    expect(screen.queryByTestId('dashboard-list')).not.toBeInTheDocument()
   })
 
   it('renders icon-only header actions with accessible names and keeps the add action last', async () => {

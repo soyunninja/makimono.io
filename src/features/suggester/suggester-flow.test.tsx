@@ -12,6 +12,11 @@ describe('SmartSuggesterFlow', () => {
       </LocaleProvider>,
     )
 
+    expect(document.querySelector('[data-slot="drawer-content"]')).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Suggestions' })).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="dialog-content"]')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-slot="sheet-content"]')).not.toBeInTheDocument()
+
     fireEvent.click(screen.getByRole('radio', { name: 'Focused evening' }))
     fireEvent.click(screen.getByRole('radio', { name: 'Curious' }))
     fireEvent.click(screen.getByRole('button', { name: 'Get 3 picks' }))

@@ -1,28 +1,18 @@
 import { Play } from 'lucide-react'
-import { useState, type MouseEvent } from 'react'
 
-import type { CategoryMetadata } from '@/features/items/metadata'
 import { CardCoverBackground } from '@/features/items/card-cover-background'
-import type { InterestItem } from '@/features/items/types'
+import {
+  DashboardItemCompletionDialog,
+  type DashboardItemInteractionProps,
+  useDashboardItemInteractions,
+} from '@/features/items/dashboard-item-interactions'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
-type InterestCardProps = {
-  item: InterestItem
-  metadata: CategoryMetadata
-  startLabel: string
-  editHref: string
-  editLabel: string
-  completeWarningLabel: string
-  closeLabel: string
-  cancelLabel: string
-  onAdvance: (item: InterestItem) => void
-  onEdit?: (item: InterestItem) => void
-}
+type InterestCardProps = DashboardItemInteractionProps
 
 export function InterestCard({
   item,
@@ -36,33 +26,19 @@ export function InterestCard({
   onAdvance,
   onEdit,
 }: InterestCardProps) {
-  const [isCompletionDialogOpen, setIsCompletionDialogOpen] = useState(false)
-  const showsCompletionControl = item.status === 'in_progress'
-  const showsStartAction = item.status === 'pending'
-  const completionActionLabel = metadata.statusActions.completed
-  const completionControlLabel = `${completionActionLabel}: ${item.title}`
-  const startControlLabel = `${startLabel}: ${item.title}`
-  const editLinkLabel = `${editLabel}: ${item.title}`
-
-  function handleEditClick(event: MouseEvent<HTMLAnchorElement>) {
-    if (!onEdit) {
-      return
-    }
-
-    if (
-      event.defaultPrevented
-      || event.button !== 0
-      || event.metaKey
-      || event.altKey
-      || event.ctrlKey
-      || event.shiftKey
-    ) {
-      return
-    }
-
-    event.preventDefault()
-    onEdit(item)
-  }
+  const {
+    completionActionLabel,
+    completionControlLabel,
+    editLinkLabel,
+    handleConfirmCompletion,
+    handleEditClick,
+    handleStatusActionClick,
+    isCompletionDialogOpen,
+    setIsCompletionDialogOpen,
+    showsCompletionControl,
+    showsStartAction,
+    startControlLabel,
+  } = useDashboardItemInteractions({ item, metadata, startLabel, editLabel, onAdvance, onEdit })
 
   return (
     <>
@@ -82,7 +58,7 @@ export function InterestCard({
                     'rounded-full border-transparent bg-transparent p-0',
                     metadata.textClassName,
                   )}
-                  onClick={() => setIsCompletionDialogOpen(true)}
+                  onClick={handleStatusActionClick}
                   size="icon"
                   type="button"
                   variant="ghost"
@@ -99,7 +75,7 @@ export function InterestCard({
                     'rounded-full border-transparent bg-transparent p-0',
                     metadata.textClassName,
                   )}
-                  onClick={() => onAdvance(item)}
+                  onClick={handleStatusActionClick}
                   size="icon"
                   type="button"
                   variant="ghost"
@@ -148,30 +124,16 @@ export function InterestCard({
 
       </Card>
 
-      <Dialog onOpenChange={setIsCompletionDialogOpen} open={isCompletionDialogOpen}>
-        <DialogContent closeLabel={closeLabel}>
-          <DialogHeader>
-            <DialogTitle>{completionActionLabel}</DialogTitle>
-            <DialogDescription>{completeWarningLabel}</DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter>
-            <Button onClick={() => setIsCompletionDialogOpen(false)} type="button" variant="outline">
-              {cancelLabel}
-            </Button>
-            <Button
-              className={metadata.textClassName}
-              onClick={() => {
-                setIsCompletionDialogOpen(false)
-                onAdvance(item)
-              }}
-              type="button"
-            >
-              {completionActionLabel}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DashboardItemCompletionDialog
+        cancelLabel={cancelLabel}
+        closeLabel={closeLabel}
+        completeWarningLabel={completeWarningLabel}
+        completionActionLabel={completionActionLabel}
+        confirmButtonClassName={metadata.textClassName}
+        isOpen={isCompletionDialogOpen}
+        onConfirm={handleConfirmCompletion}
+        onOpenChange={setIsCompletionDialogOpen}
+      />
     </>
   )
 }
