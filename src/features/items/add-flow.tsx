@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Plus, Save, Trash2 } from 'lucide-react'
+import { Plus, RotateCcw, Save, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -529,6 +529,7 @@ export function AdaptiveEditFlow({
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [coverMetadata, setCoverMetadata] = useState<EditableCoverMetadata>(toEditableCoverMetadata())
   const [coverLookupStatus, setCoverLookupStatus] = useState<CoverLookupStatus>('idle')
 
@@ -568,7 +569,8 @@ export function AdaptiveEditFlow({
 
   const itemCategory = item.category
   const metadata = getCategoryMetadata(itemCategory, locale)
-  const isSubmitDisabled = isSubmitting || isDeleting || title.trim().length === 0
+  const isSubmitDisabled = isSubmitting || isDeleting || isUpdatingStatus || title.trim().length === 0
+  const isMoveToPendingVisible = item.status === 'in_progress'
   const editInterestFormId = `edit-interest-form-${item.id}`
 
   async function handleFindCover() {
@@ -600,7 +602,7 @@ export function AdaptiveEditFlow({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!item || title.trim().length === 0 || isSubmitting || isDeleting) {
+    if (!item || title.trim().length === 0 || isSubmitting || isDeleting || isUpdatingStatus) {
       return
     }
 
@@ -634,7 +636,7 @@ export function AdaptiveEditFlow({
   }
 
   async function handleDelete() {
-    if (!item || isSubmitting || isDeleting) {
+    if (!item || isSubmitting || isDeleting || isUpdatingStatus) {
       return
     }
 
@@ -659,6 +661,32 @@ export function AdaptiveEditFlow({
     }
     catch (error) {
       setIsDeleting(false)
+      throw error
+    }
+  }
+
+  async function handleMoveToPending() {
+    if (!item || item.status !== 'in_progress' || isSubmitting || isDeleting || isUpdatingStatus) {
+      return
+    }
+
+    setIsUpdatingStatus(true)
+
+    try {
+      const updatedItem = await repository.updateStatus(item.id, 'pending')
+
+      setIsUpdatingStatus(false)
+
+      if (!updatedItem) {
+        onRequestClose?.()
+        return
+      }
+
+      setItem(updatedItem)
+      await onUpdated?.(updatedItem)
+    }
+    catch (error) {
+      setIsUpdatingStatus(false)
       throw error
     }
   }
@@ -711,7 +739,7 @@ export function AdaptiveEditFlow({
       <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between">
         <Button
           aria-label={t('dashboard.deleteEditAction')}
-          disabled={isSubmitting || isDeleting}
+          disabled={isSubmitting || isDeleting || isUpdatingStatus}
           onClick={handleDelete}
           size="icon"
           type="button"
@@ -720,9 +748,26 @@ export function AdaptiveEditFlow({
           <Trash2 />
         </Button>
 
-        <Button aria-label={t('dashboard.saveAction')} className="bg-brand-sun text-night hover:bg-brand-sun/90" disabled={isSubmitDisabled} form={editInterestFormId} size="icon" type="submit">
-          <Save />
-        </Button>
+        <div className="flex items-center gap-2">
+          {isMoveToPendingVisible
+            ? (
+              <Button
+                aria-label={t('dashboard.moveToPendingAction')}
+                disabled={isSubmitting || isDeleting || isUpdatingStatus}
+                onClick={handleMoveToPending}
+                size="icon"
+                type="button"
+                variant="outline"
+              >
+                <RotateCcw />
+              </Button>
+            )
+            : null}
+
+          <Button aria-label={t('dashboard.saveAction')} className="bg-brand-sun text-night hover:bg-brand-sun/90" disabled={isSubmitDisabled} form={editInterestFormId} size="icon" type="submit">
+            <Save />
+          </Button>
+        </div>
       </div>
     </DrawerFooter>
   )

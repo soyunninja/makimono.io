@@ -35,21 +35,22 @@ export function FoundationLandingScreen() {
   return (
     <main className="flex min-h-screen flex-col items-center px-6 pb-8 pt-24">
       <section className="flex w-full flex-col items-center text-center">
-        <div className="grid w-full max-w-[900px] overflow-hidden rounded-[2rem] bg-paper text-paper-foreground shadow-2xl shadow-night/20 md:grid-cols-2">
-          <div className="flex flex-col items-center justify-center px-12 py-10">
-            <MakimonoAnimatedLogo className="mx-auto" />
+        <div className="w-full max-w-[900px] border-[12px] border-white">
+          <div className="grid w-full overflow-hidden rounded-[4rem] bg-home-panel text-paper-foreground shadow-2xl shadow-night/20 md:grid-cols-2">
+            <div className="flex flex-col items-center justify-center px-12 py-10">
+              <MakimonoAnimatedLogo className="mx-auto" />
 
-            <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">Makimono</h1>
+              <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">Makimono</h1>
 
-            <p className="mt-3 text-sm font-medium text-paper-foreground/50"><AppVersion /></p>
-          </div>
+              <p className="mt-3 text-sm font-medium text-paper-foreground/50"><AppVersion /></p>
+            </div>
 
-          <div className="flex h-full bg-card p-4 md:p-6">
-            <PocketBaseAuthCard className="h-full w-full rounded-none border-0 bg-transparent shadow-none backdrop-blur-none" onAuthenticated={handleAuthenticated} />
+            <div className="flex h-full p-4 md:p-6 bg-card">
+              <PocketBaseAuthCard className="h-full w-full rounded-none border-0 bg-transparent shadow-none backdrop-blur-none" onAuthenticated={handleAuthenticated} />
+            </div>
           </div>
         </div>
-
-        <div className="mt-10 w-full max-w-[900px] text-left">
+        <div className="mt-10 w-full max-w-[700px] text-left">
           <div className="font-mono">
             <p className="text-sm font-semibold text-foreground">{t('landing.workingOnTitle')}</p>
             <ul className="mt-4 space-y-2 text-sm leading-6 text-foreground/60">

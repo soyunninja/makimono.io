@@ -506,6 +506,43 @@ describe('AdaptiveAddFlow', () => {
     expect(deleteButton.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it('shows a move-to-pending control for in-progress items and updates the status', async () => {
+    const repository = createMockInterestRepository()
+    const updateStatus = vi.spyOn(repository, 'updateStatus')
+    const onUpdated = vi.fn()
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveEditFlow isDesktop itemId="series-severance" onUpdated={onUpdated} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    const moveToPendingButton = await screen.findByRole('button', { name: 'Move to planned' })
+
+    fireEvent.click(moveToPendingButton)
+
+    await waitFor(() => {
+      expect(updateStatus).toHaveBeenCalledWith('series-severance', 'pending')
+    })
+
+    await waitFor(() => {
+      expect(onUpdated).toHaveBeenCalledWith(expect.objectContaining({ status: 'pending' }))
+    })
+
+    expect(screen.queryByRole('button', { name: 'Move to planned' })).not.toBeInTheDocument()
+  })
+
+  it('does not show a move-to-pending control for pending items', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveEditFlow isDesktop itemId="movie-arrival" repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Edit interest' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Move to planned' })).not.toBeInTheDocument()
+  })
+
   it('lets users remove existing edit tags and saves the updated string array', async () => {
     const repository = createMockInterestRepository()
     const onUpdated = vi.fn()

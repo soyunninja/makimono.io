@@ -82,6 +82,7 @@ export type Dictionary = {
     editAction: string
     deleteAction: string
     deleteEditAction: string
+    moveToPendingAction: string
     editTitle: string
     editDescription: string
     saveAction: string
@@ -262,6 +263,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editAction: 'Edit',
       deleteAction: 'Delete',
       deleteEditAction: 'Delete interest',
+      moveToPendingAction: 'Move to planned',
       editTitle: 'Edit interest',
       editDescription: 'Update the saved details and keep the item on your dashboard.',
       saveAction: 'Save changes',
@@ -490,6 +492,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editAction: 'Editar',
       deleteAction: 'Eliminar',
       deleteEditAction: 'Eliminar interés',
+      moveToPendingAction: 'Mover a pendiente',
       editTitle: 'Editar interés',
       editDescription: 'Actualiza los detalles guardados y mantén el elemento en tu dashboard.',
       saveAction: 'Guardar cambios',
