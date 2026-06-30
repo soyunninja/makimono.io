@@ -68,6 +68,11 @@ export type Dictionary = {
     emptyDescription: string
     emptySearchTitle: string
     emptySearchDescription: string
+    starterTitle: string
+    starterDescription: string
+    starterAction: string
+    starterLoadingAction: string
+    starterError: string
     startAction: string
     addAction: string
     suggestAction: string
@@ -243,6 +248,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       emptyDescription: 'Try another category.',
       emptySearchTitle: 'No items match this search',
       emptySearchDescription: 'Try a different title, tag, note, or category.',
+      starterTitle: 'Start with a recommended list',
+      starterDescription: 'Add a curated starter pack of Japanese series, movies, and books. Covers are added when available.',
+      starterAction: 'Add starter list',
+      starterLoadingAction: 'Adding starter list…',
+      starterError: 'We could not add the starter list. Try again in a moment.',
       startAction: 'Start now',
       addAction: 'Add interest',
       suggestAction: 'Get suggestions',
@@ -466,6 +476,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       emptyDescription: 'Prueba otra categoría.',
       emptySearchTitle: 'Ningún elemento coincide con esta búsqueda',
       emptySearchDescription: 'Prueba con otro título, etiqueta, nota o categoría.',
+      starterTitle: 'Empieza con una lista recomendada',
+      starterDescription: 'Añade una selección inicial de series, películas y libros japoneses. Incluiremos portadas cuando estén disponibles.',
+      starterAction: 'Añadir lista inicial',
+      starterLoadingAction: 'Añadiendo lista inicial…',
+      starterError: 'No se ha podido añadir la lista inicial. Inténtalo de nuevo en un momento.',
       startAction: 'Empezar ahora',
       addAction: 'Añadir interés',
       suggestAction: 'Pedir sugerencias',

@@ -4,9 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AppShell } from '@/components/app/app-shell'
 import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { Button } from '@/components/ui/button'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { CategoryFilters } from '@/features/items/category-filters'
+import type { InterestCoverResolver } from '@/features/items/cover-metadata'
 import { DashboardCoverItem } from '@/features/items/dashboard-cover-item'
 import { DashboardDisplayPreferenceControl } from '@/features/items/dashboard-display-preference-control'
 import { type DashboardDisplayPreference, useDashboardDisplayPreference } from '@/features/items/dashboard-display-preference'
@@ -22,6 +23,7 @@ import { filterItemsBySearchQuery } from '@/features/items/item-search'
 import { listCategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
 import { getNextStatus } from '@/features/items/status-flow'
+import { createStarterPackItems, defaultStarterPackCoverResolver } from '@/features/items/starter-pack'
 import type { Category, InterestItem, InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
 import { cn } from '@/lib/utils'
@@ -31,6 +33,7 @@ type CategoryFilterValue = Category | 'all'
 type DashboardScreenProps = {
   reloadKey?: string | number
   repository?: InterestRepository
+  coverResolver?: InterestCoverResolver
   onAddItem?: () => void
   onEditItem?: (itemId: string) => void
   onSuggestItem?: () => void
@@ -76,16 +79,20 @@ function DashboardLogoTitle({ preference, title }: DashboardLogoTitleProps) {
 export function DashboardScreen({
   reloadKey,
   repository = getAppInterestRepository(),
+  coverResolver = defaultStarterPackCoverResolver,
   onAddItem,
   onEditItem,
 }: DashboardScreenProps) {
   const { locale, t } = useLocale()
   const addActionLabel = t('dashboard.addAction')
   const repositoryRef = useRef<InterestRepository>(repository)
+  const starterPackCreationRef = useRef(false)
   const [items, setItems] = useState<InterestItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilterValue>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [isCreatingStarterPack, setIsCreatingStarterPack] = useState(false)
+  const [starterPackCreationFailed, setStarterPackCreationFailed] = useState(false)
   const [dashboardDisplayPreference, setDashboardDisplayPreference] = useDashboardDisplayPreference()
 
   useEffect(() => {
@@ -166,6 +173,33 @@ export function DashboardScreen({
   )
 
   const hasSearchQuery = searchQuery.trim().length > 0
+  const shouldShowStarterPack = !isLoading && activeItems.length === 0 && selectedCategory === 'all' && !hasSearchQuery
+
+  async function handleCreateStarterPack() {
+    if (starterPackCreationRef.current) {
+      return
+    }
+
+    starterPackCreationRef.current = true
+    setIsCreatingStarterPack(true)
+    setStarterPackCreationFailed(false)
+
+    try {
+      const createdItems = await createStarterPackItems(repositoryRef.current, coverResolver)
+
+      setItems((currentItems) => orderActiveDashboardItems([...createdItems, ...currentItems]))
+    }
+    catch {
+      const persistedItems = await repositoryRef.current.listItems()
+
+      setItems(orderActiveDashboardItems(persistedItems))
+      setStarterPackCreationFailed(persistedItems.length === 0)
+    }
+    finally {
+      starterPackCreationRef.current = false
+      setIsCreatingStarterPack(false)
+    }
+  }
 
   async function handleAdvanceStatus(item: InterestItem) {
     const nextStatus = getNextStatus(item.status)
@@ -275,7 +309,24 @@ export function DashboardScreen({
           </Card>
         ) : null}
 
-        {!isLoading && filteredItems.length === 0 ? (
+        {shouldShowStarterPack ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('dashboard.starterTitle')}</CardTitle>
+              <CardDescription>{t('dashboard.starterDescription')}</CardDescription>
+              {starterPackCreationFailed ? (
+                <CardDescription>{t('dashboard.starterError')}</CardDescription>
+              ) : null}
+            </CardHeader>
+            <CardFooter>
+              <Button disabled={isCreatingStarterPack} onClick={handleCreateStarterPack} type={'button'}>
+                {isCreatingStarterPack ? t('dashboard.starterLoadingAction') : t('dashboard.starterAction')}
+              </Button>
+            </CardFooter>
+          </Card>
+        ) : null}
+
+        {!isLoading && filteredItems.length === 0 && !shouldShowStarterPack ? (
           <Card>
             <CardHeader>
               <CardTitle>{hasSearchQuery ? t('dashboard.emptySearchTitle') : t('dashboard.emptyTitle')}</CardTitle>

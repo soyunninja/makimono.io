@@ -9,6 +9,8 @@ import {
   getAppInterestRepository,
   resetAppInterestRepository,
 } from '@/features/items/mock-repository'
+import { starterPackItems } from '@/features/items/starter-pack'
+import type { CreateInterestItemInput, InterestItem, InterestRepository } from '@/features/items/types'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
@@ -17,6 +19,22 @@ function formatCardDate(createdAt: string, locale: 'en' | 'es') {
     day: 'numeric',
     month: 'short',
   }).format(new Date(createdAt))
+}
+
+function countItemsByCategory(items: InterestItem[]) {
+  return items.reduce<Record<string, number>>((counts, item) => ({
+    ...counts,
+    [item.category]: (counts[item.category] ?? 0) + 1,
+  }), {})
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve
+  })
+
+  return { promise, resolve }
 }
 
 beforeEach(() => {
@@ -32,6 +50,144 @@ afterEach(() => {
 })
 
 describe('DashboardScreen', () => {
+  it('shows the starter CTA on an empty unfiltered dashboard', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen coverResolver={async () => null} repository={createMockInterestRepository([])} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
+    expect(screen.getByText('Start with a recommended list')).toBeInTheDocument()
+    expect(screen.getByText('Add a curated starter pack of Japanese series, movies, and books. Covers are added when available.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add starter list' })).toBeInTheDocument()
+    expect(screen.queryByText('No items match this category yet')).not.toBeInTheDocument()
+  })
+
+  it('creates starter items with the correct categories when accepted', async () => {
+    const repository = createMockInterestRepository([])
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen coverResolver={async () => ({ coverImageUrl: 'https://example.test/cover.jpg' })} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Add starter list' }))
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('article')).toHaveLength(starterPackItems.length)
+    })
+
+    const createdItems = await repository.listItems()
+    const categories = countItemsByCategory(createdItems)
+
+    expect(createdItems).toHaveLength(33)
+    expect(categories).toMatchObject({
+      books: 10,
+      movies: 11,
+      series: 12,
+    })
+    expect(screen.getByRole('radio', { name: 'All (33)' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Series (12)' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Movies (11)' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Books (10)' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Add starter list' })).not.toBeInTheDocument()
+  })
+
+  it('does not duplicate starter creation when clicked repeatedly while loading', async () => {
+    const repository = createMockInterestRepository([])
+    const firstCreate = createDeferred<InterestItem>()
+    const createItem = vi.fn(async (input: CreateInterestItemInput) => {
+      if (createItem.mock.calls.length === 1) {
+        await firstCreate.promise
+      }
+
+      return repository.createItem(input)
+    })
+    const delayedRepository = {
+      ...repository,
+      createItem,
+    } satisfies InterestRepository
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen coverResolver={async () => null} repository={delayedRepository} />
+      </LocaleProvider>,
+    )
+
+    const starterButton = await screen.findByRole('button', { name: 'Add starter list' })
+
+    fireEvent.click(starterButton)
+
+    await waitFor(() => {
+      expect(createItem).toHaveBeenCalledTimes(1)
+    })
+
+    fireEvent.click(starterButton)
+
+    expect(starterButton).toBeDisabled()
+    expect(createItem).toHaveBeenCalledTimes(1)
+
+    firstCreate.resolve({
+      category: 'series',
+      createdAt: '2026-06-30T00:00:00.000Z',
+      id: 'starter-first-placeholder',
+      status: 'pending',
+      tags: [],
+      title: 'Starter first placeholder',
+    })
+
+    await waitFor(() => {
+      expect(createItem).toHaveBeenCalledTimes(starterPackItems.length)
+    })
+
+    expect(await repository.listItems()).toHaveLength(starterPackItems.length)
+  })
+
+  it('refreshes persisted starter items after a partial creation failure', async () => {
+    const repository = createMockInterestRepository([])
+    const createItem = vi.fn(async (input: CreateInterestItemInput) => {
+      if (createItem.mock.calls.length > 2) {
+        throw new Error('Partial starter creation failure')
+      }
+
+      return repository.createItem(input)
+    })
+    const partiallyFailingRepository = {
+      ...repository,
+      createItem,
+    } satisfies InterestRepository
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen coverResolver={async () => null} repository={partiallyFailingRepository} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Add starter list' }))
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('article')).toHaveLength(2)
+    })
+
+    expect(await repository.listItems()).toHaveLength(2)
+    expect(screen.queryByRole('button', { name: 'Add starter list' })).not.toBeInTheDocument()
+    expect(screen.queryByText('We could not add the starter list. Please try again.')).not.toBeInTheDocument()
+  })
+
+  it('does not show the starter CTA when dashboard items already exist', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen coverResolver={async () => null} repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })).toBeInTheDocument()
+    expect(screen.queryByText('Start with a recommended list')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Add starter list' })).not.toBeInTheDocument()
+  })
+
   it('renders only active category cards behind the local mock repository', async () => {
     render(
       <LocaleProvider initialLocale="en">
