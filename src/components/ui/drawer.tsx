@@ -1,4 +1,3 @@
-import { X } from 'lucide-react'
 import { forwardRef, type ComponentProps, type ComponentPropsWithoutRef, type ElementRef, type HTMLAttributes } from 'react'
 import { Drawer as DrawerPrimitive } from 'vaul'
 
@@ -19,19 +18,19 @@ type DrawerContentProps = ComponentPropsWithoutRef<typeof DrawerPrimitive.Conten
 const DrawerOverlay = forwardRef<ElementRef<typeof DrawerPrimitive.Overlay>, ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>>(({ className, ...props }, ref) => <DrawerPrimitive.Overlay className={cn('fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out', className)} data-slot="drawer-overlay" ref={ref} {...props} />)
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
 
-const DrawerContent = forwardRef<ElementRef<typeof DrawerPrimitive.Content>, DrawerContentProps>(({ className, children, closeLabel = 'Close', ...props }, ref) => (
-  <DrawerPortal>
-    <DrawerOverlay />
-    <DrawerPrimitive.Content className={cn('fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[92vh] flex-col rounded-t-3xl border-x border-t border-border/70 bg-card p-4 text-card-foreground shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:p-6', className)} data-slot="drawer-content" ref={ref} {...props}>
-      <DrawerPrimitive.Handle className="mx-auto mb-4 h-2 w-[100px] rounded-full bg-muted" />
-      {children}
-      <DrawerPrimitive.Close className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30">
-        <X className="size-4" />
-        <span className="sr-only">{closeLabel}</span>
-      </DrawerPrimitive.Close>
-    </DrawerPrimitive.Content>
-  </DrawerPortal>
-))
+const DrawerContent = forwardRef<ElementRef<typeof DrawerPrimitive.Content>, DrawerContentProps>(({ className, children, closeLabel, ...props }, ref) => {
+  void closeLabel
+
+  return (
+    <DrawerPortal>
+      <DrawerOverlay />
+      <DrawerPrimitive.Content className={cn('fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[92vh] flex-col rounded-t-3xl border-x border-t border-border/70 bg-card p-4 text-card-foreground shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:p-6', className)} data-slot="drawer-content" ref={ref} {...props}>
+        <DrawerPrimitive.Handle className="mx-auto mb-4 h-2 w-[100px] rounded-full bg-muted" />
+        {children}
+      </DrawerPrimitive.Content>
+    </DrawerPortal>
+  )
+})
 DrawerContent.displayName = DrawerPrimitive.Content.displayName
 
 function DrawerHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

@@ -318,6 +318,7 @@ export function AdaptiveAddFlow({
   onRequestClose,
 }: AdaptiveAddFlowProps) {
   const { locale, t } = useLocale()
+  const resolvedIsDesktop = useDesktopBreakpoint(isDesktop)
   const categories = useMemo(() => listCategoryMetadata(locale), [locale])
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [title, setTitle] = useState('')
@@ -391,64 +392,66 @@ export function AdaptiveAddFlow({
         </DrawerTitle>
       </DrawerHeader>
 
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        <InterestDetailsFields
-          categoryFields={(
-            <div className="space-y-2">
-              <Label>{t('addFlow.categoryLabel')}</Label>
-              <ToggleGroup
-                aria-label={t('addFlow.categoryLabel')}
-                className="flex flex-wrap gap-2"
-                onValueChange={(value) => {
-                  setCoverMetadata(toEditableCoverMetadata())
-                  setCoverLookupStatus('idle')
-                  setSelectedCategory((value as Category) || null)
-                }}
-                type="single"
-                value={selectedCategory ?? ''}
-              >
-                {categories.map((category) => (
-                  <ToggleGroupItem
-                    className={cn('data-[state=on]:border-current data-[state=on]:bg-current/15', category.controlClassName)}
-                    key={category.key}
-                    value={category.key}
-                    variant="outline"
-                  >
-                    {category.label}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </div>
-          )}
-          coverFields={(
-            <CoverPreviewFields
-              category={selectedCategory}
-              coverMetadata={coverMetadata}
-              lookupStatus={coverLookupStatus}
-              onLookup={() => {
-                void handleFindCover()
-              }}
-              onRemove={handleRemoveCover}
-              title={title}
-            />
-          )}
-          notes={notes}
-          onNotesChange={setNotes}
-          onTagsChange={setTags}
-          onTitleChange={handleTitleChange}
-          tags={tags}
-          title={title}
-        />
+      <form className={cn('mx-auto grid w-full max-w-[1200px] gap-6', resolvedIsDesktop ? 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start' : undefined)} onSubmit={handleSubmit}>
+        <div className="space-y-6">
+          <InterestDetailsFields
+            categoryFields={(
+              <div className="space-y-2">
+                <Label>{t('addFlow.categoryLabel')}</Label>
+                <ToggleGroup
+                  aria-label={t('addFlow.categoryLabel')}
+                  className="flex flex-wrap gap-2"
+                  onValueChange={(value) => {
+                    setCoverMetadata(toEditableCoverMetadata())
+                    setCoverLookupStatus('idle')
+                    setSelectedCategory((value as Category) || null)
+                  }}
+                  type="single"
+                  value={selectedCategory ?? ''}
+                >
+                  {categories.map((category) => (
+                    <ToggleGroupItem
+                      className={cn('data-[state=on]:border-current data-[state=on]:bg-current/15', category.controlClassName)}
+                      key={category.key}
+                      value={category.key}
+                      variant="outline"
+                    >
+                      {category.label}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
+            )}
+            notes={notes}
+            onNotesChange={setNotes}
+            onTagsChange={setTags}
+            onTitleChange={handleTitleChange}
+            tags={tags}
+            title={title}
+          />
 
-        <div className="flex justify-end">
-          <Button aria-label={t('addFlow.submit')} disabled={isSubmitDisabled} size="icon" type="submit">
-            <Plus aria-hidden="true" />
-          </Button>
+          <div className="flex justify-end">
+            <Button aria-label={t('addFlow.submit')} disabled={isSubmitDisabled} size="icon" type="submit">
+              <Plus aria-hidden="true" />
+            </Button>
+          </div>
         </div>
+
+        <aside className="lg:sticky lg:top-0">
+          <CoverPreviewFields
+            category={selectedCategory}
+            coverMetadata={coverMetadata}
+            lookupStatus={coverLookupStatus}
+            onLookup={() => {
+              void handleFindCover()
+            }}
+            onRemove={handleRemoveCover}
+            title={title}
+          />
+        </aside>
       </form>
     </div>
   )
-
   return (
     <Drawer
       onOpenChange={(open) => {

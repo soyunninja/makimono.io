@@ -269,7 +269,8 @@ describe('dashboard nested routes', () => {
     expect(screen.queryByRole('heading', { name: 'Details' })).not.toBeInTheDocument()
     expect(screen.queryByText('Choose a category for this item.')).not.toBeInTheDocument()
 
-    fireEvent.click(within(screen.getByRole('dialog')).getAllByRole('button', { name: 'Close' })[0])
+    expect(within(screen.getByRole('dialog')).queryByRole('button', { name: 'Close' })).not.toBeInTheDocument()
+    fireEvent.keyDown(document, { key: 'Escape' })
 
     await waitFor(() => {
       expect(screen.queryByRole('heading', { level: 1, name: 'Add' })).not.toBeInTheDocument()
@@ -288,7 +289,7 @@ describe('dashboard nested routes', () => {
     expect(router.state.location.pathname).toBe('/dashboard')
     expect(screen.getByRole('heading', { level: 1, name: 'Suggestions' })).toBeInTheDocument()
 
-    fireEvent.click(within(screen.getByRole('dialog')).getAllByRole('button', { name: 'Close' })[0])
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }))
 
     await waitFor(() => {
       expect(screen.queryByRole('heading', { level: 1, name: 'Suggestions' })).not.toBeInTheDocument()
