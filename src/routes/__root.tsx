@@ -26,7 +26,7 @@ export const Route = createRootRoute({
       {
         name: 'description',
         content:
-          'Mock-first Tokyo Night backlog foundation built with TanStack Start and shadcn-ready tokens.',
+          'Tu dojo personal para guardar series, pelis, juegos, libros y música antes de que se escapen entre las sombras.',
       },
       {
         name: 'theme-color',
@@ -69,7 +69,7 @@ function RootComponent() {
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html className="dark" lang="es">
+    <html className='dark' lang='es'>
       <head>
         <HeadContent />
       </head>

@@ -2,7 +2,7 @@
   "name": "meinteresa",
   "version": "0.1.0",
   "private": true,
-  "description": "Makimono mock UI foundation built with TanStack Start, React, and Tailwind CSS v4.",
+  "description": "Tu dojo personal para guardar series, pelis, juegos, libros y música antes de que se escapen entre las sombras.",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "vite dev",

@@ -24,7 +24,7 @@ export default defineConfig({
         name: 'Makimono',
         short_name: 'Makimono',
         description:
-          'Mock-first Tokyo Night backlog foundation built with TanStack Start and shadcn-ready tokens.',
+          'Tu dojo personal para guardar series, pelis, juegos, libros y música antes de que se escapen entre las sombras.',
         theme_color: '#0f172a',
         background_color: '#020617',
         display: 'standalone',
