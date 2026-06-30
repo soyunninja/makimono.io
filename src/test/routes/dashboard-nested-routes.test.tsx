@@ -214,17 +214,36 @@ describe('dashboard nested routes', () => {
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.queryByText('Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Archive' })).toHaveAttribute('href', '/dashboard')
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
   })
 
   it('renders the settings route as a full replacement instead of overlaying the dashboard shell', async () => {
     await renderRoute('/dashboard/settings')
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Settings' }),
+      await screen.findByRole('link', { name: 'Settings' }),
     ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Manage language, session, and app details.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
-    expect(screen.getByText('v0.4')).toBeInTheDocument()
+    expect(screen.queryByText('Choose the interface language.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Sign out of the current PocketBase session.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('radiogroup', { name: 'Dashboard display' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Current app version.')).not.toBeInTheDocument()
+    expect(screen.getByText('v0.5')).toBeInTheDocument()
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
   })
 
   it('requires PocketBase auth before rendering the settings route content', async () => {
@@ -234,7 +253,7 @@ describe('dashboard nested routes', () => {
 
     expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Settings' })).not.toBeInTheDocument()
-    expect(screen.queryByText('v0.4')).not.toBeInTheDocument()
+    expect(screen.queryByText('v0.5')).not.toBeInTheDocument()
   })
 
   it('does not expose a logout action on the authenticated dashboard route', async () => {
@@ -287,6 +306,9 @@ describe('dashboard nested routes', () => {
     fireEvent.pointerDown(within(header).getByRole('button', { name: 'More actions' }))
 
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/dashboard')
   })
 

@@ -120,8 +120,6 @@ export type Dictionary = {
     sessionTitle: string
     sessionDescription: string
     versionTitle: string
-    versionDescription: string
-    backAction: string
   }
   addFlow: {
     title: string
@@ -297,8 +295,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       sessionTitle: 'Session',
       sessionDescription: 'Sign out of the current PocketBase session.',
       versionTitle: 'Version',
-      versionDescription: 'Current app version.',
-      backAction: 'Back to dashboard',
     },
     addFlow: {
       title: 'Add',
@@ -522,8 +518,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       sessionTitle: 'Sesión',
       sessionDescription: 'Cierra la sesión actual de PocketBase.',
       versionTitle: 'Versión',
-      versionDescription: 'Versión actual de la app.',
-      backAction: 'Volver al dashboard',
     },
     addFlow: {
       title: 'Añadir',

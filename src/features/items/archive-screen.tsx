@@ -1,11 +1,11 @@
-import { EllipsisVertical, RotateCcw, Settings } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
+import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { CardCoverBackground } from '@/features/items/card-cover-background'
 import { filterItemsBySearchQuery } from '@/features/items/item-search'
@@ -123,8 +123,6 @@ function ArchiveItemCard({
 
 export function ArchiveScreen({ repository = getAppInterestRepository() }: ArchiveScreenProps) {
   const { locale, t } = useLocale()
-  const settingsActionLabel = t('dashboard.settingsAction')
-  const moreActionsLabel = t('dashboard.moreActions')
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -205,21 +203,7 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
     <AppShell
       actions={(
         <div className={'flex flex-nowrap items-center justify-end gap-3'}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button aria-label={moreActionsLabel} className={'text-white/80 hover:text-white'} size={'icon'} type={'button'} variant={'outline'}>
-                <EllipsisVertical aria-hidden={'true'} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align={'end'}>
-              <DropdownMenuItem asChild>
-                <a href={'/dashboard/settings'}>
-                  <Settings aria-hidden={'true'} />
-                  {settingsActionLabel}
-                </a>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <DashboardOverflowMenu currentView={'archive'} />
         </div>
       )}
       contentVariant={'plain'}

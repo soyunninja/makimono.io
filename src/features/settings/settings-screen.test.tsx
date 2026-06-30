@@ -28,21 +28,30 @@ describe('SettingsScreen', () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument()
-    expect(screen.getByText('Manage language, session, and app details.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.queryByText('Manage language, session, and app details.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
-    expect(screen.getByRole('radiogroup', { name: 'Dashboard display' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Cards' })).toBeChecked()
-    expect(screen.getByRole('radio', { name: 'List' })).not.toBeChecked()
-    expect(screen.getByRole('radio', { name: 'Covers' })).not.toBeChecked()
+    expect(screen.queryByText('Choose the interface language.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Sign out of the current PocketBase session.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Dashboard display')).not.toBeInTheDocument()
+    expect(screen.queryByRole('radiogroup', { name: 'Dashboard display' })).not.toBeInTheDocument()
     expect(screen.getByText('Version')).toBeInTheDocument()
-    expect(screen.getByText('v0.4')).toBeInTheDocument()
+    expect(screen.queryByText('Current app version.')).not.toBeInTheDocument()
+    expect(screen.getByText('v0.5')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Logout' }))
 
     await waitFor(() => {
       expect(authMock.logout).toHaveBeenCalledTimes(1)
     })
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
   })
 
   it('uses localized settings copy and language switching', () => {
@@ -52,62 +61,27 @@ describe('SettingsScreen', () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Ajustes' })).toBeInTheDocument()
-    expect(screen.getByText('Gestiona el idioma, la sesión y los detalles de la app.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ajustes' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.queryByText('Gestiona el idioma, la sesión y los detalles de la app.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Volver al dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Volver al dashboard' })).not.toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Idioma' })).toBeInTheDocument()
-    expect(screen.getByRole('radiogroup', { name: 'Visualización del dashboard' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Tarjetas' })).toBeChecked()
-    expect(screen.getByRole('radio', { name: 'Listado' })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: 'Carátulas' })).toBeInTheDocument()
+    expect(screen.queryByText('Elige el idioma de la interfaz.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Cierra la sesión actual de PocketBase.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Visualización del dashboard')).not.toBeInTheDocument()
+    expect(screen.queryByRole('radiogroup', { name: 'Visualización del dashboard' })).not.toBeInTheDocument()
     expect(screen.getByText('Versión')).toBeInTheDocument()
+    expect(screen.queryByText('Versión actual de la app.')).not.toBeInTheDocument()
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Más acciones' }))
+
+    expect(screen.getByRole('menuitem', { name: 'Archivo' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Volver al dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Ajustes' })).not.toBeInTheDocument()
+    fireEvent.keyDown(document, { key: 'Escape' })
 
     fireEvent.click(screen.getByRole('button', { name: 'EN' }))
 
     expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toBeInTheDocument()
-  })
-
-  it('persists the selected dashboard display preference', () => {
-    const settings = render(
-      <LocaleProvider initialLocale={'en'}>
-        <SettingsScreen />
-      </LocaleProvider>,
-    )
-
-    fireEvent.click(screen.getByRole('radio', { name: 'List' }))
-
-    expect(screen.getByRole('radio', { name: 'List' })).toBeChecked()
-
-    settings.unmount()
-
-    render(
-      <LocaleProvider initialLocale={'en'}>
-        <SettingsScreen />
-      </LocaleProvider>,
-    )
-
-    expect(screen.getByRole('radio', { name: 'List' })).toBeChecked()
-
-    fireEvent.click(screen.getByRole('radio', { name: 'Covers' }))
-
-    expect(screen.getByRole('radio', { name: 'Covers' })).toBeChecked()
-  })
-
-  it('keeps the preference control usable when localStorage is unavailable', () => {
-    Object.defineProperty(window, 'localStorage', {
-      configurable: true,
-      value: undefined,
-    })
-
-    render(
-      <LocaleProvider initialLocale={'en'}>
-        <SettingsScreen />
-      </LocaleProvider>,
-    )
-
-    expect(screen.getByRole('radio', { name: 'Cards' })).toBeChecked()
-
-    fireEvent.click(screen.getByRole('radio', { name: 'List' }))
-
-    expect(screen.getByRole('radio', { name: 'List' })).toBeChecked()
   })
 })

@@ -545,6 +545,7 @@ describe('DashboardScreen', () => {
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
   })
@@ -564,6 +565,7 @@ describe('DashboardScreen', () => {
     expect(screen.queryByRole('menuitem', { name: 'Pedir sugerencias' })).not.toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Archivo' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.getByRole('menuitem', { name: 'Ajustes' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.queryByRole('menuitem', { name: 'Volver al dashboard' })).not.toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'Idioma' })).not.toBeInTheDocument()
     expect(screen.queryByText('Sigue los elementos mock por categoría y muévelos por el backlog.')).not.toBeInTheDocument()
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
@@ -628,6 +630,7 @@ describe('DashboardScreen', () => {
 
     expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     fireEvent.click(addAction)
 
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
@@ -751,6 +754,7 @@ describe('DashboardScreen', () => {
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
   })
 
   it('renders long card content in a readable article and preserves the visible action', async () => {

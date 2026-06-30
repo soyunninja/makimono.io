@@ -39,7 +39,7 @@ export function DashboardListItem({
   return (
     <>
       <article className={'min-w-0'}>
-        <div className={'flex min-w-0 items-center gap-3 py-1'}>
+        <div className={'flex min-w-0 items-center gap-3 py-0 md:py-1'}>
           {showsCompletionControl || showsStartAction ? (
             <Button
               aria-haspopup={showsCompletionControl ? 'dialog' : undefined}

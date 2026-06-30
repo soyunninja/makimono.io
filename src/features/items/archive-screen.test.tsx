@@ -31,6 +31,13 @@ describe('ArchiveScreen', () => {
     expect(screen.queryByText('Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.')).not.toBeInTheDocument()
     expect(screen.queryByText('Restore a completed item to move it back to the pending backlog.')).not.toBeInTheDocument()
 
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    fireEvent.keyDown(document, { key: 'Escape' })
+
     const completedArticle = await screen.findByRole('article')
     expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
     expect(screen.getAllByText('Games')).toHaveLength(2)

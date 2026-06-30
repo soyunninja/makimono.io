@@ -1,10 +1,10 @@
-import { Box, EllipsisVertical, Plus, Settings } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
+import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { CategoryFilters } from '@/features/items/category-filters'
 import { DashboardCoverItem } from '@/features/items/dashboard-cover-item'
@@ -81,9 +81,6 @@ export function DashboardScreen({
 }: DashboardScreenProps) {
   const { locale, t } = useLocale()
   const addActionLabel = t('dashboard.addAction')
-  const archiveActionLabel = t('dashboard.archiveAction')
-  const settingsActionLabel = t('dashboard.settingsAction')
-  const moreActionsLabel = t('dashboard.moreActions')
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilterValue>('all')
@@ -227,27 +224,7 @@ export function DashboardScreen({
               </a>
             </Button>
           )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button aria-label={moreActionsLabel} className={'text-white/80 hover:text-white'} size={'icon'} type={'button'} variant={'outline'}>
-                <EllipsisVertical aria-hidden={'true'} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align={'end'}>
-              <DropdownMenuItem asChild>
-                <a href={'/dashboard/archive'}>
-                  <Box aria-hidden={'true'} />
-                  {archiveActionLabel}
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <a href={'/dashboard/settings'}>
-                  <Settings aria-hidden={'true'} />
-                  {settingsActionLabel}
-                </a>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <DashboardOverflowMenu currentView={'dashboard'} />
         </div>
       )}
       contentVariant={'plain'}
@@ -264,13 +241,13 @@ export function DashboardScreen({
       )}
     >
       <div className={'space-y-6'}>
-        <div className={'flex flex-col gap-4 lg:flex-row lg:items-end'}>
+        <div className={'flex flex-col gap-4 xl:flex-row xl:items-end'}>
           <div className={'min-w-0 flex-1'}>
             <CategoryFilters
               allLabel={t('dashboard.allCategories')}
               categories={categoriesWithCounts}
-              className={'lg:min-w-max lg:flex-nowrap'}
-              containerClassName={'lg:overflow-x-auto lg:overflow-y-hidden'}
+              className={'xl:min-w-max xl:flex-nowrap'}
+              containerClassName={'xl:overflow-x-auto xl:overflow-y-hidden'}
               label={t('dashboard.filtersLabel')}
               onValueChange={setSelectedCategory}
               totalCount={activeItems.length}
@@ -278,7 +255,7 @@ export function DashboardScreen({
             />
           </div>
 
-          <div className={'w-full lg:w-80 lg:max-w-sm lg:shrink-0'}>
+          <div className={'w-full xl:w-80 xl:max-w-sm xl:shrink-0'}>
             <Input
               aria-label={t('dashboard.searchLabel')}
               className={'w-full'}
@@ -327,7 +304,7 @@ export function DashboardScreen({
         ) : null}
 
         {!isLoading && filteredItems.length > 0 && dashboardDisplayPreference === 'list' ? (
-          <div className={'space-y-8'} data-testid={'dashboard-list'}>
+          <div className={'space-y-4 md:space-y-8'} data-testid={'dashboard-list'}>
             {groupedFilteredItems.map(({ key, category, items: categoryItems }) => {
               const metadata = categoryMetadataByKey.get(category)
 
@@ -338,7 +315,7 @@ export function DashboardScreen({
               return (
                 <section className={'space-y-3'} key={key}>
                   <h2 className={cn('text-xl font-semibold tracking-tight', metadata.textClassName)}>{metadata.label}</h2>
-                  <div className={'grid gap-x-6 gap-y-3 md:grid-cols-2 xl:grid-cols-3'}>
+                  <div className={'grid gap-x-6 gap-y-0 md:grid-cols-2 md:gap-y-3 xl:grid-cols-3'}>
                     {categoryItems.map((item) => (
                       <DashboardListItem
                         key={item.id}

@@ -1,9 +1,11 @@
+import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
 import { AppFooter } from '@/components/app/app-footer'
 import { AppVersion } from '@/components/app/app-version'
 import { MakimonoAnimatedLogo } from '@/components/app/makimono-animated-logo'
 import { PocketBaseAuthCard } from '@/features/auth/pocketbase-auth-gate'
+import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provider'
 import { useLocale } from '@/i18n/locale-provider'
 
 const upcomingImprovements = [
@@ -16,6 +18,15 @@ const upcomingImprovements = [
 export function FoundationLandingScreen() {
   const navigate = useNavigate()
   const { t } = useLocale()
+  const { enabled, isAuthenticated, isLoading } = useOptionalPocketBaseAuth()
+
+  useEffect(() => {
+    if (!enabled || isLoading || !isAuthenticated) {
+      return
+    }
+
+    void navigate({ to: '/dashboard' })
+  }, [enabled, isAuthenticated, isLoading, navigate])
 
   function handleAuthenticated() {
     void navigate({ to: '/dashboard' })

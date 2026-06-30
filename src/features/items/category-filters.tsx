@@ -38,7 +38,7 @@ export function CategoryFilters({
         type="single"
         value={value}
       >
-        <ToggleGroupItem className="cursor-pointer" value="all" variant="outline">
+        <ToggleGroupItem className="cursor-pointer" size="sm" value="all" variant="outline">
           {`${allLabel} (${totalCount})`}
         </ToggleGroupItem>
 
@@ -49,6 +49,7 @@ export function CategoryFilters({
               category.controlClassName,
             )}
             key={category.key}
+            size="sm"
             value={category.key}
             variant="outline"
           >
