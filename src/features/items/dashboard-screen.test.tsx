@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DashboardScreen } from '@/features/items/dashboard-screen'
@@ -764,6 +764,34 @@ describe('DashboardScreen', () => {
     expect(await screen.findByTestId('dashboard-covers-grid')).toBeInTheDocument()
     expect(coversRadio).toBeChecked()
     expect(screen.queryByTestId('dashboard-list')).not.toBeInTheDocument()
+  })
+
+  it('clears the clicked display control highlight after one second', async () => {
+    render(
+      <LocaleProvider initialLocale="es">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    const title = await screen.findByRole('heading', { level: 1, name: 'Makimono' })
+    const titleRow = title.closest('div') as HTMLElement
+    const displayControls = within(titleRow).getByRole('radiogroup', { name: 'Visualización del dashboard' })
+    const listRadio = within(displayControls).getByRole('radio', { name: 'Listado' })
+    const listLabel = listRadio.closest('label')
+
+    vi.useFakeTimers()
+
+    fireEvent.click(listRadio)
+
+    expect(listLabel).toHaveClass('ring-2', 'ring-brand-sun/60')
+
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+
+    expect(listLabel).not.toHaveClass('ring-2')
+
+    vi.useRealTimers()
   })
 
   it('groups secondary header actions behind a menu while keeping add visible first', async () => {

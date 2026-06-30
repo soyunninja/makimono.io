@@ -237,7 +237,7 @@ describe('dashboard nested routes', () => {
     expect(screen.queryByText('Sign out of the current PocketBase session.')).not.toBeInTheDocument()
     expect(screen.queryByRole('radiogroup', { name: 'Dashboard display' })).not.toBeInTheDocument()
     expect(screen.queryByText('Current app version.')).not.toBeInTheDocument()
-    expect(screen.getByText('v0.6')).toBeInTheDocument()
+    expect(screen.getByText('v0.65')).toBeInTheDocument()
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 

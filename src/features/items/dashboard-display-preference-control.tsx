@@ -73,7 +73,7 @@ export function DashboardDisplayPreferenceControl({
         return (
           <label
             className={cn(
-              'inline-flex h-9 cursor-pointer items-center justify-center rounded-md border text-sm font-medium transition-all duration-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-sun/60',
+              'inline-flex h-9 cursor-pointer items-center justify-center rounded-md border text-sm font-medium transition-all duration-500 has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-sun/60',
               isHighlighted ? 'ring-2 ring-brand-sun/60' : undefined,
               isIconOnly ? 'w-9 px-0' : 'px-4 py-2',
               isIconOnly
