@@ -3,7 +3,7 @@ import { Plus, Save, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
+import { Drawer, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { TagsInput } from '@/components/ui/tags-input'
@@ -330,6 +330,7 @@ export function AdaptiveAddFlow({
 
   const isSubmitDisabled = isSubmitting || !selectedCategory || title.trim().length === 0
   const trimmedTitle = title.trim()
+  const addInterestFormId = 'add-interest-form'
   currentCoverLookupInputRef.current = { category: selectedCategory, title: trimmedTitle }
 
   async function requestCoverLookup(category: Category | null, requestedTitle: string) {
@@ -419,8 +420,8 @@ export function AdaptiveAddFlow({
     }
   }
 
-  const formContent = (
-    <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
+  const scrollableFormBody = (
+    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-1 pb-1">
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
         <DrawerHeader className="p-0 text-left">
           <DrawerTitle asChild className="text-2xl font-semibold tracking-tight text-foreground">
@@ -428,7 +429,7 @@ export function AdaptiveAddFlow({
           </DrawerTitle>
         </DrawerHeader>
 
-        <form className={cn('grid w-full gap-6', resolvedIsDesktop ? 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start' : undefined)} onSubmit={handleSubmit}>
+        <form className={cn('grid w-full gap-6', resolvedIsDesktop ? 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start' : undefined)} id={addInterestFormId} onSubmit={handleSubmit}>
           <div className="space-y-6">
             <InterestDetailsFields
               categoryFields={(
@@ -479,16 +480,21 @@ export function AdaptiveAddFlow({
               title={title}
             />
           </aside>
-
-          <div className="flex justify-end lg:col-span-2">
-            <Button aria-label={t('addFlow.submit')} className="bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90" disabled={isSubmitDisabled} size="icon" type="submit">
-              <Plus aria-hidden="true" />
-            </Button>
-          </div>
         </form>
       </div>
     </div>
   )
+
+  const drawerFooter = (
+    <DrawerFooter className="shrink-0 border-t border-border/70 px-1 pb-0 pt-4">
+      <div className="mx-auto flex w-full max-w-[1200px] justify-end">
+        <Button aria-label={t('addFlow.submit')} className="bg-brand-sun text-night hover:bg-brand-sun/90" disabled={isSubmitDisabled} form={addInterestFormId} size="icon" type="submit">
+          <Plus aria-hidden="true" />
+        </Button>
+      </div>
+    </DrawerFooter>
+  )
+
   return (
     <Drawer
       onOpenChange={(open) => {
@@ -499,7 +505,8 @@ export function AdaptiveAddFlow({
       open
     >
       <DrawerContent closeLabel={t('app.closeLabel')}>
-        {formContent}
+        {scrollableFormBody}
+        {drawerFooter}
       </DrawerContent>
     </Drawer>
   )
@@ -562,6 +569,7 @@ export function AdaptiveEditFlow({
   const itemCategory = item.category
   const metadata = getCategoryMetadata(itemCategory, locale)
   const isSubmitDisabled = isSubmitting || isDeleting || title.trim().length === 0
+  const editInterestFormId = `edit-interest-form-${item.id}`
 
   async function handleFindCover() {
     if (title.trim().length === 0 || coverLookupStatus === 'searching') {
@@ -655,8 +663,8 @@ export function AdaptiveEditFlow({
     }
   }
 
-  const formContent = (
-    <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
+  const scrollableFormBody = (
+    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-1 pb-1">
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
         <DrawerHeader className="p-0 text-left">
           <DrawerTitle asChild className="text-2xl font-semibold tracking-tight text-foreground">
@@ -669,7 +677,7 @@ export function AdaptiveEditFlow({
           </div>
         </DrawerHeader>
 
-        <form className={cn('grid w-full gap-6', resolvedIsDesktop ? 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start' : undefined)} onSubmit={handleSubmit}>
+        <form className={cn('grid w-full gap-6', resolvedIsDesktop ? 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start' : undefined)} id={editInterestFormId} onSubmit={handleSubmit}>
           <div className="space-y-6">
             <InterestDetailsFields
               notes={notes}
@@ -693,26 +701,30 @@ export function AdaptiveEditFlow({
               title={title}
             />
           </aside>
-
-          <div className="flex items-center justify-between border-t border-border/70 pt-4 lg:col-span-2">
-            <Button
-              aria-label={t('dashboard.deleteEditAction')}
-              disabled={isSubmitting || isDeleting}
-              onClick={handleDelete}
-              size="icon"
-              type="button"
-              variant="destructive"
-            >
-              <Trash2 />
-            </Button>
-
-            <Button aria-label={t('dashboard.saveAction')} className="bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90" disabled={isSubmitDisabled} size="icon" type="submit">
-              <Save />
-            </Button>
-          </div>
         </form>
       </div>
     </div>
+  )
+
+  const drawerFooter = (
+    <DrawerFooter className="shrink-0 border-t border-border/70 px-1 pb-0 pt-4">
+      <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between">
+        <Button
+          aria-label={t('dashboard.deleteEditAction')}
+          disabled={isSubmitting || isDeleting}
+          onClick={handleDelete}
+          size="icon"
+          type="button"
+          variant="destructive"
+        >
+          <Trash2 />
+        </Button>
+
+        <Button aria-label={t('dashboard.saveAction')} className="bg-brand-sun text-night hover:bg-brand-sun/90" disabled={isSubmitDisabled} form={editInterestFormId} size="icon" type="submit">
+          <Save />
+        </Button>
+      </div>
+    </DrawerFooter>
   )
 
   return (
@@ -729,7 +741,8 @@ export function AdaptiveEditFlow({
         aria-label={t('dashboard.editTitle')}
         closeLabel={t('app.closeLabel')}
       >
-        {formContent}
+        {scrollableFormBody}
+        {drawerFooter}
       </DrawerContent>
     </Drawer>
   )

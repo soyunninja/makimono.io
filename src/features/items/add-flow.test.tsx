@@ -80,10 +80,17 @@ describe('AdaptiveAddFlow', () => {
     const title = screen.getByRole('heading', { level: 1, name: 'Add' })
     const header = title.closest('[data-slot="drawer-header"]')
     const contentColumn = header?.parentElement
-    const form = screen.getByRole('button', { name: 'Add interest' }).closest('form')
+    const scrollContainer = contentColumn?.parentElement
+    const form = screen.getByLabelText('Title').closest('form')
+    const footer = screen.getByRole('button', { name: 'Add interest' }).closest('[data-slot="drawer-footer"]')
 
+    expect(scrollContainer).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto')
+    expect(scrollContainer).not.toHaveClass('max-h-[85vh]')
     expect(contentColumn).toHaveClass('mx-auto', 'w-full', 'max-w-[1200px]')
     expect(form?.parentElement).toBe(contentColumn)
+    expect(footer).toHaveClass('shrink-0', 'border-t')
+    expect(footer).not.toBe(scrollContainer)
+    expect(footer?.parentElement).toBe(document.querySelector('[data-slot="drawer-content"]'))
   })
 
   it('shows Podcasts in the selector and saves podcast items from trimmed Enter/comma tags without duplicate chips', async () => {
@@ -467,14 +474,19 @@ describe('AdaptiveAddFlow', () => {
     )
 
     const categoryBadge = await screen.findByText('Películas')
+    const title = screen.getByRole('heading', { name: 'Editar interés' })
+    const header = title.closest('[data-slot="drawer-header"]')
+    const contentColumn = header?.parentElement
     const titleInput = screen.getByLabelText('Título')
     const tagsInput = screen.getByLabelText('Etiquetas')
     const notesInput = screen.getByLabelText('Notas')
 
     const deleteButton = screen.getByRole('button', { name: 'Eliminar interés' })
     const saveButton = screen.getByRole('button', { name: 'Guardar cambios' })
+    const footer = saveButton.closest('[data-slot="drawer-footer"]')
+    const form = titleInput.closest('form')
 
-    expect(screen.getByRole('heading', { name: 'Editar interés' })).toBeInTheDocument()
+    expect(title).toBeInTheDocument()
     expect(screen.queryByText('Actualiza los detalles guardados y mantén el elemento en tu dashboard.')).not.toBeInTheDocument()
     expect(screen.queryByText('Detalles')).not.toBeInTheDocument()
     expect(titleInput).toBeVisible()
@@ -482,6 +494,13 @@ describe('AdaptiveAddFlow', () => {
     expect(notesInput).toBeVisible()
     expect(categoryBadge).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument()
+    expect(contentColumn?.parentElement).toHaveClass('min-h-0', 'flex-1', 'overflow-y-auto')
+    expect(footer).toHaveClass('shrink-0', 'border-t')
+    expect(footer).not.toBe(contentColumn?.parentElement)
+    expect(deleteButton.closest('form')).toBeNull()
+    expect(saveButton.closest('form')).toBeNull()
+    expect(saveButton).toHaveAttribute('form', form?.id)
+    expect(deleteButton).toHaveAttribute('type', 'button')
     expect(deleteButton).toBeEnabled()
     expect(saveButton).toBeEnabled()
     expect(deleteButton.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()

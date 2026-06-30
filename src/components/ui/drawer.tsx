@@ -24,7 +24,7 @@ const DrawerContent = forwardRef<ElementRef<typeof DrawerPrimitive.Content>, Dra
   return (
     <DrawerPortal>
       <DrawerOverlay />
-      <DrawerPrimitive.Content className={cn('fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[92vh] flex-col rounded-t-3xl border-x border-t border-border/70 bg-card p-4 text-card-foreground shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:p-6', className)} data-slot="drawer-content" ref={ref} {...props}>
+      <DrawerPrimitive.Content className={cn('fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[92svh] min-h-0 flex-col overflow-hidden rounded-t-3xl border-x border-t border-border/70 bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-card-foreground shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom supports-[height:100dvh]:max-h-[92dvh] sm:p-6 sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))]', className)} data-slot="drawer-content" ref={ref} {...props}>
         <DrawerPrimitive.Handle className="mx-auto mb-4 h-2 w-[100px] rounded-full bg-muted" />
         {children}
       </DrawerPrimitive.Content>

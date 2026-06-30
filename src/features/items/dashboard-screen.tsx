@@ -58,7 +58,7 @@ type DashboardLogoTitleProps = {
 
 function DashboardLogoTitle({ preference, title }: DashboardLogoTitleProps) {
   return (
-    <span className={'relative block h-10 w-10 sm:h-14 sm:w-14'}>
+    <span className={'relative block h-11 w-11 sm:h-14 sm:w-14'}>
       <span className={'sr-only'}>{title}</span>
       {Object.entries(dashboardLogoSources).map(([logoPreference, src]) => (
         <img

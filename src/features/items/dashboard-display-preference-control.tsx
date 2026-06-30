@@ -1,4 +1,5 @@
 import { Images, LayoutGrid, List, type LucideIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 import {
   dashboardDisplayPreferences,
@@ -38,6 +39,24 @@ export function DashboardDisplayPreferenceControl({
 }: DashboardDisplayPreferenceControlProps) {
   const { t } = useLocale()
   const isIconOnly = variant === 'icon'
+  const [highlightedPreference, setHighlightedPreference] = useState<DashboardDisplayPreference | null>(null)
+
+  useEffect(() => {
+    if (!highlightedPreference) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setHighlightedPreference(null)
+    }, 1000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [highlightedPreference])
+
+  function handlePreferenceChange(preference: DashboardDisplayPreference) {
+    setHighlightedPreference(preference)
+    onChange(preference)
+  }
 
   return (
     <div
@@ -47,13 +66,15 @@ export function DashboardDisplayPreferenceControl({
     >
       {dashboardDisplayPreferences.map((preference) => {
         const isSelected = value === preference
+        const isHighlighted = highlightedPreference === preference
         const Icon = dashboardDisplayPreferenceIcons[preference]
         const label = t(dashboardDisplayPreferenceLabels[preference])
 
         return (
           <label
             className={cn(
-              'inline-flex h-9 cursor-pointer items-center justify-center rounded-md border text-sm font-medium transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-[#FBA87A]/60',
+              'inline-flex h-9 cursor-pointer items-center justify-center rounded-md border text-sm font-medium transition-all duration-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-sun/60',
+              isHighlighted ? 'ring-2 ring-brand-sun/60' : undefined,
               isIconOnly ? 'w-9 px-0' : 'px-4 py-2',
               isIconOnly
                 ? isSelected
@@ -71,7 +92,7 @@ export function DashboardDisplayPreferenceControl({
               checked={isSelected}
               className={'sr-only'}
               name={name}
-              onChange={() => onChange(preference)}
+              onChange={() => handlePreferenceChange(preference)}
               type={'radio'}
             />
             <Icon aria-hidden={'true'} className={cn('size-4', isIconOnly ? undefined : 'mr-2')} />

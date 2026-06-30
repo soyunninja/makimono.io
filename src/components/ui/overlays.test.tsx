@@ -37,6 +37,10 @@ describe('overlay close labels', () => {
     )
 
     expect(screen.queryByRole('button', { name: 'Cerrar' })).not.toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: 'Drawer title' })).toBeInTheDocument()
+    const drawer = screen.getByRole('dialog', { name: 'Drawer title' })
+
+    expect(drawer).toBeInTheDocument()
+    expect(drawer).toHaveClass('max-h-[92svh]', 'min-h-0', 'overflow-hidden', 'supports-[height:100dvh]:max-h-[92dvh]')
+    expect(drawer).not.toHaveClass('max-h-[92vh]')
   })
 })
