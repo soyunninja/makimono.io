@@ -213,7 +213,7 @@ describe('dashboard nested routes', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.queryByText('Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Back to dashboard' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Archive' })).toHaveAttribute('href', '/dashboard')
   })
 
   it('renders the settings route as a full replacement instead of overlaying the dashboard shell', async () => {
@@ -279,22 +279,14 @@ describe('dashboard nested routes', () => {
     expect(router.state.location.pathname).toBe('/dashboard')
   })
 
-  it('opens and closes the local suggester flow from the dashboard without changing the route', async () => {
+  it('does not expose the hidden suggester action from the dashboard actions menu', async () => {
     const router = await renderRoute('/dashboard')
 
     const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
 
-    fireEvent.click(within(header).getByRole('button', { name: 'Get suggestions' }))
+    fireEvent.pointerDown(within(header).getByRole('button', { name: 'More actions' }))
 
-    expect(router.state.location.pathname).toBe('/dashboard')
-    expect(screen.getByRole('heading', { level: 1, name: 'Suggestions' })).toBeInTheDocument()
-
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }))
-
-    await waitFor(() => {
-      expect(screen.queryByRole('heading', { level: 1, name: 'Suggestions' })).not.toBeInTheDocument()
-    })
-
+    expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/dashboard')
   })
 
@@ -373,9 +365,7 @@ describe('dashboard nested routes', () => {
 
     expect(router.state.location.pathname).toBe('/dashboard')
 
-    await waitFor(() => {
-      expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
-    })
+    expect(await screen.findByRole('heading', { name: 'Edit interest' })).toBeInTheDocument()
     expect(screen.queryByText('Update the saved details and keep the item on your dashboard.')).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Details' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
@@ -409,7 +399,7 @@ describe('dashboard nested routes', () => {
     const router = await renderRoute('/dashboard/edit/movie-arrival')
 
     await screen.findByRole('heading', { level: 1, name: 'Your interests', hidden: true })
-    expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Edit interest' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Details' })).not.toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Arrival (Director Cut)' } })
@@ -447,11 +437,13 @@ describe('dashboard nested routes', () => {
   })
 
   it('soft-deletes an item from the edit flow and returns to the dashboard without the card', async () => {
-    const router = await renderRoute('/dashboard/edit/movie-arrival')
+    const router = await renderRoute('/dashboard')
 
-    await waitFor(() => {
-      expect(screen.queryByRole('heading', { name: 'Edit interest' })).not.toBeInTheDocument()
-    })
+    const arrivalCard = (await screen.findByRole('heading', { level: 2, name: 'Arrival' })).closest('[role="article"]') as HTMLElement
+    fireEvent.click(within(arrivalCard).getByRole('link', { name: 'Edit: Arrival' }))
+
+    await screen.findByRole('dialog', { name: 'Edit interest' })
+
     expect(screen.queryByRole('heading', { name: 'Details' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete interest' }))

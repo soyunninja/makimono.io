@@ -21,15 +21,38 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Kyoumi',
+        title: 'Makimono',
       },
       {
         name: 'description',
         content:
           'Mock-first Tokyo Night backlog foundation built with TanStack Start and shadcn-ready tokens.',
       },
+      {
+        name: 'theme-color',
+        content: '#0f172a',
+      },
+      {
+        name: 'mobile-web-app-capable',
+        content: 'yes',
+      },
+      {
+        name: 'apple-mobile-web-app-capable',
+        content: 'yes',
+      },
+      {
+        name: 'apple-mobile-web-app-title',
+        content: 'Makimono',
+      },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+      { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+      { rel: 'icon', href: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      { rel: 'manifest', href: '/manifest.webmanifest' },
+    ],
   }),
   component: RootComponent,
 })

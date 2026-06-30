@@ -129,7 +129,7 @@ export function InterestCard({
         closeLabel={closeLabel}
         completeWarningLabel={completeWarningLabel}
         completionActionLabel={completionActionLabel}
-        confirmButtonClassName={metadata.textClassName}
+        confirmButtonClassName="bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90"
         isOpen={isCompletionDialogOpen}
         onConfirm={handleConfirmCompletion}
         onOpenChange={setIsCompletionDialogOpen}

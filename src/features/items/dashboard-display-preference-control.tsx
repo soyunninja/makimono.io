@@ -53,11 +53,15 @@ export function DashboardDisplayPreferenceControl({
         return (
           <label
             className={cn(
-              'inline-flex h-9 cursor-pointer items-center justify-center rounded-md border text-sm font-medium transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring/60',
+              'inline-flex h-9 cursor-pointer items-center justify-center rounded-md border text-sm font-medium transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-[#FBA87A]/60',
               isIconOnly ? 'w-9 px-0' : 'px-4 py-2',
-              isSelected
-                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                : 'border-input bg-background hover:bg-accent hover:text-accent-foreground',
+              isIconOnly
+                ? isSelected
+                  ? 'border-transparent bg-transparent text-white shadow-none'
+                  : 'border-transparent bg-transparent !text-white/40 hover:bg-white/10 hover:!text-white'
+                : isSelected
+                  ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                  : 'border-input bg-background hover:bg-accent hover:text-accent-foreground',
             )}
             key={preference}
             title={label}

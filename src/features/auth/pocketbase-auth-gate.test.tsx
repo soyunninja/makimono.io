@@ -146,7 +146,7 @@ describe('PocketBaseAuthGate', () => {
     fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'bad-password' } })
     fireEvent.click(screen.getByRole('button', { name: 'Entrar con mi cuenta' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Credenciales inválidas')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Todavía no podemos abrir la puerta')
   })
 
   it('displays failed registration errors accessibly', async () => {
@@ -160,7 +160,7 @@ describe('PocketBaseAuthGate', () => {
     fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'super-secret' } })
     fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta nueva' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('El correo ya está registrado')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Todavía no podemos abrir la puerta')
   })
 
   it('renders protected content when the user is authenticated', () => {

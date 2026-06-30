@@ -12,22 +12,15 @@ describe('FoundationLandingScreen', () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByText('Foundation slice')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: 'Kyoumi foundation',
+        name: 'Makimono',
       }),
     ).toBeInTheDocument()
-    expect(screen.getByText('TanStack Start, Tailwind v4, and shadcn-ready tokens are in place.')).toBeInTheDocument()
-
-    expect(screen.getAllByRole('article')).toHaveLength(3)
-    expect(screen.queryByText('Ready')).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'TanStack Start scaffold' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'Tailwind CSS v4 theme' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'shadcn-ready baseline' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'Next' })).toBeInTheDocument()
-    expect(screen.getByText('Add shared UI, mock items, and ES/EN copy on top of this scaffold.')).toBeInTheDocument()
+    expect(screen.getByText('v0.3')).toBeInTheDocument()
+    expect(screen.getByText(/personalized suggestions/i)).toBeInTheDocument()
+    expect(screen.getByText(/list subscriptions/i)).toBeInTheDocument()
   })
 
   it('renders the localized landing copy in Spanish', () => {
@@ -37,14 +30,13 @@ describe('FoundationLandingScreen', () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByText('Base inicial')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', {
         level: 1,
-        name: 'Base de Kyoumi',
+        name: 'Makimono',
       }),
     ).toBeInTheDocument()
-    expect(screen.queryByText('Listo')).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'Siguiente paso' })).toBeInTheDocument()
+    expect(screen.getByText('v0.3')).toBeInTheDocument()
+    expect(screen.getByText(/listas compartidas/i)).toBeInTheDocument()
   })
 })

@@ -6,7 +6,7 @@ type AppShellSurfaceVariant = 'card' | 'plain'
 
 type AppShellProps = PropsWithChildren<{
   eyebrow?: string
-  title: string
+  title: ReactNode
   titleActions?: ReactNode
   description?: string
   actions?: ReactNode
@@ -37,7 +37,7 @@ export function AppShell({
           )}
           data-variant={headerVariant}
         >
-          <div className={cn('flex flex-col gap-6 lg:flex-row lg:justify-between', headerVariant === 'card' ? 'lg:items-end' : 'lg:items-center')}>
+          <div className={cn(headerVariant === 'card' ? 'flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between' : 'flex items-center justify-between gap-3')}>
             <div className={cn(headerVariant === 'card' ? 'space-y-4' : 'space-y-3')}>
               {eyebrow ? (
                 <span className="inline-flex w-fit items-center rounded-full border border-accent-purple/30 bg-accent-purple/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-purple">
@@ -45,7 +45,7 @@ export function AppShell({
                 </span>
               ) : null}
               <div className={cn(description ? 'space-y-3' : undefined)}>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-nowrap items-center gap-3">
                   <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
                     {title}
                   </h1>

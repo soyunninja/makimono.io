@@ -1,10 +1,11 @@
-import { RotateCcw } from 'lucide-react'
+import { EllipsisVertical, RotateCcw, Settings } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { CardCoverBackground } from '@/features/items/card-cover-background'
 import { filterItemsBySearchQuery } from '@/features/items/item-search'
@@ -28,6 +29,15 @@ type ArchiveItemCardProps = {
   deletedBadgeLabel: string
   deletedOnLabel: string
   onRestore: (item: InterestItem) => void
+}
+
+function ArchiveLogoTitle({ title }: { title: string }) {
+  return (
+    <a className={'block h-12 w-48 sm:h-14 sm:w-56'} href={'/dashboard'}>
+      <span className={'sr-only'}>{title}</span>
+      <img alt={''} aria-hidden={'true'} className={'h-full w-full object-contain object-left'} src={'/makimono.png'} />
+    </a>
+  )
 }
 
 function formatArchiveDate(date: string, locale: 'en' | 'es') {
@@ -113,6 +123,8 @@ function ArchiveItemCard({
 
 export function ArchiveScreen({ repository = getAppInterestRepository() }: ArchiveScreenProps) {
   const { locale, t } = useLocale()
+  const settingsActionLabel = t('dashboard.settingsAction')
+  const moreActionsLabel = t('dashboard.moreActions')
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -192,15 +204,27 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
   return (
     <AppShell
       actions={(
-        <div className={'flex flex-wrap items-center justify-end gap-3'}>
-          <Button asChild variant={'outline'}>
-            <a href={'/dashboard'}>{t('archive.backAction')}</a>
-          </Button>
+        <div className={'flex flex-nowrap items-center justify-end gap-3'}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button aria-label={moreActionsLabel} className={'text-white/80 hover:text-white'} size={'icon'} type={'button'} variant={'outline'}>
+                <EllipsisVertical aria-hidden={'true'} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align={'end'}>
+              <DropdownMenuItem asChild>
+                <a href={'/dashboard/settings'}>
+                  <Settings aria-hidden={'true'} />
+                  {settingsActionLabel}
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
       contentVariant={'plain'}
       headerVariant={'plain'}
-      title={t('archive.title')}
+      title={<ArchiveLogoTitle title={t('archive.title')} />}
     >
       <div className={'space-y-8'}>
         {isLoading ? (

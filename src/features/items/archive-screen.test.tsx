@@ -27,7 +27,7 @@ describe('ArchiveScreen', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Archive' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Back to dashboard' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Archive' })).toHaveAttribute('href', '/dashboard')
     expect(screen.queryByText('Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.')).not.toBeInTheDocument()
     expect(screen.queryByText('Restore a completed item to move it back to the pending backlog.')).not.toBeInTheDocument()
 

@@ -1,6 +1,6 @@
-# Kyoumi
+# Makimono
 
-Kyoumi is a personal backlog UI for tracking series, movies, games, books, music, and podcasts. The current codebase is a TanStack Start + React + TypeScript app with Tailwind CSS v4, shadcn-compatible primitives, ES/EN localization, dashboard flows, an adaptive add form, archive view, a mock suggester, and an optional PocketBase-backed auth + repository mode.
+Makimono is a personal backlog UI for tracking series, movies, games, books, music, and podcasts. The current codebase is a TanStack Start + React + TypeScript app with Tailwind CSS v4, shadcn-compatible primitives, ES/EN localization, dashboard flows, an adaptive add form, archive view, a mock suggester, and an optional PocketBase-backed auth + repository mode.
 
 ## Quick path
 

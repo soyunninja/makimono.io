@@ -1,14 +1,15 @@
-import { Bot, Box, Plus, Settings } from 'lucide-react'
+import { Box, EllipsisVertical, Plus, Settings } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { CategoryFilters } from '@/features/items/category-filters'
 import { DashboardCoverItem } from '@/features/items/dashboard-cover-item'
 import { DashboardDisplayPreferenceControl } from '@/features/items/dashboard-display-preference-control'
-import { useDashboardDisplayPreference } from '@/features/items/dashboard-display-preference'
+import { type DashboardDisplayPreference, useDashboardDisplayPreference } from '@/features/items/dashboard-display-preference'
 import {
   groupActiveDashboardItemsByStatus,
   groupOrderedDashboardItemsByCategorySections,
@@ -35,24 +36,83 @@ type DashboardScreenProps = {
   onSuggestItem?: () => void
 }
 
+const dashboardLogoSources = {
+  cards: '/tarjetas.png',
+  list: '/listado.png',
+  covers: '/caratula.png',
+} satisfies Record<DashboardDisplayPreference, string>
+
+const dashboardFaviconSources = {
+  cards: '/favicon-tarjetas.png',
+  list: '/favicon-listado.png',
+  covers: '/favicon-caratulas.png',
+} satisfies Record<DashboardDisplayPreference, string>
+
+type DashboardLogoTitleProps = {
+  preference: DashboardDisplayPreference
+  title: string
+}
+
+function DashboardLogoTitle({ preference, title }: DashboardLogoTitleProps) {
+  return (
+    <span className={'relative block h-12 w-48 sm:h-14 sm:w-56'}>
+      <span className={'sr-only'}>{title}</span>
+      {Object.entries(dashboardLogoSources).map(([logoPreference, src]) => (
+        <img
+          alt={''}
+          aria-hidden={'true'}
+          className={cn(
+            'absolute inset-0 h-full w-full object-contain object-left transition-opacity duration-300 ease-in-out',
+            preference === logoPreference ? 'opacity-100' : 'opacity-0',
+          )}
+          key={logoPreference}
+          src={src}
+        />
+      ))}
+    </span>
+  )
+}
+
 export function DashboardScreen({
   reloadKey,
   repository = getAppInterestRepository(),
   onAddItem,
   onEditItem,
-  onSuggestItem,
 }: DashboardScreenProps) {
   const { locale, t } = useLocale()
   const addActionLabel = t('dashboard.addAction')
-  const suggestActionLabel = t('dashboard.suggestAction')
   const archiveActionLabel = t('dashboard.archiveAction')
   const settingsActionLabel = t('dashboard.settingsAction')
+  const moreActionsLabel = t('dashboard.moreActions')
   const repositoryRef = useRef<InterestRepository>(repository)
   const [items, setItems] = useState<InterestItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilterValue>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [dashboardDisplayPreference, setDashboardDisplayPreference] = useDashboardDisplayPreference()
+
+  useEffect(() => {
+    const dynamicFaviconId = 'dashboard-view-favicon'
+    const faviconHref = `${dashboardFaviconSources[dashboardDisplayPreference]}?view=${dashboardDisplayPreference}`
+    let favicon = document.querySelector<HTMLLinkElement>(`#${dynamicFaviconId}`)
+
+    if (!favicon) {
+      favicon = document.createElement('link')
+      favicon.id = dynamicFaviconId
+      favicon.rel = 'icon'
+      favicon.type = 'image/png'
+      favicon.sizes = '96x96'
+      document.head.appendChild(favicon)
+    }
+
+    document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]').forEach((iconLink) => {
+      iconLink.href = faviconHref
+      iconLink.type = 'image/png'
+      iconLink.sizes = '96x96'
+    })
+
+    favicon.href = faviconHref
+  }, [dashboardDisplayPreference])
 
   useEffect(() => {
     repositoryRef.current = repository
@@ -153,50 +213,46 @@ export function DashboardScreen({
   return (
     <AppShell
       actions={(
-        <div className={'flex flex-wrap items-center justify-end gap-3'}>
-          <Button asChild size={'icon'} variant={'outline'}>
-            <a href={'/dashboard/archive'} title={archiveActionLabel}>
-              <Box aria-hidden={'true'} />
-              <span className={'sr-only'}>{archiveActionLabel}</span>
-            </a>
-          </Button>
-          <Button asChild size={'icon'} variant={'outline'}>
-            <a href={'/dashboard/settings'} title={settingsActionLabel}>
-              <Settings aria-hidden={'true'} />
-              <span className={'sr-only'}>{settingsActionLabel}</span>
-            </a>
-          </Button>
-          {onSuggestItem ? (
-            <Button onClick={onSuggestItem} size={'icon'} type={'button'} variant={'secondary'}>
-              <Bot aria-hidden={'true'} />
-              <span className={'sr-only'}>{suggestActionLabel}</span>
-            </Button>
-          ) : (
-            <Button asChild size={'icon'} variant={'secondary'}>
-              <a href={'/dashboard/suggest'} title={suggestActionLabel}>
-                <Bot aria-hidden={'true'} />
-                <span className={'sr-only'}>{suggestActionLabel}</span>
-              </a>
-            </Button>
-          )}
+        <div className={'flex flex-nowrap items-center justify-end gap-3'}>
           {onAddItem ? (
-            <Button className={'[&_svg]:size-6'} onClick={onAddItem} size={'icon'} type={'button'}>
+            <Button className={'bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90 [&_svg]:size-6'} onClick={onAddItem} size={'icon'} type={'button'}>
               <Plus aria-hidden={'true'} className={'size-6'} />
               <span className={'sr-only'}>{addActionLabel}</span>
             </Button>
           ) : (
-            <Button asChild className={'[&_svg]:size-6'} size={'icon'}>
+            <Button asChild className={'bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90 [&_svg]:size-6'} size={'icon'}>
               <a href={'/dashboard/add'} title={addActionLabel}>
                 <Plus aria-hidden={'true'} className={'size-6'} />
                 <span className={'sr-only'}>{addActionLabel}</span>
               </a>
             </Button>
           )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button aria-label={moreActionsLabel} className={'text-white/80 hover:text-white'} size={'icon'} type={'button'} variant={'outline'}>
+                <EllipsisVertical aria-hidden={'true'} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align={'end'}>
+              <DropdownMenuItem asChild>
+                <a href={'/dashboard/archive'}>
+                  <Box aria-hidden={'true'} />
+                  {archiveActionLabel}
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={'/dashboard/settings'}>
+                  <Settings aria-hidden={'true'} />
+                  {settingsActionLabel}
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
       contentVariant={'plain'}
       headerVariant={'plain'}
-      title={t('dashboard.title')}
+      title={<DashboardLogoTitle preference={dashboardDisplayPreference} title={t('dashboard.title')} />}
       titleActions={(
         <DashboardDisplayPreferenceControl
           name={'dashboard-display-preference-header'}
@@ -296,7 +352,7 @@ export function DashboardScreen({
         ) : null}
 
         {!isLoading && filteredItems.length > 0 && dashboardDisplayPreference === 'covers' ? (
-          <div className={'columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4'} data-testid={'dashboard-covers-grid'}>
+          <div className={'columns-2 gap-4 lg:columns-3 xl:columns-4'} data-testid={'dashboard-covers-grid'}>
             {filteredItems.map((item) => {
               const metadata = categoryMetadataByKey.get(item.category)
 

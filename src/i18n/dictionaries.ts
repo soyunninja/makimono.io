@@ -11,6 +11,10 @@ type LandingMilestoneDictionary = Record<
     description: string
   }
 >
+type LandingUpcomingImprovementDictionary = Record<
+  'personalizedSuggestions' | 'listSubscriptions' | 'sharedLists' | 'prioritiesAndReminders',
+  string
+>
 
 export type Dictionary = {
   app: {
@@ -35,6 +39,7 @@ export type Dictionary = {
     submittingRegister: string
     readyStatus: string
     logoutAction: string
+    errorTitle: string
     errorGeneric: string
   }
   landing: {
@@ -44,6 +49,8 @@ export type Dictionary = {
     nextTitle: string
     nextDescription: string
     milestones: LandingMilestoneDictionary
+    workingOnTitle: string
+    upcomingImprovements: LandingUpcomingImprovementDictionary
   }
   dashboard: {
     eyebrow: string
@@ -63,6 +70,7 @@ export type Dictionary = {
     suggestAction: string
     archiveAction: string
     settingsAction: string
+    moreActions: string
     editAction: string
     deleteAction: string
     deleteEditAction: string
@@ -187,10 +195,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       submittingRegister: 'Creating account…',
       readyStatus: 'Preparing authentication…',
       logoutAction: 'Logout',
-      errorGeneric: 'We could not complete authentication. Check your details and try again.',
+      errorTitle: 'Access not ready yet',
+      errorGeneric: 'Check your email and password, then try again. If you just created the account, give it a moment and sign in again.',
     },
     landing: {
-      title: 'Kyoumi foundation',
+      title: 'Makimono foundation',
       description: 'TanStack Start, Tailwind v4, and shadcn-ready tokens are in place.',
       milestoneBadge: 'Ready',
       nextTitle: 'Next',
@@ -208,6 +217,13 @@ export const dictionaries: Record<Locale, Dictionary> = {
           title: 'shadcn-ready baseline',
           description: 'Aliases and UI helpers are ready for the next slice.',
         },
+      },
+      workingOnTitle: 'Working on:',
+      upcomingImprovements: {
+        personalizedSuggestions: 'Personalized suggestions',
+        listSubscriptions: 'List subscriptions',
+        sharedLists: 'Shared lists',
+        prioritiesAndReminders: 'Priorities and reminders',
       },
     },
     dashboard: {
@@ -228,6 +244,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       suggestAction: 'Get suggestions',
       archiveAction: 'Archive',
       settingsAction: 'Settings',
+      moreActions: 'More actions',
       editAction: 'Edit',
       deleteAction: 'Delete',
       deleteEditAction: 'Delete interest',
@@ -400,10 +417,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       submittingRegister: 'Creando cuenta…',
       readyStatus: 'Preparando la autenticación…',
       logoutAction: 'Salir',
-      errorGeneric: 'No hemos podido completar la autenticación. Revisa los datos e inténtalo de nuevo.',
+      errorTitle: 'Todavía no podemos abrir la puerta',
+      errorGeneric: 'Revisa el correo y la contraseña, y vuelve a intentarlo. Si acabas de crear la cuenta, espera un momento y entra de nuevo.',
     },
     landing: {
-      title: 'Base de Kyoumi',
+      title: 'Base de Makimono',
       description: 'TanStack Start, Tailwind v4 y los tokens compatibles con shadcn ya están listos.',
       milestoneBadge: 'Listo',
       nextTitle: 'Siguiente paso',
@@ -422,10 +440,17 @@ export const dictionaries: Record<Locale, Dictionary> = {
           description: 'Los alias y helpers de UI ya están listos para el siguiente slice.',
         },
       },
+      workingOnTitle: 'Trabajando en:',
+      upcomingImprovements: {
+        personalizedSuggestions: 'Sugerencias personalizadas',
+        listSubscriptions: 'Suscripción a listas',
+        sharedLists: 'Listas compartidas',
+        prioritiesAndReminders: 'Prioridades y recordatorios',
+      },
     },
     dashboard: {
       eyebrow: 'Dashboard',
-      title: 'Kyoumi',
+      title: 'Makimono',
       subtitle: 'Sigue los elementos mock por categoría y muévelos por el backlog.',
       localDataBadge: 'Solo datos locales',
       localDataNote: 'Los cambios de estado se mantienen en memoria hasta que recargues la página.',
@@ -441,6 +466,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       suggestAction: 'Pedir sugerencias',
       archiveAction: 'Archivo',
       settingsAction: 'Ajustes',
+      moreActions: 'Más acciones',
       editAction: 'Editar',
       deleteAction: 'Eliminar',
       deleteEditAction: 'Eliminar interés',

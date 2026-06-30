@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Plus, Save, Trash2 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { TagsInput } from '@/components/ui/tags-input'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -42,6 +40,7 @@ function getRemoveTagLabel(template: string, tag: string) {
 }
 
 const COVER_LOOKUP_TIMEOUT_MS = 3500
+const AUTO_COVER_LOOKUP_DEBOUNCE_MS = 500
 
 const defaultCoverResolver: InterestCoverResolver = (input) => {
   // Approved by openspec/changes/add-cover-metadata-cache: optional client-side
@@ -204,63 +203,61 @@ function CoverPreviewFields({ category, title, coverMetadata, lookupStatus, onLo
 
         {hasCover
           ? (
-              <Button disabled={isSearching} onClick={onRemove} size="sm" type="button" variant="ghost">
-                {t('addFlow.removeCoverAction')}
-              </Button>
-            )
+            <Button disabled={isSearching} onClick={onRemove} size="sm" type="button" variant="ghost">
+              {t('addFlow.removeCoverAction')}
+            </Button>
+          )
           : null}
       </div>
 
       {isSearching
         ? (
-            <p aria-live="polite" className="text-sm text-muted-foreground">
-              {t('addFlow.coverLookupSearching')}
-            </p>
-          )
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            {t('addFlow.coverLookupSearching')}
+          </p>
+        )
         : null}
 
       {lookupStatus === 'not_found'
         ? (
-            <p aria-live="polite" className="text-sm text-muted-foreground">
-              {t('addFlow.coverLookupNotFound')}
-            </p>
-          )
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            {t('addFlow.coverLookupNotFound')}
+          </p>
+        )
         : null}
 
       {hasCover
         ? (
-            <div className="flex items-start gap-3 rounded-md border border-border/60 bg-background/70 p-3">
-              <img
-                alt={t('addFlow.coverPreviewAlt')}
-                className="h-24 w-16 rounded-md border border-border/60 object-cover shadow-sm"
-                src={coverMetadata.coverImageUrl}
-              />
+          <div className="space-y-3 rounded-md border border-border/60 bg-background/70 p-3">
+            <div className="space-y-1 text-sm text-muted-foreground">
+              {coverMetadata.coverMatchedTitle
+                ? (
+                  <p>
+                    <span className="font-medium text-foreground">{t('addFlow.coverMatchedTitleLabel')}</span>
+                    {' '}
+                    {coverMetadata.coverMatchedTitle}
+                  </p>
+                )
+                : null}
 
-              <div className="space-y-1 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">{t('addFlow.coverFoundStatus')}</p>
-
-                {coverMetadata.coverMatchedTitle
-                  ? (
-                      <p>
-                        <span className="font-medium text-foreground">{t('addFlow.coverMatchedTitleLabel')}</span>
-                        {' '}
-                        {coverMetadata.coverMatchedTitle}
-                      </p>
-                    )
-                  : null}
-
-                {providerLabel
-                  ? (
-                      <p>
-                        <span className="font-medium text-foreground">{t('addFlow.coverProviderLabel')}</span>
-                        {' '}
-                        {providerLabel}
-                      </p>
-                    )
-                  : null}
-              </div>
+              {providerLabel
+                ? (
+                  <p>
+                    <span className="font-medium text-foreground">{t('addFlow.coverProviderLabel')}</span>
+                    {' '}
+                    {providerLabel}
+                  </p>
+                )
+                : null}
             </div>
-          )
+
+            <img
+              alt={t('addFlow.coverPreviewAlt')}
+              className="mx-auto max-h-80 w-full max-w-56 rounded-lg border border-border/60 object-cover shadow-sm"
+              src={coverMetadata.coverImageUrl}
+            />
+          </div>
+        )
         : null}
     </div>
   )
@@ -274,7 +271,7 @@ function InterestDetailsFields({ title, tags, notes, categoryFields, coverFields
       {categoryFields}
 
       <div className="space-y-2">
-        <Label htmlFor="add-interest-title">{t('addFlow.titleLabel')}</Label>
+        <Label htmlFor="add-interest-title" className="block">{t('addFlow.titleLabel')}</Label>
         <Input
           id="add-interest-title"
           onChange={(event) => onTitleChange(event.target.value)}
@@ -287,7 +284,7 @@ function InterestDetailsFields({ title, tags, notes, categoryFields, coverFields
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="add-interest-tags">{t('addFlow.tagsLabel')}</Label>
+        <Label htmlFor="add-interest-tags" className="block">{t('addFlow.tagsLabel')}</Label>
         <TagsInput
           getRemoveTagLabel={(tag) => getRemoveTagLabel(t('addFlow.removeTagAction'), tag)}
           id="add-interest-tags"
@@ -298,7 +295,7 @@ function InterestDetailsFields({ title, tags, notes, categoryFields, coverFields
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="add-interest-notes">{t('addFlow.notesLabel')}</Label>
+        <Label htmlFor="add-interest-notes" className="block">{t('addFlow.notesLabel')}</Label>
         <Textarea
           id="add-interest-notes"
           onChange={(event) => onNotesChange(event.target.value)}
@@ -327,20 +324,47 @@ export function AdaptiveAddFlow({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [coverMetadata, setCoverMetadata] = useState<EditableCoverMetadata>(toEditableCoverMetadata())
   const [coverLookupStatus, setCoverLookupStatus] = useState<CoverLookupStatus>('idle')
+  const latestCoverLookupIdRef = useRef(0)
+  const lastCoverLookupKeyRef = useRef<string | null>(null)
+  const currentCoverLookupInputRef = useRef<{ category: Category | null, title: string }>({ category: null, title: '' })
 
   const isSubmitDisabled = isSubmitting || !selectedCategory || title.trim().length === 0
+  const trimmedTitle = title.trim()
+  currentCoverLookupInputRef.current = { category: selectedCategory, title: trimmedTitle }
 
-  async function handleFindCover() {
-    if (!selectedCategory || title.trim().length === 0 || coverLookupStatus === 'searching') {
+  async function requestCoverLookup(category: Category | null, requestedTitle: string) {
+    const normalizedTitle = requestedTitle.trim()
+
+    if (!category || normalizedTitle.length === 0) {
       return
     }
 
+    const lookupKey = `${category}:${normalizedTitle}`
+
+    if (lastCoverLookupKeyRef.current === lookupKey) {
+      return
+    }
+
+    lastCoverLookupKeyRef.current = lookupKey
+    const lookupId = latestCoverLookupIdRef.current + 1
+    latestCoverLookupIdRef.current = lookupId
+
     setCoverLookupStatus('searching')
 
-    const resolvedCoverMetadata = await lookupCoverMetadata(coverResolver, selectedCategory, title.trim())
+    const resolvedCoverMetadata = await lookupCoverMetadata(coverResolver, category, normalizedTitle)
+
+    const latestInput = currentCoverLookupInputRef.current
+
+    if (latestCoverLookupIdRef.current !== lookupId || latestInput.category !== category || latestInput.title !== normalizedTitle) {
+      return
+    }
 
     setCoverMetadata(toEditableCoverMetadata(resolvedCoverMetadata))
     setCoverLookupStatus(resolvedCoverMetadata ? 'found' : 'not_found')
+  }
+
+  function handleFindCover() {
+    void requestCoverLookup(selectedCategory, title)
   }
 
   function handleRemoveCover() {
@@ -350,11 +374,22 @@ export function AdaptiveAddFlow({
 
   function handleTitleChange(value: string) {
     setTitle(value)
-
-    if (coverLookupStatus !== 'searching') {
-      setCoverLookupStatus('idle')
-    }
+    setCoverLookupStatus('idle')
   }
+
+  useEffect(() => {
+    if (!selectedCategory || trimmedTitle.length === 0) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void requestCoverLookup(selectedCategory, trimmedTitle)
+    }, AUTO_COVER_LOOKUP_DEBOUNCE_MS)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [selectedCategory, trimmedTitle, coverResolver])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -386,70 +421,72 @@ export function AdaptiveAddFlow({
 
   const formContent = (
     <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
-      <DrawerHeader className="p-0 text-left">
-        <DrawerTitle asChild className="text-2xl font-semibold tracking-tight text-foreground">
-          <h1>{t('addFlow.title')}</h1>
-        </DrawerTitle>
-      </DrawerHeader>
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+        <DrawerHeader className="p-0 text-left">
+          <DrawerTitle asChild className="text-2xl font-semibold tracking-tight text-foreground">
+            <h1>{t('addFlow.title')}</h1>
+          </DrawerTitle>
+        </DrawerHeader>
 
-      <form className={cn('mx-auto grid w-full max-w-[1200px] gap-6', resolvedIsDesktop ? 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start' : undefined)} onSubmit={handleSubmit}>
-        <div className="space-y-6">
-          <InterestDetailsFields
-            categoryFields={(
-              <div className="space-y-2">
-                <Label>{t('addFlow.categoryLabel')}</Label>
-                <ToggleGroup
-                  aria-label={t('addFlow.categoryLabel')}
-                  className="flex flex-wrap gap-2"
-                  onValueChange={(value) => {
-                    setCoverMetadata(toEditableCoverMetadata())
-                    setCoverLookupStatus('idle')
-                    setSelectedCategory((value as Category) || null)
-                  }}
-                  type="single"
-                  value={selectedCategory ?? ''}
-                >
-                  {categories.map((category) => (
-                    <ToggleGroupItem
-                      className={cn('data-[state=on]:border-current data-[state=on]:bg-current/15', category.controlClassName)}
-                      key={category.key}
-                      value={category.key}
-                      variant="outline"
-                    >
-                      {category.label}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </div>
-            )}
-            notes={notes}
-            onNotesChange={setNotes}
-            onTagsChange={setTags}
-            onTitleChange={handleTitleChange}
-            tags={tags}
-            title={title}
-          />
+        <form className={cn('grid w-full gap-6', resolvedIsDesktop ? 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start' : undefined)} onSubmit={handleSubmit}>
+          <div className="space-y-6">
+            <InterestDetailsFields
+              categoryFields={(
+                <div className="space-y-2">
+                  <Label className="block">{t('addFlow.categoryLabel')}</Label>
+                  <ToggleGroup
+                    aria-label={t('addFlow.categoryLabel')}
+                    className="flex flex-wrap gap-2"
+                    onValueChange={(value) => {
+                      setCoverMetadata(toEditableCoverMetadata())
+                      setCoverLookupStatus('idle')
+                      setSelectedCategory((value as Category) || null)
+                    }}
+                    type="single"
+                    value={selectedCategory ?? ''}
+                  >
+                    {categories.map((category) => (
+                      <ToggleGroupItem
+                        className={cn('data-[state=on]:border-current data-[state=on]:bg-current/15', category.controlClassName)}
+                        key={category.key}
+                        value={category.key}
+                        variant="outline"
+                      >
+                        {category.label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </div>
+              )}
+              notes={notes}
+              onNotesChange={setNotes}
+              onTagsChange={setTags}
+              onTitleChange={handleTitleChange}
+              tags={tags}
+              title={title}
+            />
+          </div>
 
-          <div className="flex justify-end">
-            <Button aria-label={t('addFlow.submit')} disabled={isSubmitDisabled} size="icon" type="submit">
+          <aside className="lg:sticky lg:top-0">
+            <CoverPreviewFields
+              category={selectedCategory}
+              coverMetadata={coverMetadata}
+              lookupStatus={coverLookupStatus}
+              onLookup={() => {
+                void handleFindCover()
+              }}
+              onRemove={handleRemoveCover}
+              title={title}
+            />
+          </aside>
+
+          <div className="flex justify-end lg:col-span-2">
+            <Button aria-label={t('addFlow.submit')} className="bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90" disabled={isSubmitDisabled} size="icon" type="submit">
               <Plus aria-hidden="true" />
             </Button>
           </div>
-        </div>
-
-        <aside className="lg:sticky lg:top-0">
-          <CoverPreviewFields
-            category={selectedCategory}
-            coverMetadata={coverMetadata}
-            lookupStatus={coverLookupStatus}
-            onLookup={() => {
-              void handleFindCover()
-            }}
-            onRemove={handleRemoveCover}
-            title={title}
-          />
-        </aside>
-      </form>
+        </form>
+      </div>
     </div>
   )
   return (
@@ -620,17 +657,31 @@ export function AdaptiveEditFlow({
 
   const formContent = (
     <div className="flex max-h-[85vh] flex-col gap-6 overflow-y-auto px-1 pb-1">
-      <div className="pr-12">
-        <div className="flex min-h-6 items-center">
-          <Badge className={metadata.accentClassName} variant="outline">
-            {metadata.label}
-          </Badge>
-        </div>
-      </div>
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
+        <DrawerHeader className="p-0 text-left">
+          <DrawerTitle asChild className="text-2xl font-semibold tracking-tight text-foreground">
+            <h1>{t('dashboard.editTitle')}</h1>
+          </DrawerTitle>
+          <div className="flex min-h-6 items-center">
+            <Badge className={metadata.accentClassName} variant="outline">
+              {metadata.label}
+            </Badge>
+          </div>
+        </DrawerHeader>
 
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        <InterestDetailsFields
-          coverFields={(
+        <form className={cn('grid w-full gap-6', resolvedIsDesktop ? 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start' : undefined)} onSubmit={handleSubmit}>
+          <div className="space-y-6">
+            <InterestDetailsFields
+              notes={notes}
+              onNotesChange={setNotes}
+              onTagsChange={setTags}
+              onTitleChange={handleTitleChange}
+              tags={tags}
+              title={title}
+            />
+          </div>
+
+          <aside className="lg:sticky lg:top-0">
             <CoverPreviewFields
               category={itemCategory}
               coverMetadata={coverMetadata}
@@ -641,59 +692,31 @@ export function AdaptiveEditFlow({
               onRemove={handleRemoveCover}
               title={title}
             />
-          )}
-          notes={notes}
-          onNotesChange={setNotes}
-          onTagsChange={setTags}
-          onTitleChange={handleTitleChange}
-          tags={tags}
-          title={title}
-        />
+          </aside>
 
-        <div className="flex items-center justify-between border-t border-border/70 pt-4">
-          <Button
-            aria-label={t('dashboard.deleteEditAction')}
-            disabled={isSubmitting || isDeleting}
-            onClick={handleDelete}
-            size="icon"
-            type="button"
-            variant="destructive"
-          >
-            <Trash2 />
-          </Button>
+          <div className="flex items-center justify-between border-t border-border/70 pt-4 lg:col-span-2">
+            <Button
+              aria-label={t('dashboard.deleteEditAction')}
+              disabled={isSubmitting || isDeleting}
+              onClick={handleDelete}
+              size="icon"
+              type="button"
+              variant="destructive"
+            >
+              <Trash2 />
+            </Button>
 
-          <Button aria-label={t('dashboard.saveAction')} disabled={isSubmitDisabled} size="icon" type="submit">
-            <Save />
-          </Button>
-        </div>
-      </form>
+            <Button aria-label={t('dashboard.saveAction')} className="bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90" disabled={isSubmitDisabled} size="icon" type="submit">
+              <Save />
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 
-  if (resolvedIsDesktop) {
-    return (
-      <Dialog
-        onOpenChange={(open) => {
-          if (!open) {
-            onRequestClose?.()
-          }
-        }}
-        open
-      >
-        <DialogContent
-          aria-description={t('dashboard.editDescription')}
-          aria-label={t('dashboard.editTitle')}
-          className="max-h-[90vh] overflow-hidden"
-          closeLabel={t('app.closeLabel')}
-        >
-          {formContent}
-        </DialogContent>
-      </Dialog>
-    )
-  }
-
   return (
-    <Sheet
+    <Drawer
       onOpenChange={(open) => {
         if (!open) {
           onRequestClose?.()
@@ -701,15 +724,13 @@ export function AdaptiveEditFlow({
       }}
       open
     >
-      <SheetContent
+      <DrawerContent
         aria-description={t('dashboard.editDescription')}
         aria-label={t('dashboard.editTitle')}
-        className="rounded-t-3xl border-x border-t border-border/70"
         closeLabel={t('app.closeLabel')}
-        side="bottom"
       >
         {formContent}
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   )
 }

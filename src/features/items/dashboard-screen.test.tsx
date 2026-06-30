@@ -46,7 +46,7 @@ describe('DashboardScreen', () => {
     expect(screen.queryByTestId('dashboard-list')).not.toBeInTheDocument()
     expect(screen.queryByTestId('dashboard-covers-grid')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.getByRole('button', { name: 'More actions' })).toBeInTheDocument()
     expect(await screen.findAllByRole('article')).toHaveLength(4)
     expect(screen.queryByRole('heading', { level: 2, name: 'Celeste' })).not.toBeInTheDocument()
 
@@ -253,7 +253,7 @@ describe('DashboardScreen', () => {
     const coversGrid = await screen.findByTestId('dashboard-covers-grid')
 
     expect(coversGrid).toBeInTheDocument()
-    expect(coversGrid).toHaveClass('columns-1', 'sm:columns-2', 'lg:columns-3', 'xl:columns-4')
+    expect(coversGrid).toHaveClass('columns-2', 'lg:columns-3', 'xl:columns-4')
     expect(coversGrid).not.toHaveClass('grid', 'xl:grid-cols-3')
     expect(screen.queryByTestId('dashboard-cards-grid')).not.toBeInTheDocument()
     expect(screen.queryByTestId('dashboard-list')).not.toBeInTheDocument()
@@ -541,8 +541,11 @@ describe('DashboardScreen', () => {
       await screen.findByRole('heading', { level: 1, name: 'Your interests' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Get suggestions' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Archive' })).toBeInTheDocument()
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
+    expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
   })
 
@@ -554,11 +557,13 @@ describe('DashboardScreen', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Kyoumi' }),
+      await screen.findByRole('heading', { level: 1, name: 'Makimono' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Añadir interés' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Pedir sugerencias' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Archivo' })).toBeInTheDocument()
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Más acciones' }))
+    expect(screen.queryByRole('menuitem', { name: 'Pedir sugerencias' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archivo' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'Ajustes' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('group', { name: 'Idioma' })).not.toBeInTheDocument()
     expect(screen.queryByText('Sigue los elementos mock por categoría y muévelos por el backlog.')).not.toBeInTheDocument()
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
@@ -571,7 +576,7 @@ describe('DashboardScreen', () => {
       </LocaleProvider>,
     )
 
-    const title = await screen.findByRole('heading', { level: 1, name: 'Kyoumi' })
+    const title = await screen.findByRole('heading', { level: 1, name: 'Makimono' })
     const titleRow = title.closest('div') as HTMLElement
     const displayControls = within(titleRow).getByRole('radiogroup', { name: 'Visualización del dashboard' })
     const cardsRadio = within(displayControls).getByRole('radio', { name: 'Tarjetas' })
@@ -581,7 +586,7 @@ describe('DashboardScreen', () => {
     expect(await screen.findByTestId('dashboard-cards-grid')).toBeInTheDocument()
     expect(cardsRadio).toBeChecked()
     expect(cardsRadio.closest('label')).toHaveAttribute('title', 'Tarjetas')
-    expect(cardsRadio.closest('label')).toHaveClass('bg-primary')
+    expect(cardsRadio.closest('label')).toHaveClass('bg-transparent')
     expect(within(displayControls).queryByText('Tarjetas')).not.toBeInTheDocument()
     expect(within(displayControls).queryByText('Listado')).not.toBeInTheDocument()
     expect(within(displayControls).queryByText('Carátulas')).not.toBeInTheDocument()
@@ -599,7 +604,7 @@ describe('DashboardScreen', () => {
     expect(screen.queryByTestId('dashboard-list')).not.toBeInTheDocument()
   })
 
-  it('renders icon-only header actions with accessible names and keeps the add action last', async () => {
+  it('groups secondary header actions behind a menu while keeping add visible first', async () => {
     const handleAddItem = vi.fn()
     const handleSuggestItem = vi.fn()
 
@@ -614,16 +619,19 @@ describe('DashboardScreen', () => {
     )
 
     const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
-    const archiveAction = within(header).getByRole('link', { name: 'Archive' })
-    const suggestAction = within(header).getByRole('button', { name: 'Get suggestions' })
     const addAction = within(header).getByRole('button', { name: 'Add interest' })
+    const moreActions = within(header).getByRole('button', { name: 'More actions' })
 
-    expect(archiveAction).toHaveAttribute('href', '/dashboard/archive')
+    expect(addAction.compareDocumentPosition(moreActions)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
 
-    fireEvent.click(suggestAction)
+    fireEvent.pointerDown(moreActions)
+
+    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     fireEvent.click(addAction)
 
-    expect(handleSuggestItem).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
+    expect(handleSuggestItem).not.toHaveBeenCalled()
     expect(handleAddItem).toHaveBeenCalledTimes(1)
   })
 
@@ -722,8 +730,6 @@ describe('DashboardScreen', () => {
     const getArrivalCard = () => screen.getByRole('heading', { level: 2, name: 'Arrival' }).closest('[role="article"]') as HTMLElement
     expect(screen.getByRole('radiogroup', { name: 'Category filters' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Add interest' })).toHaveAttribute('href', '/dashboard/add')
-    expect(screen.getByRole('link', { name: 'Get suggestions' })).toHaveAttribute('href', '/dashboard/suggest')
-    expect(screen.getByRole('link', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'EN' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 2, name: 'Celeste' })).not.toBeInTheDocument()
@@ -740,6 +746,11 @@ describe('DashboardScreen', () => {
 
     expect(screen.getByRole('radio', { name: 'All (4)' })).toHaveAttribute('aria-checked', 'true')
     expect(within(getArrivalCard()).getByRole('button', { name: 'Mark as watched: Arrival' })).toHaveAttribute('aria-haspopup', 'dialog')
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
+    expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
   })
 
   it('renders long card content in a readable article and preserves the visible action', async () => {

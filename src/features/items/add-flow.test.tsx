@@ -1,9 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AdaptiveAddFlow, AdaptiveEditFlow } from '@/features/items/add-flow'
 import type { InterestCoverResolver } from '@/features/items/cover-metadata'
 import { createMockInterestRepository, getAppInterestRepository, resetAppInterestRepository } from '@/features/items/mock-repository'
+import type { InterestItemCoverMetadata } from '@/features/items/types'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
@@ -18,6 +19,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.useRealTimers()
   window.localStorage.clear()
   resetAppInterestRepository()
 })
@@ -66,6 +68,22 @@ describe('AdaptiveAddFlow', () => {
     expect(screen.queryByLabelText('Author')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Reading format')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Current season')).not.toBeInTheDocument()
+  })
+
+  it('aligns the add drawer title inside the same centered content column as the form', () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveAddFlow isDesktop repository={createMockInterestRepository([])} />
+      </LocaleProvider>,
+    )
+
+    const title = screen.getByRole('heading', { level: 1, name: 'Add' })
+    const header = title.closest('[data-slot="drawer-header"]')
+    const contentColumn = header?.parentElement
+    const form = screen.getByRole('button', { name: 'Add interest' }).closest('form')
+
+    expect(contentColumn).toHaveClass('mx-auto', 'w-full', 'max-w-[1200px]')
+    expect(form?.parentElement).toBe(contentColumn)
   })
 
   it('shows Podcasts in the selector and saves podcast items from trimmed Enter/comma tags without duplicate chips', async () => {
@@ -204,7 +222,6 @@ describe('AdaptiveAddFlow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Find cover' }))
 
     expect(await screen.findByRole('img', { name: 'Cover preview' })).toHaveAttribute('src', 'https://images.example.com/severance.jpg')
-    expect(screen.getByText('Cover ready to save')).toBeVisible()
     expect(screen.getByText(hasExactText('Matched title: Severance'))).toBeVisible()
     expect(screen.getByText(hasExactText('Provider: TMDB'))).toBeVisible()
 
@@ -225,6 +242,91 @@ describe('AdaptiveAddFlow', () => {
       category: 'series',
       title: 'Severance',
     }))
+  })
+
+  it('automatically looks up a cover after category and title settle without duplicating the same lookup', async () => {
+    const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue({
+      coverImageUrl: 'https://images.example.com/severance.jpg',
+      coverMatchedTitle: 'Severance',
+      coverProvider: 'tmdb',
+    })
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveAddFlow coverResolver={coverResolver} isDesktop={false} repository={createMockInterestRepository([])} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Series' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Sev' } })
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Severance' } })
+
+    await new Promise((resolve) => window.setTimeout(resolve, 250))
+
+    expect(coverResolver).not.toHaveBeenCalled()
+
+    await waitFor(() => {
+      expect(coverResolver).toHaveBeenCalledTimes(1)
+    })
+
+    expect(await screen.findByRole('img', { name: 'Cover preview' })).toHaveAttribute('src', 'https://images.example.com/severance.jpg')
+    expect(coverResolver).toHaveBeenCalledTimes(1)
+    expect(coverResolver).toHaveBeenCalledWith(expect.objectContaining({
+      category: 'series',
+      title: 'Severance',
+    }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Find cover' }))
+
+    expect(coverResolver).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores stale automatic cover results after the title changes', async () => {
+    const pendingLookups: Array<(value: InterestItemCoverMetadata | null) => void> = []
+    const coverResolver: InterestCoverResolver = vi.fn((_input) => new Promise<InterestItemCoverMetadata | null>((resolve) => {
+      pendingLookups.push(resolve)
+    }))
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <AdaptiveAddFlow coverResolver={coverResolver} isDesktop={false} repository={createMockInterestRepository([])} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Series' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Old title' } })
+
+    await waitFor(() => {
+      expect(coverResolver).toHaveBeenCalledTimes(1)
+    })
+
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Severance' } })
+
+    await waitFor(() => {
+      expect(coverResolver).toHaveBeenCalledTimes(2)
+    })
+
+    await act(async () => {
+      pendingLookups[0]?.({
+        coverImageUrl: 'https://images.example.com/old.jpg',
+        coverMatchedTitle: 'Old title',
+        coverProvider: 'tmdb',
+      })
+    })
+
+    expect(screen.queryByRole('img', { name: 'Cover preview' })).not.toBeInTheDocument()
+
+    await act(async () => {
+      pendingLookups[1]?.({
+        coverImageUrl: 'https://images.example.com/severance.jpg',
+        coverMatchedTitle: 'Severance',
+        coverProvider: 'tmdb',
+      })
+    })
+
+    expect(await screen.findByRole('img', { name: 'Cover preview' })).toHaveAttribute('src', 'https://images.example.com/severance.jpg')
+    expect(screen.getByText(hasExactText('Matched title: Severance'))).toBeVisible()
+    expect(screen.queryByText(hasExactText('Matched title: Old title'))).not.toBeInTheDocument()
   })
 
   it('removes a found cover preview before submit and saves the item without cover metadata', async () => {
@@ -307,10 +409,10 @@ describe('AdaptiveAddFlow', () => {
     }))
   })
 
-  it('still creates the item without cover metadata when the user skips cover search', async () => {
+  it('still creates the item without cover metadata when automatic cover lookup finds nothing', async () => {
     const repository = createMockInterestRepository([])
     const onCreated = vi.fn()
-    const coverResolver: InterestCoverResolver = vi.fn()
+    const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue(null)
 
     render(
       <LocaleProvider initialLocale="en">
@@ -320,6 +422,11 @@ describe('AdaptiveAddFlow', () => {
 
     fireEvent.click(screen.getByRole('radio', { name: 'Books' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Clean Code' } })
+
+    await waitFor(() => {
+      expect(coverResolver).toHaveBeenCalledTimes(1)
+    })
+
     fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
 
     await waitFor(() => {
@@ -333,7 +440,10 @@ describe('AdaptiveAddFlow', () => {
       title: 'Clean Code',
     })
     expect(createdItem.coverImageUrl).toBeUndefined()
-    expect(coverResolver).not.toHaveBeenCalled()
+    expect(coverResolver).toHaveBeenCalledWith(expect.objectContaining({
+      category: 'books',
+      title: 'Clean Code',
+    }))
   })
 
   it('uses an icon-only submit button with an accessible name and no visible submit text', async () => {
@@ -364,9 +474,7 @@ describe('AdaptiveAddFlow', () => {
     const deleteButton = screen.getByRole('button', { name: 'Eliminar interés' })
     const saveButton = screen.getByRole('button', { name: 'Guardar cambios' })
 
-    await waitFor(() => {
-      expect(screen.queryByRole('heading', { name: 'Editar interés' })).not.toBeInTheDocument()
-    })
+    expect(screen.getByRole('heading', { name: 'Editar interés' })).toBeInTheDocument()
     expect(screen.queryByText('Actualiza los detalles guardados y mantén el elemento en tu dashboard.')).not.toBeInTheDocument()
     expect(screen.queryByText('Detalles')).not.toBeInTheDocument()
     expect(titleInput).toBeVisible()

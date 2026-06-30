@@ -38,14 +38,14 @@ export function CategoryFilters({
         type="single"
         value={value}
       >
-        <ToggleGroupItem value="all" variant="outline">
+        <ToggleGroupItem className="cursor-pointer" value="all" variant="outline">
           {`${allLabel} (${totalCount})`}
         </ToggleGroupItem>
 
         {categories.map((category) => (
           <ToggleGroupItem
             className={cn(
-              'data-[state=on]:border-current data-[state=on]:bg-current/15',
+              'cursor-pointer data-[state=on]:border-current data-[state=on]:bg-current/15',
               category.controlClassName,
             )}
             key={category.key}
