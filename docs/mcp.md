@@ -186,6 +186,22 @@ Behavior:
 - The existing OpenCode bearer-token remote MCP write path is unchanged and still depends on `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true`.
 - Write calls still use the resolved authenticated user; tool input must not include a user id. Soft delete still requires `confirm` to be exactly `soft-delete`, write rate limits still apply, and successful writes still create durable audit events when the audit collection is available.
 
+### Recommended ChatGPT capture prompt
+
+Use a standing instruction like this when asking ChatGPT to add interests to Makimono:
+
+```text
+When you add interests to Makimono:
+- Ask first if the category is unclear.
+- Keep the title clean, without commentary.
+- Write notes with why I may care, where the recommendation came from, and any useful context.
+- Use tags for medium, genre, language, source, mood, and priority when they are known.
+- Do not invent facts; leave unknown details out of notes and tags.
+- Prefer a pending status unless I explicitly say I already started or completed it.
+```
+
+After a ChatGPT write, verify the event in `/dashboard/audit` by filtering for the returned interest id.
+
 By default, remote MCP exposes only `makimono_list_interests`. Enable guarded remote create, update, status update, soft delete, and restore explicitly:
 
 ```sh
