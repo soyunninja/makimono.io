@@ -225,9 +225,9 @@ describe('dashboard nested routes', () => {
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
-    expect(await screen.findByRole('menuitem', { name: 'Audit' })).toHaveAttribute('href', '/dashboard/audit')
     expect(await screen.findByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
   })
 
@@ -246,13 +246,13 @@ describe('dashboard nested routes', () => {
     expect(screen.queryByText('Sign out of the current PocketBase session.')).not.toBeInTheDocument()
     expect(screen.queryByRole('radiogroup', { name: 'Dashboard display' })).not.toBeInTheDocument()
     expect(screen.queryByText('Current app version.')).not.toBeInTheDocument()
-    expect(screen.getByText('v0.65')).toBeInTheDocument()
+    expect(screen.getByText('v0.66')).toBeInTheDocument()
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
     expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
-    expect(screen.getByRole('menuitem', { name: 'Audit' })).toHaveAttribute('href', '/dashboard/audit')
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
   })
 
@@ -341,8 +341,8 @@ describe('dashboard nested routes', () => {
 
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
-    expect(screen.getByRole('menuitem', { name: 'Audit' })).toHaveAttribute('href', '/dashboard/audit')
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/dashboard')
   })

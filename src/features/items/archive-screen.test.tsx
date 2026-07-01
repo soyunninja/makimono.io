@@ -34,8 +34,8 @@ describe('ArchiveScreen', () => {
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
     expect(await screen.findByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
-    expect(screen.getByRole('menuitem', { name: 'Audit' })).toHaveAttribute('href', '/dashboard/audit')
     expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     fireEvent.keyDown(document, { key: 'Escape' })
 

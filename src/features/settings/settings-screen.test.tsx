@@ -39,7 +39,7 @@ describe('SettingsScreen', () => {
     expect(screen.queryByRole('radiogroup', { name: 'Dashboard display' })).not.toBeInTheDocument()
     expect(screen.getByText('Version')).toBeInTheDocument()
     expect(screen.queryByText('Current app version.')).not.toBeInTheDocument()
-    expect(screen.getByText('v0.65')).toBeInTheDocument()
+    expect(screen.getByText('v0.66')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Logout' }))
 
@@ -50,8 +50,8 @@ describe('SettingsScreen', () => {
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
     expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
-    expect(screen.getByRole('menuitem', { name: 'Audit' })).toHaveAttribute('href', '/dashboard/audit')
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
   })
 
@@ -77,8 +77,8 @@ describe('SettingsScreen', () => {
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Más acciones' }))
 
     expect(screen.getByRole('menuitem', { name: 'Archivo' })).toHaveAttribute('href', '/dashboard/archive')
-    expect(screen.getByRole('menuitem', { name: 'Auditoría' })).toHaveAttribute('href', '/dashboard/audit')
     expect(screen.queryByRole('menuitem', { name: 'Volver al dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Auditoría' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Ajustes' })).not.toBeInTheDocument()
     fireEvent.keyDown(document, { key: 'Escape' })
 
