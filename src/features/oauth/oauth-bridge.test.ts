@@ -25,6 +25,10 @@ const envWithoutPkce = {
   MAKIMONO_OAUTH_REDIRECT_URIS: chatGptRedirectUri,
   MAKIMONO_OAUTH_REQUIRE_PKCE: 'false',
 }
+const writeScopeEnv = {
+  ...env,
+  MAKIMONO_OAUTH_ENABLE_WRITES: 'true',
+}
 
 function createAuthorizeRequest(overrides: Record<string, string> = {}) {
   const url = new URL('https://app.example/oauth/authorize')
@@ -108,6 +112,14 @@ describe('OAuth bridge metadata', () => {
       scopes_supported: ['mcp.read'],
     })
   })
+
+  it('includes the write scope in metadata only when OAuth writes are enabled', async () => {
+    const authorizationResponse = handleOAuthAuthorizationServerMetadata(new Request('https://app.example/.well-known/oauth-authorization-server'), { env: writeScopeEnv })
+    const resourceResponse = handleOAuthProtectedResourceMetadata(new Request('https://app.example/.well-known/oauth-protected-resource'), { env: writeScopeEnv })
+
+    await expect(authorizationResponse.json()).resolves.toMatchObject({ scopes_supported: ['mcp.read', 'mcp.write'] })
+    await expect(resourceResponse.json()).resolves.toMatchObject({ scopes_supported: ['mcp.read', 'mcp.write'] })
+  })
 })
 
 describe('OAuth authorize endpoint', () => {
@@ -157,6 +169,20 @@ describe('OAuth authorize endpoint', () => {
     await expect(clientResponse.json()).resolves.toMatchObject({ error: 'unauthorized_client' })
     await expect(redirectResponse.json()).resolves.toMatchObject({ error: 'invalid_request' })
     await expect(scopeResponse.json()).resolves.toMatchObject({ error: 'invalid_scope' })
+  })
+
+  it('rejects write scope authorization when OAuth writes are disabled', async () => {
+    const response = await handleOAuthAuthorize(createAuthorizeRequest({ scope: 'mcp.read mcp.write' }), { env })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toMatchObject({ error: 'invalid_scope' })
+  })
+
+  it('rejects arbitrary OAuth scopes even when OAuth writes are enabled', async () => {
+    const response = await handleOAuthAuthorize(createAuthorizeRequest({ scope: 'mcp.read profile' }), { env: writeScopeEnv })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toMatchObject({ error: 'invalid_scope' })
   })
 })
 
@@ -241,6 +267,26 @@ describe('OAuth token endpoint', () => {
       access_token: expect.stringMatching(/^mk_oauth_/),
       expires_in: 900,
       scope: 'mcp.read',
+      token_type: 'Bearer',
+    })
+  })
+
+  it('exchanges a code with read and write scopes when OAuth writes are enabled', async () => {
+    const authorizeResponse = await handleOAuthAuthorize(createAuthorizeRequest({ scope: 'mcp.read mcp.write' }), { env: writeScopeEnv, now: () => 1_000 })
+    const code = new URL(authorizeResponse.headers.get('Location') ?? '').searchParams.get('code') ?? ''
+
+    const response = await handleOAuthToken(createTokenRequest({
+      client_id: 'chatgpt-client',
+      code,
+      code_verifier: verifier,
+      grant_type: 'authorization_code',
+      redirect_uri: 'https://chat.openai.com/aip/g-123/oauth/callback',
+    }), { env: writeScopeEnv, fetch: createPocketBaseFetch(), now: () => 2_000 })
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
+      access_token: expect.stringMatching(/^mk_oauth_/),
+      scope: 'mcp.read mcp.write',
       token_type: 'Bearer',
     })
   })

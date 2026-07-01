@@ -33,6 +33,7 @@ type RemoteMcpConfig = {
   auditCollection: string
   authCollection: string
   enableWrites: boolean
+  oauthEnableWrites: boolean
   pocketBaseUrl: string
   writeLimitPerMinute: number
 }
@@ -267,6 +268,7 @@ function getRemoteMcpConfig(env = getProcessEnv()): RemoteMcpConfig {
     authCollection,
     auditCollection: env.MAKIMONO_REMOTE_MCP_AUDIT_COLLECTION?.trim() || defaultAuditCollection,
     enableWrites: env.MAKIMONO_REMOTE_MCP_ENABLE_WRITES === 'true',
+    oauthEnableWrites: env.MAKIMONO_OAUTH_ENABLE_WRITES === 'true',
     pocketBaseUrl: pocketBaseUrl.replace(/\/+$/, ''),
     writeLimitPerMinute,
   }
@@ -302,7 +304,7 @@ async function resolveRemoteMcpAuth({ config, fetcher, token }: { config: Remote
   if (oauthToken) {
     return {
       ok: true,
-      readOnly: true,
+      readOnly: !(config.oauthEnableWrites && oauthToken.scope.split(/\s+/).includes('mcp.write')),
       token: oauthToken.pocketBaseToken,
       userId: oauthToken.userId,
     }

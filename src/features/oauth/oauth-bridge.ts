@@ -5,6 +5,7 @@ type OAuthBridgeConfig = {
   allowedClientIds: Set<string>
   allowedRedirectUris: Set<string>
   codeTtlSeconds: number
+  enableWrites: boolean
   requirePkce: boolean
   issuer: string
   pocketBaseToken: string
@@ -12,18 +13,22 @@ type OAuthBridgeConfig = {
   authCollection: string
 }
 
+type OAuthScope = 'mcp.read' | 'mcp.write'
+
+type OAuthScopeString = 'mcp.read' | 'mcp.read mcp.write'
+
 type AuthorizationCode = {
   challenge?: string
   clientId: string
   expiresAt: number
   redirectUri: string
-  scope: 'mcp.read'
+  scope: OAuthScopeString
 }
 
 export type OAuthBridgeAccessToken = {
   expiresAt: number
   pocketBaseToken: string
-  scope: 'mcp.read'
+  scope: OAuthScopeString
   userId: string
 }
 
@@ -55,7 +60,7 @@ export function handleOAuthAuthorizationServerMetadata(request: Request, depende
     grant_types_supported: ['authorization_code'],
     code_challenge_methods_supported: ['S256'],
     token_endpoint_auth_methods_supported: ['none'],
-    scopes_supported: ['mcp.read'],
+    scopes_supported: getSupportedScopes(config),
   })
 }
 
@@ -65,7 +70,7 @@ export function handleOAuthProtectedResourceMetadata(request: Request, dependenc
   return jsonResponse({
     resource: `${config.issuer}/api/mcp`,
     authorization_servers: [config.issuer],
-    scopes_supported: ['mcp.read'],
+    scopes_supported: getSupportedScopes(config),
     bearer_methods_supported: ['header'],
   })
 }
@@ -99,7 +104,7 @@ export async function handleOAuthAuthorize(request: Request, dependencies: OAuth
     clientId: validation.clientId,
     expiresAt: now + config.codeTtlSeconds * 1000,
     redirectUri: validation.redirectUri,
-    scope: 'mcp.read',
+    scope: validation.scope,
   })
 
   const redirectUrl = new URL(validation.redirectUri)
@@ -176,7 +181,7 @@ export async function handleOAuthToken(request: Request, dependencies: OAuthBrid
   accessTokens.set(accessToken, {
     expiresAt,
     pocketBaseToken: config.pocketBaseToken,
-    scope: 'mcp.read',
+    scope: authorizationCode.scope,
     userId: user.userId,
   })
 
@@ -184,7 +189,7 @@ export async function handleOAuthToken(request: Request, dependencies: OAuthBrid
     access_token: accessToken,
     token_type: 'Bearer',
     expires_in: config.accessTokenTtlSeconds,
-    scope: 'mcp.read',
+    scope: authorizationCode.scope,
   })
 }
 
@@ -232,6 +237,7 @@ function getOAuthBridgeConfig(request: Request, env = getProcessEnv()): OAuthBri
     allowedRedirectUris,
     authCollection: env.MAKIMONO_POCKETBASE_AUTH_COLLECTION?.trim() || defaultAuthCollection,
     codeTtlSeconds: parsePositiveInteger(env.MAKIMONO_OAUTH_CODE_TTL_SECONDS, defaultCodeTtlSeconds),
+    enableWrites: env.MAKIMONO_OAUTH_ENABLE_WRITES === 'true',
     issuer,
     pocketBaseToken,
     pocketBaseUrl,
@@ -245,7 +251,7 @@ function validateAuthorizeSearchParams(params: URLSearchParams, config: OAuthBri
   const redirectUri = params.get('redirect_uri')?.trim() ?? ''
   const codeChallenge = params.get('code_challenge')?.trim() ?? ''
   const codeChallengeMethod = params.get('code_challenge_method')
-  const scope = params.get('scope')?.trim() || 'mcp.read'
+  const scope = parseRequestedScope(params.get('scope')?.trim() || 'mcp.read', config)
   const state = params.get('state')?.trim() ?? ''
 
   if (responseType !== 'code') {
@@ -268,11 +274,36 @@ function validateAuthorizeSearchParams(params: URLSearchParams, config: OAuthBri
     return { ok: false as const, error: 'invalid_request' }
   }
 
-  if (scope !== 'mcp.read') {
+  if (!scope.ok) {
     return { ok: false as const, error: 'invalid_scope' }
   }
 
-  return { ok: true as const, clientId, codeChallenge, redirectUri, state }
+  return { ok: true as const, clientId, codeChallenge, redirectUri, scope: scope.scope, state }
+}
+
+function getSupportedScopes(config: OAuthBridgeConfig): OAuthScope[] {
+  return config.enableWrites ? ['mcp.read', 'mcp.write'] : ['mcp.read']
+}
+
+function parseRequestedScope(value: string, config: OAuthBridgeConfig) {
+  const scopes = value.split(/\s+/).filter(Boolean)
+  const uniqueScopes = new Set(scopes)
+
+  if (scopes.length === 0 || uniqueScopes.size !== scopes.length || !uniqueScopes.has('mcp.read')) {
+    return { ok: false as const }
+  }
+
+  for (const scope of uniqueScopes) {
+    if (scope !== 'mcp.read' && scope !== 'mcp.write') {
+      return { ok: false as const }
+    }
+  }
+
+  if (uniqueScopes.has('mcp.write') && !config.enableWrites) {
+    return { ok: false as const }
+  }
+
+  return { ok: true as const, scope: uniqueScopes.has('mcp.write') ? 'mcp.read mcp.write' as const : 'mcp.read' as const }
 }
 
 async function readOAuthForm(request: Request) {

@@ -12,6 +12,10 @@ const oauthEnv = {
   MAKIMONO_OAUTH_POCKETBASE_TOKEN: 'server-pocketbase-token',
   MAKIMONO_OAUTH_REDIRECT_URIS: 'https://chat.openai.com/aip/g-123/oauth/callback',
 }
+const oauthWriteEnv = {
+  ...oauthEnv,
+  MAKIMONO_OAUTH_ENABLE_WRITES: 'true',
+}
 const oauthVerifier = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~'
 const oauthChallenge = 'ImpiCd8pp4MveCNnbIS7-GXEtB0xF5HMIDoWqvGA5ig'
 
@@ -54,8 +58,11 @@ function createPocketBaseFetch() {
   })
 }
 
-async function createOAuthAccessToken(fetcher: typeof fetch) {
+async function createOAuthAccessToken(fetcher: typeof fetch, options: { env?: Record<string, string>, scope?: string } = {}) {
   resetOAuthBridgeStateForTests()
+
+  const bridgeEnv = options.env ?? oauthEnv
+  const scope = options.scope ?? 'mcp.read'
 
   const authorizeUrl = new URL('https://app.example/oauth/authorize')
   authorizeUrl.searchParams.set('response_type', 'code')
@@ -63,9 +70,9 @@ async function createOAuthAccessToken(fetcher: typeof fetch) {
   authorizeUrl.searchParams.set('redirect_uri', 'https://chat.openai.com/aip/g-123/oauth/callback')
   authorizeUrl.searchParams.set('code_challenge', oauthChallenge)
   authorizeUrl.searchParams.set('code_challenge_method', 'S256')
-  authorizeUrl.searchParams.set('scope', 'mcp.read')
+  authorizeUrl.searchParams.set('scope', scope)
 
-  const authorizeResponse = await handleOAuthAuthorize(new Request(authorizeUrl), { env: oauthEnv })
+  const authorizeResponse = await handleOAuthAuthorize(new Request(authorizeUrl), { env: bridgeEnv })
   const code = new URL(authorizeResponse.headers.get('Location') ?? '').searchParams.get('code') ?? ''
   const tokenResponse = await handleOAuthToken(new Request('https://app.example/oauth/token', {
     body: new URLSearchParams({
@@ -77,7 +84,7 @@ async function createOAuthAccessToken(fetcher: typeof fetch) {
     }),
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     method: 'POST',
-  }), { env: oauthEnv, fetch: fetcher })
+  }), { env: bridgeEnv, fetch: fetcher })
   const body = await tokenResponse.json() as { access_token: string }
 
   return body.access_token
@@ -347,6 +354,47 @@ describe('handleRemoteMcpRequest', () => {
       },
     })
     await expect(writeResponse.json()).resolves.toMatchObject({ error: { code: -32601 } })
+  })
+
+  it('includes write tools for OAuth write tokens only when OAuth and remote writes are enabled', async () => {
+    const fetcher = createPocketBaseFetch()
+    const accessToken = await createOAuthAccessToken(fetcher, { env: oauthWriteEnv, scope: 'mcp.read mcp.write' })
+    const enabledResponse = await handleRemoteMcpRequest(createRequest({ id: 42, jsonrpc: '2.0', method: 'tools/list' }, `Bearer ${accessToken}`), {
+      env: oauthWriteEnv,
+      fetch: fetcher,
+    })
+    const oauthDisabledResponse = await handleRemoteMcpRequest(createRequest({ id: 43, jsonrpc: '2.0', method: 'tools/list' }, `Bearer ${accessToken}`), {
+      env: oauthEnv,
+      fetch: fetcher,
+    })
+    const remoteDisabledResponse = await handleRemoteMcpRequest(createRequest({ id: 44, jsonrpc: '2.0', method: 'tools/list' }, `Bearer ${accessToken}`), {
+      env: { ...oauthWriteEnv, MAKIMONO_REMOTE_MCP_ENABLE_WRITES: 'false' },
+      fetch: fetcher,
+    })
+
+    await expect(enabledResponse.json()).resolves.toMatchObject({
+      result: {
+        tools: expect.arrayContaining([
+          expect.objectContaining({ name: 'makimono_create_interest' }),
+          expect.objectContaining({ name: 'makimono_update_interest' }),
+        ]),
+      },
+    })
+    await expect(oauthDisabledResponse.json()).resolves.toMatchObject({ result: { tools: [{ name: 'makimono_list_interests' }] } })
+    await expect(remoteDisabledResponse.json()).resolves.toMatchObject({ result: { tools: [{ name: 'makimono_list_interests' }] } })
+  })
+
+  it('allows OAuth write tokens to call guarded write tools when both write flags are enabled', async () => {
+    const fetcher = createPocketBaseFetchWithCreateAndAudit()
+    const accessToken = await createOAuthAccessToken(fetcher, { env: oauthWriteEnv, scope: 'mcp.read mcp.write' })
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 45,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { category: 'books', title: 'Dune' }, name: 'makimono_create_interest' },
+    }, `Bearer ${accessToken}`), { env: oauthWriteEnv, fetch: fetcher, writeLimiter: createWriteLimiter(true) })
+
+    await expect(response.json()).resolves.toMatchObject({ result: { structuredContent: { item: { id: 'created-1' } } } })
   })
 
   it('rejects userId in list tool input', async () => {

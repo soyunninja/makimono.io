@@ -116,9 +116,9 @@ OpenCode remote configuration example:
 
 Use the `makimono-remote` connector, not `makimono-local`, when validating that remote writes appear in `/dashboard/audit`.
 
-## ChatGPT Pro read-only OAuth setup
+## ChatGPT Pro OAuth setup
 
-ChatGPT Pro custom MCP apps use OAuth discovery instead of a static bearer header. Makimono exposes a minimal authorization-code + PKCE bridge for read-only ChatGPT access:
+ChatGPT Pro custom MCP apps use OAuth discovery instead of a static bearer header. Makimono exposes a minimal authorization-code + PKCE bridge. The recommended default is read-only access with scope `mcp.read`.
 
 - OAuth authorization server metadata: `GET /.well-known/oauth-authorization-server`
 - OAuth protected resource metadata: `GET /.well-known/oauth-protected-resource`
@@ -158,9 +158,33 @@ Security notes:
 - Redirect URIs and client ids are exact-match allowlists. Do not use wildcards.
 - PKCE is required by default. Disabling it is a ChatGPT compatibility tradeoff, not a general OAuth recommendation.
 - The bridge issues opaque Makimono OAuth access tokens and keeps the PocketBase token server-side.
-- OAuth bridge tokens are scoped to `mcp.read`. Even when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true`, ChatGPT OAuth tokens only see `makimono_list_interests` and write tool calls are rejected.
-- This first slice is read-only for ChatGPT Pro. Write actions remain available through OpenCode remote MCP with the existing bearer-token path; ChatGPT write actions require Business/Enterprise/Edu/full MCP support and a later authorization design.
+- OAuth bridge tokens are read-only by default. With scope `mcp.read`, ChatGPT OAuth tokens only see `makimono_list_interests` and write tool calls are rejected.
+- Do not enable OAuth writes unless you are explicitly testing ChatGPT MCP writes. Keep read-only as the production default.
 - The in-memory authorization code and access token store is intentionally minimal. A multi-instance deployment needs a durable server-side store with code, token hash, expiry, user id, scope, client id, redirect URI, and PKCE challenge fields.
+
+### Experimental ChatGPT write-test setup
+
+ChatGPT write support is experimental. To test create, update, status update, soft delete, and restore from ChatGPT, all of these must be true:
+
+```sh
+MAKIMONO_OAUTH_ENABLE_WRITES=true
+MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true
+```
+
+Configure the ChatGPT app scopes as a space-separated scope string:
+
+```text
+mcp.read mcp.write
+```
+
+Behavior:
+
+- Authorization accepts `mcp.write` only when `MAKIMONO_OAUTH_ENABLE_WRITES=true`; arbitrary scopes are rejected.
+- The token response returns the granted scope string, for example `mcp.read mcp.write`.
+- An OAuth token with only `mcp.read` remains read-only even if remote writes are enabled.
+- An OAuth token with `mcp.read mcp.write` can see and call write tools only when both `MAKIMONO_OAUTH_ENABLE_WRITES=true` and `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` are set.
+- The existing OpenCode bearer-token remote MCP write path is unchanged and still depends on `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true`.
+- Write calls still use the resolved authenticated user; tool input must not include a user id. Soft delete still requires `confirm` to be exactly `soft-delete`, write rate limits still apply, and successful writes still create durable audit events when the audit collection is available.
 
 By default, remote MCP exposes only `makimono_list_interests`. Enable guarded remote create, update, status update, soft delete, and restore explicitly:
 
