@@ -95,14 +95,28 @@ By default, remote MCP exposes only `makimono_list_interests`. Enable the guarde
 ```sh
 MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true
 MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE=5
+MAKIMONO_REMOTE_MCP_AUDIT_COLLECTION=remote_mcp_audit_events
 ```
 
 Notes:
 
 - `MAKIMONO_REMOTE_MCP_ENABLE_WRITES` must be exactly `true`; otherwise remote create is omitted from `tools/list` and rejected on call.
 - `MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE` defaults to 5 writes per minute per resolved user.
+- `MAKIMONO_REMOTE_MCP_AUDIT_COLLECTION` defaults to `remote_mcp_audit_events`.
 - The current write limiter is in memory and resets when the server restarts.
-- Successful remote create calls emit a safe audit event to server logs by default. The audit event omits tokens and auth headers, but server logs are not a durable production audit store.
+- Successful remote create calls first try to create a durable audit record in PocketBase. If the audit collection is missing or the audit write fails, the user-facing create still succeeds and the server falls back to a safe log event. Audit payloads omit tokens and auth headers.
+
+## PocketBase collection import
+
+Import `docs/pocketbase-collections.json` into PocketBase before enabling remote writes in production-like environments. It defines both `interests` and `remote_mcp_audit_events`.
+
+The audit collection rules are scoped to the authenticated user:
+
+- authenticated users can create audit events only for their own `user` relation;
+- authenticated users can list/view only their own audit events;
+- client update/delete rules are disabled.
+
+If you use a different collection name, set `MAKIMONO_REMOTE_MCP_AUDIT_COLLECTION` to match it. Keep the schema fields compatible with `user`, `toolName`, `outcome`, `targetCollection`, `targetId`, `action`, `summary`, `clientLabel`, and `requestId`.
 
 Example remote create call when writes are enabled:
 

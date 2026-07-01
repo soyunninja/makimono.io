@@ -197,5 +197,185 @@
       "CREATE INDEX `idx_interests_user_category` ON `interests` (`user`, `category`)"
     ],
     "system": false
+  },
+  {
+    "id": "pbc_mcp_audit",
+    "listRule": "@request.auth.id != \"\" && user = @request.auth.id",
+    "viewRule": "@request.auth.id != \"\" && user = @request.auth.id",
+    "createRule": "@request.auth.id != \"\" && @request.body.user = @request.auth.id",
+    "updateRule": null,
+    "deleteRule": null,
+    "name": "remote_mcp_audit_events",
+    "type": "base",
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "help": "",
+        "hidden": false,
+        "id": "text_audit_id",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "_pb_users_auth_",
+        "help": "",
+        "hidden": false,
+        "id": "relation_audit_user",
+        "maxSelect": 1,
+        "minSelect": 1,
+        "name": "user",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "select_audit_tool",
+        "maxSelect": 1,
+        "name": "toolName",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "makimono_create_interest"
+        ]
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "select_audit_outcome",
+        "maxSelect": 1,
+        "name": "outcome",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "success",
+          "failure"
+        ]
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "select_audit_target_collection",
+        "maxSelect": 1,
+        "name": "targetCollection",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "interests"
+        ]
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text_audit_target_id",
+        "max": 120,
+        "min": 0,
+        "name": "targetId",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "help": "",
+        "hidden": false,
+        "id": "select_audit_action",
+        "maxSelect": 1,
+        "name": "action",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "create"
+        ]
+      },
+      {
+        "help": "Non-secret audit summary. Do not store tokens, auth headers, or credential material.",
+        "hidden": false,
+        "id": "json_audit_summary",
+        "maxSize": 0,
+        "name": "summary",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "json"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text_audit_client_label",
+        "max": 120,
+        "min": 0,
+        "name": "clientLabel",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "",
+        "hidden": false,
+        "id": "text_audit_request_id",
+        "max": 120,
+        "min": 0,
+        "name": "requestId",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_audit_created",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_audit_updated",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX `idx_remote_mcp_audit_user` ON `remote_mcp_audit_events` (`user`)",
+      "CREATE INDEX `idx_remote_mcp_audit_user_created` ON `remote_mcp_audit_events` (`user`, `created`)",
+      "CREATE INDEX `idx_remote_mcp_audit_user_tool_created` ON `remote_mcp_audit_events` (`user`, `toolName`, `created`)"
+    ],
+    "system": false
   }
 ]

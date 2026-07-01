@@ -29,6 +29,7 @@ type PocketBaseListResponse = {
 }
 
 type RemoteMcpConfig = {
+  auditCollection: string
   authCollection: string
   enableWrites: boolean
   pocketBaseUrl: string
@@ -36,12 +37,13 @@ type RemoteMcpConfig = {
 }
 
 type RemoteMcpAuditEvent = {
-  createdItem: {
-    category: Category
-    id: string
-    title: string
-  }
+  action: 'create'
+  clientLabel?: string
   outcome: 'success'
+  requestId?: string
+  summary: JsonObject
+  targetCollection: typeof interestsCollection
+  targetId: string
   timestamp: string
   toolName: 'makimono_create_interest'
   userId: string
@@ -60,6 +62,7 @@ export type RemoteMcpDependencies = {
 }
 
 const interestsCollection = 'interests'
+const defaultAuditCollection = 'remote_mcp_audit_events'
 const defaultAuthCollection = 'users'
 const hasOwn = Object.prototype.hasOwnProperty
 
@@ -154,7 +157,7 @@ export async function handleRemoteMcpRequest(request: Request, dependencies: Rem
   if (body.method === 'tools/call') {
     try {
       return jsonResponse(await handleToolCall({
-        auditSink: dependencies.auditSink ?? writeSafeAuditEvent,
+        auditSink: dependencies.auditSink ?? createPocketBaseAuditSink({ config, fetcher, token }),
         config,
         fetcher,
         id,
@@ -194,6 +197,7 @@ function getRemoteMcpConfig(env = getProcessEnv()): RemoteMcpConfig {
 
   return {
     authCollection,
+    auditCollection: env.MAKIMONO_REMOTE_MCP_AUDIT_COLLECTION?.trim() || defaultAuditCollection,
     enableWrites: env.MAKIMONO_REMOTE_MCP_ENABLE_WRITES === 'true',
     pocketBaseUrl: pocketBaseUrl.replace(/\/+$/, ''),
     writeLimitPerMinute,
@@ -257,8 +261,11 @@ async function handleToolCall({ auditSink, config, fetcher, id, now, params, tok
     const item = await createPocketBaseInterest({ config, fetcher, input: argumentsResult.arguments, token, userId })
 
     await auditSink({
-      createdItem: { category: item.category, id: item.id, title: item.title },
+      action: 'create',
       outcome: 'success',
+      summary: { category: item.category, title: item.title },
+      targetCollection: interestsCollection,
+      targetId: item.id,
       timestamp: new Date(now()).toISOString(),
       toolName: createTool.name,
       userId,
@@ -474,6 +481,52 @@ function parsePositiveInteger(value: string | undefined, fallback: number) {
   const parsed = Number.parseInt(value ?? '', 10)
 
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function createPocketBaseAuditSink({ config, fetcher, token }: { config: RemoteMcpConfig, fetcher: typeof fetch, token: string }) {
+  return async (event: RemoteMcpAuditEvent) => {
+    try {
+      await createPocketBaseAuditEvent({ config, event, fetcher, token })
+    }
+    catch {
+      writeSafeAuditEvent(event)
+    }
+  }
+}
+
+async function createPocketBaseAuditEvent({ config, event, fetcher, token }: {
+  config: RemoteMcpConfig
+  event: RemoteMcpAuditEvent
+  fetcher: typeof fetch
+  token: string
+}) {
+  const payload: JsonObject = {
+    action: event.action,
+    outcome: event.outcome,
+    summary: event.summary,
+    targetCollection: event.targetCollection,
+    targetId: event.targetId,
+    toolName: event.toolName,
+    user: event.userId,
+  }
+
+  if (event.clientLabel) {
+    payload.clientLabel = event.clientLabel
+  }
+
+  if (event.requestId) {
+    payload.requestId = event.requestId
+  }
+
+  const response = await fetcher(`${config.pocketBaseUrl}/api/collections/${encodeURIComponent(config.auditCollection)}/records`, {
+    body: JSON.stringify(payload),
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    throw new Error(`PocketBase audit create request failed with status ${response.status}.`)
+  }
 }
 
 function writeSafeAuditEvent(event: RemoteMcpAuditEvent) {

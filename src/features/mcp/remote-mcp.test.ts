@@ -70,6 +70,36 @@ function createPocketBaseFetchWithCreate() {
   })
 }
 
+function createPocketBaseFetchWithCreateAndAudit(auditStatus = 200) {
+  return vi.fn(async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+    const url = input.toString()
+
+    if (url.endsWith('/api/collections/users/auth-refresh')) {
+      return jsonResponse({ record: { id: 'resolved-user' } })
+    }
+
+    if (url === 'https://pocketbase.example/api/collections/interests/records' && init?.method === 'POST') {
+      const payload = JSON.parse(init.body?.toString() ?? '{}') as Record<string, unknown>
+
+      return jsonResponse({
+        id: 'created-1',
+        category: payload.category,
+        created: '2026-01-03T00:00:00.000Z',
+        notes: payload.notes,
+        status: 'pending',
+        tags: payload.tags,
+        title: payload.title,
+      })
+    }
+
+    if (url === 'https://pocketbase.example/api/collections/remote_mcp_audit_events/records' && init?.method === 'POST') {
+      return jsonResponse({ id: 'audit-1' }, auditStatus)
+    }
+
+    return jsonResponse({ message: 'Unexpected request' }, 500)
+  })
+}
+
 function createWriteLimiter(allowed: boolean) {
   return { consume: vi.fn(() => allowed) }
 }
@@ -288,12 +318,78 @@ describe('handleRemoteMcpRequest', () => {
     await expect(response.json()).resolves.toMatchObject({ result: { structuredContent: { item: { id: 'created-1' } } } })
 
     expect(auditSink).toHaveBeenCalledWith({
-      createdItem: { category: 'books', id: 'created-1', title: 'Dune' },
+      action: 'create',
       outcome: 'success',
+      summary: { category: 'books', title: 'Dune' },
+      targetCollection: 'interests',
+      targetId: 'created-1',
       timestamp: '2026-01-03T12:00:00.000Z',
       toolName: 'makimono_create_interest',
       userId: 'resolved-user',
     })
     expect(JSON.stringify(auditSink.mock.calls)).not.toContain('user-token')
+  })
+
+  it('creates a durable audit record after successful remote create by default', async () => {
+    const fetcher = createPocketBaseFetchWithCreateAndAudit()
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 11,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        arguments: { category: 'books', title: 'Dune' },
+        name: 'makimono_create_interest',
+      },
+    }), {
+      env: writeEnv,
+      fetch: fetcher,
+      now: () => Date.parse('2026-01-03T12:00:00.000Z'),
+      writeLimiter: createWriteLimiter(true),
+    })
+
+    await expect(response.json()).resolves.toMatchObject({ result: { structuredContent: { item: { id: 'created-1' } } } })
+
+    const auditCall = fetcher.mock.calls.find(([input, init]) => input.toString().endsWith('/api/collections/remote_mcp_audit_events/records') && init?.method === 'POST')
+    const payload = JSON.parse(auditCall?.[1]?.body?.toString() ?? '{}') as Record<string, unknown>
+
+    expect(payload).toMatchObject({
+      action: 'create',
+      outcome: 'success',
+      summary: { category: 'books', title: 'Dune' },
+      targetCollection: 'interests',
+      targetId: 'created-1',
+      toolName: 'makimono_create_interest',
+      user: 'resolved-user',
+    })
+    expect(JSON.stringify(payload)).not.toContain('user-token')
+    expect(JSON.stringify(payload)).not.toContain('Bearer')
+  })
+
+  it('keeps the created item response when durable audit creation fails', async () => {
+    const fetcher = createPocketBaseFetchWithCreateAndAudit(500)
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => undefined)
+
+    try {
+      const response = await handleRemoteMcpRequest(createRequest({
+        id: 12,
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          arguments: { category: 'books', title: 'Dune' },
+          name: 'makimono_create_interest',
+        },
+      }), {
+        env: writeEnv,
+        fetch: fetcher,
+        writeLimiter: createWriteLimiter(true),
+      })
+
+      await expect(response.json()).resolves.toMatchObject({ result: { structuredContent: { item: { id: 'created-1' } } } })
+      expect(JSON.stringify(consoleInfo.mock.calls)).not.toContain('user-token')
+      expect(JSON.stringify(consoleInfo.mock.calls)).not.toContain('Bearer')
+    }
+    finally {
+      consoleInfo.mockRestore()
+    }
   })
 })

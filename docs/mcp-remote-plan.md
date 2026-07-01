@@ -31,7 +31,7 @@ The remote MCP server should not reuse a copied browser token as a long-term cre
 | Storage | Do not store raw long-lived PocketBase user tokens unless encrypted and revocable. Prefer short-lived server-issued credentials. |
 | Writes | Allow small, explicit writes first: create, update, status change, soft delete, restore. |
 | Destructive actions | Keep delete as soft delete. Require confirmation for bulk delete or permanent delete. |
-| Auditing | Record tool name, user id, target interest id, timestamp, host/client id, and before/after summary. |
+| Auditing | Record tool name, user id, target interest id, PocketBase created timestamp, host/client id when available, and non-secret before/after summary. |
 | Rate limits | Limit writes per user and per client to prevent accidental loops. |
 | Observability | Log failures without dumping tokens, request bodies with secrets, or auth headers. |
 
@@ -91,16 +91,18 @@ Add the first low-risk write after read-only remote access is proven.
 
 - `makimono_create_interest` only
 - explicit remote write opt-in with `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true`
-- safe audit event for successful create
+- durable PocketBase audit event for successful create, with safe server-log fallback
 - basic per-user write rate limit
 
 ### Acceptance checklist
 
-- [x] Create writes a safe audit event.
+- [x] Create writes a durable audit event when `remote_mcp_audit_events` is available.
+- [x] Audit failure falls back to a safe server log and does not fail the created item response.
 - [x] Create is scoped to the authenticated user resolved through PocketBase `auth-refresh`.
 - [x] Create ignores caller-provided user ids by rejecting unsupported input keys.
 - [x] Write rate limits return clear errors.
-- [ ] PocketBase rules prevent cross-user access even if the MCP server has a bug.
+- [x] PocketBase audit collection rules are documented for per-user create/list/view and no client update/delete.
+- [ ] PocketBase rules are imported and verified in the live PocketBase instance.
 
 ### Current implementation status
 
@@ -110,11 +112,13 @@ Remote create continues to require `Authorization: Bearer <PocketBase token>`. T
 
 Write limits default to 5 writes per minute per resolved user and can be changed with `MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE`. The current limiter is in memory, so it resets on server restart and does not coordinate across multiple app instances.
 
-Audit events include timestamp, tool name, resolved user id, created item id/title/category, and outcome. The default sink writes a safe server log event without tokens or auth headers. This is enough for the guarded slice, but it is not enough for production remote writes; add a durable audit store before broader or higher-risk write exposure.
+Audit events include tool name, action, outcome, resolved user id, target collection/id, and a non-secret summary. The default sink writes to the PocketBase `remote_mcp_audit_events` collection, configurable with `MAKIMONO_REMOTE_MCP_AUDIT_COLLECTION`. If the collection is missing or the audit write fails, remote create still returns the created item and falls back to a safe server log without tokens or auth headers.
+
+Import `docs/pocketbase-collections.json` into PocketBase before treating remote writes as production-ready. The file now includes `remote_mcp_audit_events` with per-user list/view/create rules and disabled client update/delete rules.
 
 ## Later guarded write slices
 
-Add remaining low-risk writes only after the guarded create slice has durable audit storage and production-ready rate limiting.
+Add remaining low-risk writes only after the guarded create slice has imported durable audit storage and production-ready rate limiting.
 
 ### Scope
 
@@ -125,7 +129,7 @@ Add remaining low-risk writes only after the guarded create slice has durable au
 
 ### Acceptance checklist
 
-- [ ] Each mutation writes a durable audit event.
+- [ ] Each mutation writes a durable audit event and keeps a safe fallback path.
 - [ ] Mutations are scoped to the authenticated user.
 - [ ] No-op updates are rejected.
 - [ ] Shared write rate limits return clear errors.
@@ -165,7 +169,7 @@ When a host supports custom connectors, configure it with:
 - [ ] Server-side user resolution.
 - [ ] No raw token logging.
 - [ ] Scoped PocketBase collection rules.
-- [ ] Audit records for writes.
+- [ ] Audit collection imported and verified for writes.
 - [ ] Write rate limits.
 - [ ] Soft delete before permanent delete.
 - [ ] Tool descriptions clearly state side effects.
@@ -173,4 +177,4 @@ When a host supports custom connectors, configure it with:
 
 ## Next step
 
-Implement the first remote slice as a read-only HTTPS MCP endpoint. Do not expose write tools remotely until auth, audit, and rate limits are in place.
+Import and verify the PocketBase audit collection, then add shared production-ready write rate limits before exposing more remote write tools.
