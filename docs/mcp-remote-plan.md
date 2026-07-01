@@ -43,8 +43,8 @@ The remote MCP server should not reuse a copied browser token as a long-term cre
 | `makimono_create_interest` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Validate category/title; use resolved user id; audit creation; rate limit writes. |
 | `makimono_update_interest` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Scope lookup to resolved user; reject no-op payloads; audit changed fields; rate limit writes. |
 | `makimono_update_interest_status` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Scope lookup to resolved user; validate status; audit previous and next status; rate limit writes. |
-| `makimono_delete_interest` | Not yet | Soft delete only; audit and allow restore. |
-| `makimono_restore_interest` | Not yet | Audit restore. |
+| `makimono_delete_interest` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Soft delete only; require `confirm: "soft-delete"`; audit and allow restore. |
+| `makimono_restore_interest` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Scope lookup to resolved user; audit restore; rate limit writes. |
 | Bulk mutation tools | Not in first remote slice | Require explicit confirmation and stricter limits. |
 | Permanent delete | Not allowed initially | Add only with separate approval and recovery policy. |
 
@@ -175,14 +175,20 @@ Add reversible destructive operations.
 
 - `makimono_delete_interest` as soft delete only
 - `makimono_restore_interest`
-- optional confirmation challenge for delete requests
+- explicit `confirm: "soft-delete"` challenge for delete requests
 
 ### Acceptance checklist
 
-- [ ] Delete sets `deletedAt`; it does not physically remove records.
-- [ ] Restore clears `deletedAt`.
-- [ ] Delete and restore are audited.
+- [x] Delete sets `deletedAt`; it does not physically remove records.
+- [x] Restore clears `deletedAt`.
+- [x] Delete and restore are audited.
 - [ ] The webapp can still show or hide deleted records according to existing behavior.
+
+### Current implementation status
+
+The remote endpoint now exposes `makimono_delete_interest` and `makimono_restore_interest` only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` is set. Delete accepts only `id` plus `confirm: "soft-delete"`; restore accepts only `id`. Both reject caller-provided `userId`, content fields, status, and direct `deletedAt` values.
+
+Both tools perform the same scoped lookup with `id="<interest-id>" && user="<resolved-user-id>"` before patching. Delete patches only `deletedAt` to the server timestamp and restore patches only `deletedAt` to `null`; neither tool physically deletes records. Successful calls use the existing write limiter and emit durable audit events with actions `soft_delete` and `restore`, including non-secret title/category/status and deleted/restored timestamp details.
 
 ## Remote client notes
 

@@ -59,7 +59,7 @@ Use placeholders in documentation and examples only. Store real tokens in local,
 | `makimono_create_interest` | Creates a pending interest. | `category`, `title`, `notes?`, `tags?` |
 | `makimono_update_interest` | Edits an existing interest title, notes, or tags. Empty `notes` clears notes; omitted fields are unchanged. | `id`, `title?`, `notes?`, `tags?` |
 | `makimono_update_interest_status` | Changes status to `pending`, `in_progress`, or `completed`. | `id`, `status` |
-| `makimono_delete_interest` | Soft deletes an interest by setting `deletedAt`. | `id` |
+| `makimono_delete_interest` | Soft deletes an interest by setting `deletedAt`. | `id`, `confirm: "soft-delete"` |
 | `makimono_restore_interest` | Restores a soft-deleted interest by clearing `deletedAt`. | `id` |
 
 `makimono_update_interest` rejects calls that do not include at least one editable field. Tags are trimmed, empty entries are removed, and duplicates are collapsed before writing.
@@ -90,7 +90,7 @@ The hosted app also exposes a narrow JSON-RPC MCP compatibility endpoint at `POS
 
 Remote requests must include `Authorization: Bearer <PocketBase token>`. The server resolves the user id through PocketBase `auth-refresh`; remote tool input must not include a user id.
 
-By default, remote MCP exposes only `makimono_list_interests`. Enable guarded remote create, update, and status update explicitly:
+By default, remote MCP exposes only `makimono_list_interests`. Enable guarded remote create, update, status update, soft delete, and restore explicitly:
 
 ```sh
 MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true
@@ -100,11 +100,12 @@ MAKIMONO_REMOTE_MCP_AUDIT_COLLECTION=remote_mcp_audit_events
 
 Notes:
 
-- `MAKIMONO_REMOTE_MCP_ENABLE_WRITES` must be exactly `true`; otherwise remote create, update, and status update are omitted from `tools/list` and rejected on call.
+- `MAKIMONO_REMOTE_MCP_ENABLE_WRITES` must be exactly `true`; otherwise remote create, update, status update, soft delete, and restore are omitted from `tools/list` and rejected on call.
 - `MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE` defaults to 5 writes per minute per resolved user.
 - `MAKIMONO_REMOTE_MCP_AUDIT_COLLECTION` defaults to `remote_mcp_audit_events`.
 - The current write limiter is in memory and resets when the server restarts.
-- Successful remote create, update, and status update calls first try to create a durable audit record in PocketBase. If the audit collection is missing or the audit write fails, the user-facing write still succeeds and the server falls back to a safe log event. Audit payloads omit tokens and auth headers.
+- Remote `makimono_delete_interest` is soft delete only and requires `confirm` to be exactly `soft-delete`. It sets `deletedAt`; it never physically deletes records.
+- Successful remote create, update, status update, soft delete, and restore calls first try to create a durable audit record in PocketBase. If the audit collection is missing or the audit write fails, the user-facing write still succeeds and the server falls back to a safe log event. Audit payloads omit tokens and auth headers.
 
 ## PocketBase collection import
 
@@ -177,6 +178,45 @@ curl -X POST "https://your-app.example/api/mcp" \
       "arguments": {
         "id": "<interest-id>",
         "status": "completed"
+      }
+    }
+  }'
+```
+
+Example remote soft delete call when writes are enabled:
+
+```sh
+curl -X POST "https://your-app.example/api/mcp" \
+  -H "Authorization: Bearer <PocketBase token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "tools/call",
+    "params": {
+      "name": "makimono_delete_interest",
+      "arguments": {
+        "id": "<interest-id>",
+        "confirm": "soft-delete"
+      }
+    }
+  }'
+```
+
+Example remote restore call when writes are enabled:
+
+```sh
+curl -X POST "https://your-app.example/api/mcp" \
+  -H "Authorization: Bearer <PocketBase token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 5,
+    "method": "tools/call",
+    "params": {
+      "name": "makimono_restore_interest",
+      "arguments": {
+        "id": "<interest-id>"
       }
     }
   }'

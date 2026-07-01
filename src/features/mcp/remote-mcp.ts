@@ -37,7 +37,7 @@ type RemoteMcpConfig = {
 }
 
 type RemoteMcpAuditEvent = {
-  action: 'create' | 'update' | 'update_status'
+  action: 'create' | 'restore' | 'soft_delete' | 'update' | 'update_status'
   clientLabel?: string
   outcome: 'success'
   requestId?: string
@@ -45,7 +45,7 @@ type RemoteMcpAuditEvent = {
   targetCollection: typeof interestsCollection
   targetId: string
   timestamp: string
-  toolName: 'makimono_create_interest' | 'makimono_update_interest' | 'makimono_update_interest_status'
+  toolName: 'makimono_create_interest' | 'makimono_delete_interest' | 'makimono_restore_interest' | 'makimono_update_interest' | 'makimono_update_interest_status'
   userId: string
 }
 
@@ -125,6 +125,33 @@ const updateStatusTool = {
   },
 }
 
+const deleteTool = {
+  name: 'makimono_delete_interest' as const,
+  description: 'Soft delete a PocketBase-backed Makimono interest for the authenticated user. Requires confirm="soft-delete".',
+  inputSchema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['confirm', 'id'],
+    properties: {
+      confirm: { const: 'soft-delete', type: 'string' },
+      id: { type: 'string' },
+    },
+  },
+}
+
+const restoreTool = {
+  name: 'makimono_restore_interest' as const,
+  description: 'Restore a soft-deleted PocketBase-backed Makimono interest for the authenticated user.',
+  inputSchema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['id'],
+    properties: {
+      id: { type: 'string' },
+    },
+  },
+}
+
 const defaultWriteLimiter = createInMemoryWriteLimiter()
 
 export async function handleRemoteMcpRequest(request: Request, dependencies: RemoteMcpDependencies = {}) {
@@ -181,7 +208,7 @@ export async function handleRemoteMcpRequest(request: Request, dependencies: Rem
   }
 
   if (body.method === 'tools/list') {
-    return jsonResponse({ id, jsonrpc: '2.0', result: { tools: config.enableWrites ? [listTool, createTool, updateTool, updateStatusTool] : [listTool] } })
+    return jsonResponse({ id, jsonrpc: '2.0', result: { tools: config.enableWrites ? [listTool, createTool, updateTool, updateStatusTool, deleteTool, restoreTool] : [listTool] } })
   }
 
   if (body.method === 'tools/call') {
@@ -273,7 +300,7 @@ async function handleToolCall({ auditSink, config, fetcher, id, now, params, tok
     return jsonRpcError(id, -32602, 'MCP tool call params must be an object.')
   }
 
-  if ((params.name === createTool.name || params.name === updateTool.name || params.name === updateStatusTool.name) && !config.enableWrites) {
+  if ((params.name === createTool.name || params.name === updateTool.name || params.name === updateStatusTool.name || params.name === deleteTool.name || params.name === restoreTool.name) && !config.enableWrites) {
     return jsonRpcError(id, -32601, `${params.name} is disabled for remote MCP. Set MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true to enable guarded remote writes.`)
   }
 
@@ -378,6 +405,99 @@ async function handleToolCall({ auditSink, config, fetcher, id, now, params, tok
       targetId: result.item.id,
       timestamp: new Date(now()).toISOString(),
       toolName: updateStatusTool.name,
+      userId,
+    })
+
+    const output = { item: result.item }
+
+    return {
+      id,
+      jsonrpc: '2.0',
+      result: {
+        content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
+        structuredContent: output,
+      },
+    }
+  }
+
+  if (params.name === deleteTool.name) {
+    const argumentsResult = parseDeleteToolArguments(params.arguments)
+
+    if (!argumentsResult.ok) {
+      return jsonRpcError(id, -32602, argumentsResult.message)
+    }
+
+    if (!writeLimiter.consume(userId, config.writeLimitPerMinute, now())) {
+      return jsonRpcError(id, -32029, `Remote MCP write rate limit exceeded. Try again later; limit is ${config.writeLimitPerMinute} writes per minute.`)
+    }
+
+    const deletedAt = new Date(now()).toISOString()
+    const result = await softDeletePocketBaseInterest({ config, deletedAt, fetcher, id: argumentsResult.arguments.id, token, userId })
+
+    if (!result) {
+      return jsonRpcError(id, -32004, 'Interest was not found for the authenticated user.')
+    }
+
+    await auditSink({
+      action: 'soft_delete',
+      outcome: 'success',
+      summary: {
+        category: result.previousItem.category,
+        deletedAt: result.item.deletedAt,
+        previousDeletedAt: result.previousItem.deletedAt ?? null,
+        status: result.previousItem.status,
+        title: result.previousItem.title,
+      },
+      targetCollection: interestsCollection,
+      targetId: result.item.id,
+      timestamp: new Date(now()).toISOString(),
+      toolName: deleteTool.name,
+      userId,
+    })
+
+    const output = { item: result.item }
+
+    return {
+      id,
+      jsonrpc: '2.0',
+      result: {
+        content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
+        structuredContent: output,
+      },
+    }
+  }
+
+  if (params.name === restoreTool.name) {
+    const argumentsResult = parseRestoreToolArguments(params.arguments)
+
+    if (!argumentsResult.ok) {
+      return jsonRpcError(id, -32602, argumentsResult.message)
+    }
+
+    if (!writeLimiter.consume(userId, config.writeLimitPerMinute, now())) {
+      return jsonRpcError(id, -32029, `Remote MCP write rate limit exceeded. Try again later; limit is ${config.writeLimitPerMinute} writes per minute.`)
+    }
+
+    const result = await restorePocketBaseInterest({ config, fetcher, id: argumentsResult.arguments.id, token, userId })
+
+    if (!result) {
+      return jsonRpcError(id, -32004, 'Interest was not found for the authenticated user.')
+    }
+
+    await auditSink({
+      action: 'restore',
+      outcome: 'success',
+      summary: {
+        category: result.previousItem.category,
+        previousDeletedAt: result.previousItem.deletedAt ?? null,
+        restoredAt: new Date(now()).toISOString(),
+        status: result.item.status,
+        title: result.item.title,
+      },
+      targetCollection: interestsCollection,
+      targetId: result.item.id,
+      timestamp: new Date(now()).toISOString(),
+      toolName: restoreTool.name,
       userId,
     })
 
@@ -509,6 +629,50 @@ function parseUpdateStatusToolArguments(value: unknown) {
       status: value.status,
     },
   }
+}
+
+function parseDeleteToolArguments(value: unknown) {
+  if (!isRecord(value)) {
+    return { ok: false as const, message: 'makimono_delete_interest arguments must be an object.' }
+  }
+
+  const allowedKeys = new Set(['confirm', 'id'])
+
+  for (const key of Object.keys(value)) {
+    if (!allowedKeys.has(key)) {
+      return { ok: false as const, message: `Unsupported makimono_delete_interest argument: ${key}.` }
+    }
+  }
+
+  if (!isString(value.id) || value.id.trim().length === 0) {
+    return { ok: false as const, message: 'id must be a non-empty string.' }
+  }
+
+  if (value.confirm !== 'soft-delete') {
+    return { ok: false as const, message: 'confirm must be exactly "soft-delete" for makimono_delete_interest.' }
+  }
+
+  return { ok: true as const, arguments: { id: value.id.trim() } }
+}
+
+function parseRestoreToolArguments(value: unknown) {
+  if (!isRecord(value)) {
+    return { ok: false as const, message: 'makimono_restore_interest arguments must be an object.' }
+  }
+
+  const allowedKeys = new Set(['id'])
+
+  for (const key of Object.keys(value)) {
+    if (!allowedKeys.has(key)) {
+      return { ok: false as const, message: `Unsupported makimono_restore_interest argument: ${key}.` }
+    }
+  }
+
+  if (!isString(value.id) || value.id.trim().length === 0) {
+    return { ok: false as const, message: 'id must be a non-empty string.' }
+  }
+
+  return { ok: true as const, arguments: { id: value.id.trim() } }
 }
 
 function parseCreateToolArguments(value: unknown) {
@@ -715,6 +879,62 @@ async function updatePocketBaseInterestStatus({ config, fetcher, input, token, u
   return {
     item: mapPocketBaseRecord(await response.json() as unknown),
     previousStatus: previousItem.status,
+  }
+}
+
+async function softDeletePocketBaseInterest({ config, deletedAt, fetcher, id, token, userId }: {
+  config: RemoteMcpConfig
+  deletedAt: string
+  fetcher: typeof fetch
+  id: string
+  token: string
+  userId: string
+}) {
+  return updatePocketBaseInterestDeletedAt({ config, deletedAt, fetcher, id, token, userId })
+}
+
+async function restorePocketBaseInterest({ config, fetcher, id, token, userId }: {
+  config: RemoteMcpConfig
+  fetcher: typeof fetch
+  id: string
+  token: string
+  userId: string
+}) {
+  return updatePocketBaseInterestDeletedAt({ config, deletedAt: null, fetcher, id, token, userId })
+}
+
+async function updatePocketBaseInterestDeletedAt({ config, deletedAt, fetcher, id, token, userId }: {
+  config: RemoteMcpConfig
+  deletedAt: string | null
+  fetcher: typeof fetch
+  id: string
+  token: string
+  userId: string
+}) {
+  const scopedRecord = await getScopedPocketBaseInterest({ config, fetcher, id, token, userId })
+
+  if (!scopedRecord) {
+    return null
+  }
+
+  const previousItem = mapPocketBaseRecord(scopedRecord)
+  const response = await fetcher(`${config.pocketBaseUrl}/api/collections/${interestsCollection}/records/${encodeURIComponent(id)}`, {
+    body: JSON.stringify({ deletedAt }),
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    method: 'PATCH',
+  })
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (!response.ok) {
+    throw new Error(`PocketBase deletedAt update request failed with status ${response.status}.`)
+  }
+
+  return {
+    item: mapPocketBaseRecord(await response.json() as unknown),
+    previousItem,
   }
 }
 

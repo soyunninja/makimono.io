@@ -125,11 +125,13 @@ function createPocketBaseFetchWithUpdateAndAudit(options: { scopedItems?: unknow
 
     if (url === 'https://pocketbase.example/api/collections/interests/records/item-1' && init?.method === 'PATCH') {
       const payload = JSON.parse(init.body?.toString() ?? '{}') as Record<string, unknown>
+      const deletedAt = Object.prototype.hasOwnProperty.call(payload, 'deletedAt') ? payload.deletedAt : undefined
 
       return jsonResponse({
         id: 'item-1',
         category: 'books',
         created: '2026-01-01T00:00:00.000Z',
+        deletedAt,
         notes: payload.notes,
         status: payload.status ?? 'pending',
         tags: payload.tags ?? ['architecture'],
@@ -246,6 +248,24 @@ describe('handleRemoteMcpRequest', () => {
     await expect(response.json()).resolves.toMatchObject({ error: { code: -32601 } })
   })
 
+  it('rejects delete and restore tool calls when remote writes are disabled', async () => {
+    const deleteResponse = await handleRemoteMcpRequest(createRequest({
+      id: 32,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { confirm: 'soft-delete', id: 'item-1' }, name: 'makimono_delete_interest' },
+    }), { env, fetch: createPocketBaseFetch() })
+    const restoreResponse = await handleRemoteMcpRequest(createRequest({
+      id: 33,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1' }, name: 'makimono_restore_interest' },
+    }), { env, fetch: createPocketBaseFetch() })
+
+    await expect(deleteResponse.json()).resolves.toMatchObject({ error: { code: -32601 } })
+    await expect(restoreResponse.json()).resolves.toMatchObject({ error: { code: -32601 } })
+  })
+
   it('includes write tools when remote writes are enabled', async () => {
     const response = await handleRemoteMcpRequest(createRequest({ id: 7, jsonrpc: '2.0', method: 'tools/list' }), {
       env: writeEnv,
@@ -256,6 +276,8 @@ describe('handleRemoteMcpRequest', () => {
       result: {
         tools: expect.arrayContaining([
           expect.objectContaining({ name: 'makimono_create_interest' }),
+          expect.objectContaining({ name: 'makimono_delete_interest' }),
+          expect.objectContaining({ name: 'makimono_restore_interest' }),
           expect.objectContaining({ name: 'makimono_update_interest' }),
           expect.objectContaining({ name: 'makimono_update_interest_status' }),
         ]),
@@ -333,6 +355,42 @@ describe('handleRemoteMcpRequest', () => {
     await expect(invalidStatusResponse.json()).resolves.toMatchObject({ error: { code: -32602 } })
     await expect(noIdResponse.json()).resolves.toMatchObject({ error: { code: -32602 } })
     await expect(titleResponse.json()).resolves.toMatchObject({ error: { code: -32602 } })
+  })
+
+  it('rejects invalid delete and restore input', async () => {
+    const missingConfirmResponse = await handleRemoteMcpRequest(createRequest({
+      id: 34,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1' }, name: 'makimono_delete_interest' },
+    }), { env: writeEnv, fetch: createPocketBaseFetchWithUpdateAndAudit(), writeLimiter: createWriteLimiter(true) })
+    const wrongConfirmResponse = await handleRemoteMcpRequest(createRequest({
+      id: 35,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { confirm: 'delete', id: 'item-1' }, name: 'makimono_delete_interest' },
+    }), { env: writeEnv, fetch: createPocketBaseFetchWithUpdateAndAudit(), writeLimiter: createWriteLimiter(true) })
+    const unsupportedKeys = ['userId', 'status', 'deletedAt', 'title', 'notes', 'tags']
+    const unsupportedResponses = await Promise.all(unsupportedKeys.flatMap((key, index) => [
+      handleRemoteMcpRequest(createRequest({
+        id: 36 + index,
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: { arguments: { confirm: 'soft-delete', id: 'item-1', [key]: 'unsupported' }, name: 'makimono_delete_interest' },
+      }), { env: writeEnv, fetch: createPocketBaseFetchWithUpdateAndAudit(), writeLimiter: createWriteLimiter(true) }),
+      handleRemoteMcpRequest(createRequest({
+        id: 46 + index,
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: { arguments: { id: 'item-1', [key]: 'unsupported' }, name: 'makimono_restore_interest' },
+      }), { env: writeEnv, fetch: createPocketBaseFetchWithUpdateAndAudit(), writeLimiter: createWriteLimiter(true) }),
+    ]))
+
+    await expect(missingConfirmResponse.json()).resolves.toMatchObject({ error: { code: -32602 } })
+    await expect(wrongConfirmResponse.json()).resolves.toMatchObject({ error: { code: -32602 } })
+    await Promise.all(unsupportedResponses.map(async (response) => {
+      await expect(response.json()).resolves.toMatchObject({ error: { code: -32602 } })
+    }))
   })
 
   it('applies authenticated user scope to the PocketBase list request', async () => {
@@ -509,6 +567,106 @@ describe('handleRemoteMcpRequest', () => {
     expect(fetcher.mock.calls.some(([input, init]) => input.toString().endsWith('/api/collections/interests/records/item-1') && init?.method === 'PATCH')).toBe(false)
   })
 
+  it('soft deletes interests with confirmation and audits the event', async () => {
+    const auditSink = vi.fn()
+    const fetcher = createPocketBaseFetchWithUpdateAndAudit()
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 38,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { confirm: 'soft-delete', id: 'item-1' }, name: 'makimono_delete_interest' },
+    }), {
+      auditSink,
+      env: writeEnv,
+      fetch: fetcher,
+      now: () => Date.parse('2026-01-03T12:00:00.000Z'),
+      writeLimiter: createWriteLimiter(true),
+    })
+
+    await expect(response.json()).resolves.toMatchObject({ result: { structuredContent: { item: { deletedAt: '2026-01-03T12:00:00.000Z', id: 'item-1' } } } })
+
+    const patchCall = fetcher.mock.calls.find(([input, init]) => input.toString().endsWith('/api/collections/interests/records/item-1') && init?.method === 'PATCH')
+    const payload = JSON.parse(patchCall?.[1]?.body?.toString() ?? '{}') as Record<string, unknown>
+
+    expect(payload).toEqual({ deletedAt: '2026-01-03T12:00:00.000Z' })
+    expect(auditSink).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'soft_delete',
+      summary: expect.objectContaining({ category: 'books', deletedAt: '2026-01-03T12:00:00.000Z', status: 'pending', title: 'Clean Architecture' }),
+      targetId: 'item-1',
+      timestamp: '2026-01-03T12:00:00.000Z',
+      toolName: 'makimono_delete_interest',
+      userId: 'resolved-user',
+    }))
+    expect(JSON.stringify(auditSink.mock.calls)).not.toContain('user-token')
+    expect(JSON.stringify(auditSink.mock.calls)).not.toContain('Bearer')
+  })
+
+  it('restores interests by clearing deletedAt and audits the event', async () => {
+    const auditSink = vi.fn()
+    const fetcher = createPocketBaseFetchWithUpdateAndAudit({
+      scopedItems: [{
+        id: 'item-1',
+        category: 'books',
+        created: '2026-01-01T00:00:00.000Z',
+        deletedAt: '2026-01-02T00:00:00.000Z',
+        status: 'pending',
+        tags: ['architecture'],
+        title: 'Clean Architecture',
+      }],
+    })
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 39,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1' }, name: 'makimono_restore_interest' },
+    }), {
+      auditSink,
+      env: writeEnv,
+      fetch: fetcher,
+      now: () => Date.parse('2026-01-03T12:00:00.000Z'),
+      writeLimiter: createWriteLimiter(true),
+    })
+
+    await expect(response.json()).resolves.toMatchObject({ result: { structuredContent: { item: { id: 'item-1' } } } })
+
+    const patchCall = fetcher.mock.calls.find(([input, init]) => input.toString().endsWith('/api/collections/interests/records/item-1') && init?.method === 'PATCH')
+    const payload = JSON.parse(patchCall?.[1]?.body?.toString() ?? '{}') as Record<string, unknown>
+
+    expect(payload).toEqual({ deletedAt: null })
+    expect(auditSink).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'restore',
+      summary: expect.objectContaining({ category: 'books', previousDeletedAt: '2026-01-02T00:00:00.000Z', restoredAt: '2026-01-03T12:00:00.000Z', status: 'pending', title: 'Clean Architecture' }),
+      targetId: 'item-1',
+      timestamp: '2026-01-03T12:00:00.000Z',
+      toolName: 'makimono_restore_interest',
+      userId: 'resolved-user',
+    }))
+    expect(JSON.stringify(auditSink.mock.calls)).not.toContain('user-token')
+    expect(JSON.stringify(auditSink.mock.calls)).not.toContain('Bearer')
+  })
+
+  it('applies authenticated user scope before delete and restore', async () => {
+    const deleteFetch = createPocketBaseFetchWithUpdateAndAudit({ scopedItems: [] })
+    const restoreFetch = createPocketBaseFetchWithUpdateAndAudit({ scopedItems: [] })
+    const deleteResponse = await handleRemoteMcpRequest(createRequest({
+      id: 40,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { confirm: 'soft-delete', id: 'item-1' }, name: 'makimono_delete_interest' },
+    }), { auditSink: vi.fn(), env: writeEnv, fetch: deleteFetch, writeLimiter: createWriteLimiter(true) })
+    const restoreResponse = await handleRemoteMcpRequest(createRequest({
+      id: 41,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1' }, name: 'makimono_restore_interest' },
+    }), { auditSink: vi.fn(), env: writeEnv, fetch: restoreFetch, writeLimiter: createWriteLimiter(true) })
+
+    await expect(deleteResponse.json()).resolves.toMatchObject({ error: { code: -32004 } })
+    await expect(restoreResponse.json()).resolves.toMatchObject({ error: { code: -32004 } })
+    expect(deleteFetch.mock.calls.some(([input, init]) => input.toString().endsWith('/api/collections/interests/records/item-1') && init?.method === 'PATCH')).toBe(false)
+    expect(restoreFetch.mock.calls.some(([input, init]) => input.toString().endsWith('/api/collections/interests/records/item-1') && init?.method === 'PATCH')).toBe(false)
+  })
+
   it('rejects create requests when the per-user write rate limit is exceeded', async () => {
     const response = await handleRemoteMcpRequest(createRequest({
       id: 9,
@@ -561,6 +719,32 @@ describe('handleRemoteMcpRequest', () => {
     })
 
     await expect(response.json()).resolves.toMatchObject({ error: { code: -32029 } })
+  })
+
+  it('rejects delete and restore requests when the per-user write rate limit is exceeded', async () => {
+    const deleteResponse = await handleRemoteMcpRequest(createRequest({
+      id: 42,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { confirm: 'soft-delete', id: 'item-1' }, name: 'makimono_delete_interest' },
+    }), {
+      env: { ...writeEnv, MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE: '1' },
+      fetch: createPocketBaseFetchWithUpdateAndAudit(),
+      writeLimiter: createWriteLimiter(false),
+    })
+    const restoreResponse = await handleRemoteMcpRequest(createRequest({
+      id: 43,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1' }, name: 'makimono_restore_interest' },
+    }), {
+      env: { ...writeEnv, MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE: '1' },
+      fetch: createPocketBaseFetchWithUpdateAndAudit(),
+      writeLimiter: createWriteLimiter(false),
+    })
+
+    await expect(deleteResponse.json()).resolves.toMatchObject({ error: { code: -32029 } })
+    await expect(restoreResponse.json()).resolves.toMatchObject({ error: { code: -32029 } })
   })
 
   it('emits a safe audit event after successful remote create', async () => {
@@ -699,6 +883,77 @@ describe('handleRemoteMcpRequest', () => {
     })
     expect(JSON.stringify(payload)).not.toContain('user-token')
     expect(JSON.stringify(payload)).not.toContain('Bearer')
+  })
+
+  it('creates durable audit records after successful remote delete and restore by default', async () => {
+    const deleteFetch = createPocketBaseFetchWithUpdateAndAudit()
+    const restoreFetch = createPocketBaseFetchWithUpdateAndAudit({
+      scopedItems: [{
+        id: 'item-1',
+        category: 'books',
+        created: '2026-01-01T00:00:00.000Z',
+        deletedAt: '2026-01-02T00:00:00.000Z',
+        status: 'pending',
+        tags: ['architecture'],
+        title: 'Clean Architecture',
+      }],
+    })
+
+    const deleteResponse = await handleRemoteMcpRequest(createRequest({
+      id: 44,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { confirm: 'soft-delete', id: 'item-1' }, name: 'makimono_delete_interest' },
+    }), {
+      env: writeEnv,
+      fetch: deleteFetch,
+      now: () => Date.parse('2026-01-03T12:00:00.000Z'),
+      writeLimiter: createWriteLimiter(true),
+    })
+    const restoreResponse = await handleRemoteMcpRequest(createRequest({
+      id: 45,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1' }, name: 'makimono_restore_interest' },
+    }), {
+      env: writeEnv,
+      fetch: restoreFetch,
+      now: () => Date.parse('2026-01-03T12:00:00.000Z'),
+      writeLimiter: createWriteLimiter(true),
+    })
+
+    await expect(deleteResponse.json()).resolves.toMatchObject({ result: { structuredContent: { item: { id: 'item-1' } } } })
+    await expect(restoreResponse.json()).resolves.toMatchObject({ result: { structuredContent: { item: { id: 'item-1' } } } })
+
+    const deleteAuditCall = deleteFetch.mock.calls.find(([input, init]) => input.toString().endsWith('/api/collections/remote_mcp_audit_events/records') && init?.method === 'POST')
+    const restoreAuditCall = restoreFetch.mock.calls.find(([input, init]) => input.toString().endsWith('/api/collections/remote_mcp_audit_events/records') && init?.method === 'POST')
+    const deletePayload = JSON.parse(deleteAuditCall?.[1]?.body?.toString() ?? '{}') as Record<string, unknown>
+    const restorePayload = JSON.parse(restoreAuditCall?.[1]?.body?.toString() ?? '{}') as Record<string, unknown>
+
+    expect(deletePayload).toMatchObject({
+      action: 'soft_delete',
+      outcome: 'success',
+      summary: { category: 'books', deletedAt: '2026-01-03T12:00:00.000Z', previousDeletedAt: null, status: 'pending', title: 'Clean Architecture' },
+      targetCollection: 'interests',
+      targetId: 'item-1',
+      timestamp: '2026-01-03T12:00:00.000Z',
+      toolName: 'makimono_delete_interest',
+      user: 'resolved-user',
+    })
+    expect(restorePayload).toMatchObject({
+      action: 'restore',
+      outcome: 'success',
+      summary: { category: 'books', previousDeletedAt: '2026-01-02T00:00:00.000Z', restoredAt: '2026-01-03T12:00:00.000Z', status: 'pending', title: 'Clean Architecture' },
+      targetCollection: 'interests',
+      targetId: 'item-1',
+      timestamp: '2026-01-03T12:00:00.000Z',
+      toolName: 'makimono_restore_interest',
+      user: 'resolved-user',
+    })
+    expect(JSON.stringify(deletePayload)).not.toContain('user-token')
+    expect(JSON.stringify(deletePayload)).not.toContain('Bearer')
+    expect(JSON.stringify(restorePayload)).not.toContain('user-token')
+    expect(JSON.stringify(restorePayload)).not.toContain('Bearer')
   })
 
   it('creates a durable audit record after successful remote create by default', async () => {
