@@ -60,6 +60,23 @@ function createTokenRequest(body: Record<string, string>) {
   })
 }
 
+function createPkceTokenRequest(code: string, overrides: Record<string, string> = {}) {
+  return createTokenRequest({
+    client_id: 'chatgpt-client',
+    code,
+    code_verifier: verifier,
+    grant_type: 'authorization_code',
+    redirect_uri: 'https://chat.openai.com/aip/g-123/oauth/callback',
+    ...overrides,
+  })
+}
+
+async function createAuthorizationCode(request: Request, options: { env: Record<string, string>, now?: () => number }) {
+  const response = await handleOAuthAuthorize(request, options)
+
+  return new URL(response.headers.get('Location') ?? '').searchParams.get('code') ?? ''
+}
+
 function createChatGptAuthorizeRequest(overrides: Record<string, string> = {}) {
   const url = new URL('https://www.makimono.io/oauth/authorize')
   url.searchParams.set('response_type', 'code')
@@ -201,31 +218,16 @@ describe('OAuth token endpoint', () => {
   })
 
   it('rejects an invalid code verifier and exchanges a valid code once', async () => {
-    const authorizeResponse = await handleOAuthAuthorize(createAuthorizeRequest(), { env, now: () => 1_000 })
-    const location = new URL(authorizeResponse.headers.get('Location') ?? '')
-    const code = location.searchParams.get('code') ?? ''
+    const code = await createAuthorizationCode(createAuthorizeRequest(), { env, now: () => 1_000 })
     const fetcher = createPocketBaseFetch()
 
-    const invalidVerifierResponse = await handleOAuthToken(createTokenRequest({
-      client_id: 'chatgpt-client',
-      code,
-      code_verifier: `${verifier}x`,
-      grant_type: 'authorization_code',
-      redirect_uri: 'https://chat.openai.com/aip/g-123/oauth/callback',
-    }), { env, fetch: fetcher, now: () => 2_000 })
+    const invalidVerifierResponse = await handleOAuthToken(createPkceTokenRequest(code, { code_verifier: `${verifier}x` }), { env, fetch: fetcher, now: () => 2_000 })
 
     expect(invalidVerifierResponse.status).toBe(400)
 
-    const nextAuthorizeResponse = await handleOAuthAuthorize(createAuthorizeRequest(), { env, now: () => 2_000 })
-    const nextCode = new URL(nextAuthorizeResponse.headers.get('Location') ?? '').searchParams.get('code') ?? ''
+    const nextCode = await createAuthorizationCode(createAuthorizeRequest(), { env, now: () => 2_000 })
 
-    const validResponse = await handleOAuthToken(createTokenRequest({
-      client_id: 'chatgpt-client',
-      code: nextCode,
-      code_verifier: verifier,
-      grant_type: 'authorization_code',
-      redirect_uri: 'https://chat.openai.com/aip/g-123/oauth/callback',
-    }), { env, fetch: fetcher, now: () => 2_000 })
+    const validResponse = await handleOAuthToken(createPkceTokenRequest(nextCode), { env, fetch: fetcher, now: () => 2_000 })
 
     expect(validResponse.status).toBe(200)
     await expect(validResponse.json()).resolves.toMatchObject({
@@ -237,8 +239,7 @@ describe('OAuth token endpoint', () => {
   })
 
   it('rejects a missing code verifier for PKCE authorization codes', async () => {
-    const authorizeResponse = await handleOAuthAuthorize(createAuthorizeRequest(), { env, now: () => 1_000 })
-    const code = new URL(authorizeResponse.headers.get('Location') ?? '').searchParams.get('code') ?? ''
+    const code = await createAuthorizationCode(createAuthorizeRequest(), { env, now: () => 1_000 })
 
     const response = await handleOAuthToken(createTokenRequest({
       client_id: 'chatgpt-client',
@@ -252,8 +253,7 @@ describe('OAuth token endpoint', () => {
   })
 
   it('exchanges a non-PKCE authorization code without a verifier when PKCE is disabled', async () => {
-    const authorizeResponse = await handleOAuthAuthorize(createChatGptAuthorizeRequest(), { env: envWithoutPkce, now: () => 1_000 })
-    const code = new URL(authorizeResponse.headers.get('Location') ?? '').searchParams.get('code') ?? ''
+    const code = await createAuthorizationCode(createChatGptAuthorizeRequest(), { env: envWithoutPkce, now: () => 1_000 })
 
     const response = await handleOAuthToken(createTokenRequest({
       client_id: 'chatgpt-makimono',
@@ -272,16 +272,9 @@ describe('OAuth token endpoint', () => {
   })
 
   it('exchanges a code with read and write scopes when OAuth writes are enabled', async () => {
-    const authorizeResponse = await handleOAuthAuthorize(createAuthorizeRequest({ scope: 'mcp.read mcp.write' }), { env: writeScopeEnv, now: () => 1_000 })
-    const code = new URL(authorizeResponse.headers.get('Location') ?? '').searchParams.get('code') ?? ''
+    const code = await createAuthorizationCode(createAuthorizeRequest({ scope: 'mcp.read mcp.write' }), { env: writeScopeEnv, now: () => 1_000 })
 
-    const response = await handleOAuthToken(createTokenRequest({
-      client_id: 'chatgpt-client',
-      code,
-      code_verifier: verifier,
-      grant_type: 'authorization_code',
-      redirect_uri: 'https://chat.openai.com/aip/g-123/oauth/callback',
-    }), { env: writeScopeEnv, fetch: createPocketBaseFetch(), now: () => 2_000 })
+    const response = await handleOAuthToken(createPkceTokenRequest(code), { env: writeScopeEnv, fetch: createPocketBaseFetch(), now: () => 2_000 })
 
     expect(response.status).toBe(200)
     await expect(response.json()).resolves.toMatchObject({

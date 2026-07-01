@@ -13,9 +13,9 @@ type OAuthBridgeConfig = {
   authCollection: string
 }
 
-type OAuthScope = 'mcp.read' | 'mcp.write'
+export type OAuthScope = 'mcp.read' | 'mcp.write'
 
-type OAuthScopeString = 'mcp.read' | 'mcp.read mcp.write'
+export type OAuthScopeString = 'mcp.read' | 'mcp.read mcp.write'
 
 type AuthorizationCode = {
   challenge?: string
@@ -48,6 +48,8 @@ const defaultCodeTtlSeconds = 300
 const defaultAccessTokenTtlSeconds = 900
 const defaultAuthCollection = 'users'
 const hasOwn = Object.prototype.hasOwnProperty
+const readScope = 'mcp.read'
+const writeScope = 'mcp.write'
 
 export function handleOAuthAuthorizationServerMetadata(request: Request, dependencies: OAuthBridgeDependencies = {}) {
   const config = getOAuthBridgeConfig(request, dependencies.env)
@@ -214,6 +216,10 @@ export function getOAuthBridgeResourceMetadataUrl(request: Request) {
   return `${origin}/.well-known/oauth-protected-resource`
 }
 
+export function hasOAuthBridgeWriteScope(scope: OAuthScopeString) {
+  return parseOAuthScopeSet(scope).has(writeScope)
+}
+
 export function resetOAuthBridgeStateForTests() {
   authorizationCodes.clear()
   accessTokens.clear()
@@ -282,28 +288,42 @@ function validateAuthorizeSearchParams(params: URLSearchParams, config: OAuthBri
 }
 
 function getSupportedScopes(config: OAuthBridgeConfig): OAuthScope[] {
-  return config.enableWrites ? ['mcp.read', 'mcp.write'] : ['mcp.read']
+  return config.enableWrites ? [readScope, writeScope] : [readScope]
 }
 
 function parseRequestedScope(value: string, config: OAuthBridgeConfig) {
-  const scopes = value.split(/\s+/).filter(Boolean)
-  const uniqueScopes = new Set(scopes)
+  const scopes = splitOAuthScopes(value)
+  const uniqueScopes = new Set<OAuthScope>(scopes.filter(isOAuthScope))
 
-  if (scopes.length === 0 || uniqueScopes.size !== scopes.length || !uniqueScopes.has('mcp.read')) {
+  if (scopes.length === 0 || uniqueScopes.size !== scopes.length || !uniqueScopes.has(readScope)) {
     return { ok: false as const }
   }
 
-  for (const scope of uniqueScopes) {
-    if (scope !== 'mcp.read' && scope !== 'mcp.write') {
-      return { ok: false as const }
-    }
-  }
-
-  if (uniqueScopes.has('mcp.write') && !config.enableWrites) {
+  if (scopes.some((scope) => !isOAuthScope(scope))) {
     return { ok: false as const }
   }
 
-  return { ok: true as const, scope: uniqueScopes.has('mcp.write') ? 'mcp.read mcp.write' as const : 'mcp.read' as const }
+  if (uniqueScopes.has(writeScope) && !config.enableWrites) {
+    return { ok: false as const }
+  }
+
+  return { ok: true as const, scope: formatOAuthScopeString(uniqueScopes) }
+}
+
+function splitOAuthScopes(value: string) {
+  return value.split(/\s+/).filter(Boolean)
+}
+
+function parseOAuthScopeSet(value: OAuthScopeString) {
+  return new Set<OAuthScope>(splitOAuthScopes(value).filter(isOAuthScope))
+}
+
+function formatOAuthScopeString(scopes: Set<OAuthScope>): OAuthScopeString {
+  return scopes.has(writeScope) ? `${readScope} ${writeScope}` : readScope
+}
+
+function isOAuthScope(value: string): value is OAuthScope {
+  return value === readScope || value === writeScope
 }
 
 async function readOAuthForm(request: Request) {
