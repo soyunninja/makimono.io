@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '@/components/app/app-shell'
 import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provider'
 import { useLocale } from '@/i18n/locale-provider'
 import { getPocketBaseClient } from '@/lib/pocketbase'
@@ -92,6 +93,19 @@ function formatSummary(summary: unknown) {
   return JSON.stringify(summary, null, 2)
 }
 
+function getSearchableAuditText(event: McpAuditEvent) {
+  return [
+    event.targetId,
+    event.toolName,
+    event.action,
+    event.outcome,
+    formatSummary(event.summary),
+  ]
+    .filter(isString)
+    .join(' ')
+    .toLowerCase()
+}
+
 function createPocketBaseMcpAuditRepository(client: ReturnType<typeof getPocketBaseClient>): McpAuditRepository | null {
   if (!client) {
     return null
@@ -111,10 +125,18 @@ export function McpAuditScreen({ repository }: McpAuditScreenProps = {}) {
   const { t } = useLocale()
   const [events, setEvents] = useState<McpAuditEvent[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const auditRepository = useMemo(
     () => repository ?? createPocketBaseMcpAuditRepository(client),
     [client, repository],
+  )
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const filteredEvents = useMemo(
+    () => normalizedSearchQuery.length === 0
+      ? events
+      : events.filter((event) => getSearchableAuditText(event).includes(normalizedSearchQuery)),
+    [events, normalizedSearchQuery],
   )
 
   useEffect(() => {
@@ -197,7 +219,32 @@ export function McpAuditScreen({ repository }: McpAuditScreenProps = {}) {
 
         {!isLoading && !errorMessage && events.length > 0 ? (
           <div className={'space-y-3'}>
-            {events.map((event) => {
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('mcpAudit.searchTitle')}</CardTitle>
+                <CardDescription>{t('mcpAudit.searchDescription')}</CardDescription>
+              </CardHeader>
+              <CardContent className={'space-y-2'}>
+                <Input
+                  aria-label={t('mcpAudit.searchLabel')}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={t('mcpAudit.searchPlaceholder')}
+                  value={searchQuery}
+                />
+                <p className={'text-sm text-muted-foreground'}>{filteredEvents.length} / {events.length} {t('mcpAudit.resultCountSuffix')}</p>
+              </CardContent>
+            </Card>
+
+            {filteredEvents.length === 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t('mcpAudit.emptySearchTitle')}</CardTitle>
+                  <CardDescription>{t('mcpAudit.emptySearchDescription')}</CardDescription>
+                </CardHeader>
+              </Card>
+            ) : null}
+
+            {filteredEvents.map((event) => {
               const summaryText = formatSummary(event.summary)
 
               return (

@@ -120,6 +120,13 @@ export type Dictionary = {
     emptyDescription: string
     errorTitle: string
     errorDescription: string
+    searchTitle: string
+    searchDescription: string
+    searchLabel: string
+    searchPlaceholder: string
+    resultCountSuffix: string
+    emptySearchTitle: string
+    emptySearchDescription: string
     actionLabel: string
     outcomeLabel: string
     targetIdLabel: string
@@ -314,6 +321,13 @@ export const dictionaries: Record<Locale, Dictionary> = {
       emptyDescription: 'Remote MCP write events will appear here after they are recorded in PocketBase.',
       errorTitle: 'Could not load MCP audit events',
       errorDescription: 'Check your PocketBase session and audit collection rules, then try again.',
+      searchTitle: 'Find audit events',
+      searchDescription: 'Search the loaded events by target, tool, action, outcome, or summary.',
+      searchLabel: 'Search MCP audit events',
+      searchPlaceholder: 'Search target, tool, action, outcome, or summary',
+      resultCountSuffix: 'events shown',
+      emptySearchTitle: 'No MCP audit events match this search',
+      emptySearchDescription: 'Try a different target, tool, action, outcome, or summary value.',
       actionLabel: 'Action',
       outcomeLabel: 'Outcome',
       targetIdLabel: 'Target ID',
@@ -556,6 +570,13 @@ export const dictionaries: Record<Locale, Dictionary> = {
       emptyDescription: 'Los eventos de escritura del MCP remoto aparecerán aquí cuando PocketBase los registre.',
       errorTitle: 'No se han podido cargar los eventos de auditoría MCP',
       errorDescription: 'Revisa tu sesión de PocketBase y las reglas de la colección de auditoría, e inténtalo de nuevo.',
+      searchTitle: 'Buscar eventos de auditoría',
+      searchDescription: 'Busca en los eventos cargados por objetivo, herramienta, acción, resultado o resumen.',
+      searchLabel: 'Buscar eventos de auditoría MCP',
+      searchPlaceholder: 'Buscar objetivo, herramienta, acción, resultado o resumen',
+      resultCountSuffix: 'eventos mostrados',
+      emptySearchTitle: 'Ningún evento de auditoría MCP coincide con esta búsqueda',
+      emptySearchDescription: 'Prueba con otro objetivo, herramienta, acción, resultado o valor del resumen.',
       actionLabel: 'Acción',
       outcomeLabel: 'Resultado',
       targetIdLabel: 'ID objetivo',

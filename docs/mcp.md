@@ -1,16 +1,23 @@
-# Local Makimono MCP server
+# Makimono MCP servers
 
-Use this local stdio MCP server when an AI client needs to read or safely update Makimono interests during development. It talks to the existing PocketBase `interests` collection through minimal REST calls and returns structured tool results.
+Makimono supports two MCP paths. Use the local stdio server for development-only direct PocketBase access, and use the remote HTTP endpoint when you need production writes to create durable audit events visible in `/dashboard/audit`.
 
 ## Quick path
 
-1. Provide PocketBase environment variables in your local MCP client config.
-2. Register this project command as the `makimono` MCP server.
-3. Ask the client to list, create, update, change status, delete, or restore interests.
+1. Register the local server as `makimono-local` for direct PocketBase development work.
+2. Register the production endpoint as `makimono-remote` for audited remote MCP work.
+3. Use `makimono-remote` when validating `/dashboard/audit`.
 
 ```sh
 npx pnpm mcp:dev
 ```
+
+## Connector names
+
+| Connector | Type | Target | Creates `/dashboard/audit` events |
+|-----------|------|--------|-----------------------------------|
+| `makimono-local` | `local` | `mcp/server.ts` -> PocketBase REST | No |
+| `makimono-remote` | `remote` | `https://www.makimono.io/api/mcp` | Yes |
 
 ## Local setup
 
@@ -31,12 +38,12 @@ Notes:
 
 ## OpenCode configuration example
 
-Register the server with the name `makimono` so prompts and tool logs are easy to recognize.
+Register the local server with the name `makimono-local` so prompts and tool logs clearly distinguish local direct PocketBase writes from remote audited writes.
 
 ```jsonc
 {
   "mcp": {
-    "makimono": {
+    "makimono-local": {
       "type": "local",
       "command": ["npx", "pnpm", "mcp:dev"],
       "environment": {
@@ -90,6 +97,25 @@ The hosted app also exposes a narrow JSON-RPC MCP compatibility endpoint at `POS
 
 Remote requests must include `Authorization: Bearer <PocketBase token>`. The server resolves the user id through PocketBase `auth-refresh`; remote tool input must not include a user id.
 
+OpenCode remote configuration example:
+
+```jsonc
+{
+  "mcp": {
+    "makimono-remote": {
+      "type": "remote",
+      "url": "https://www.makimono.io/api/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer <PocketBase token>"
+      }
+    }
+  }
+}
+```
+
+Use the `makimono-remote` connector, not `makimono-local`, when validating that remote writes appear in `/dashboard/audit`.
+
 By default, remote MCP exposes only `makimono_list_interests`. Enable guarded remote create, update, status update, soft delete, and restore explicitly:
 
 ```sh
@@ -106,7 +132,7 @@ Notes:
 - The current write limiter is in memory and resets when the server restarts.
 - Remote `makimono_delete_interest` is soft delete only and requires `confirm` to be exactly `soft-delete`. It sets `deletedAt`; it never physically deletes records.
 - Successful remote create, update, status update, soft delete, and restore calls first try to create a durable audit record in PocketBase. If the audit collection is missing or the audit write fails, the user-facing write still succeeds and the server falls back to a safe log event. Audit payloads omit tokens and auth headers.
-- Authenticated users can review their durable remote MCP audit events at `/dashboard/audit` without opening PocketBase admin. The screen reads `remote_mcp_audit_events` through the app's PocketBase session and relies on collection rules to scope events to the current user.
+- Authenticated users can review their durable remote MCP audit events at `/dashboard/audit` without opening PocketBase admin. The screen reads recent `remote_mcp_audit_events` through the app's PocketBase session, relies on collection rules to scope events to the current user, and supports client-side filtering/search over the loaded events.
 
 ## PocketBase collection import
 
