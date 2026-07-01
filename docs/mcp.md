@@ -84,6 +84,48 @@ This server is for local development only.
 
 Before exposing a remote MCP server to ChatGPT, Gemini, or any hosted client, add HTTPS-only transport, explicit client authentication, per-user token storage or token exchange, request auditing, rate limits, and narrowly scoped PocketBase rules.
 
+## Remote MCP endpoint
+
+The hosted app also exposes a narrow JSON-RPC MCP compatibility endpoint at `POST /api/mcp`.
+
+Remote requests must include `Authorization: Bearer <PocketBase token>`. The server resolves the user id through PocketBase `auth-refresh`; remote tool input must not include a user id.
+
+By default, remote MCP exposes only `makimono_list_interests`. Enable the guarded remote create slice explicitly:
+
+```sh
+MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true
+MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE=5
+```
+
+Notes:
+
+- `MAKIMONO_REMOTE_MCP_ENABLE_WRITES` must be exactly `true`; otherwise remote create is omitted from `tools/list` and rejected on call.
+- `MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE` defaults to 5 writes per minute per resolved user.
+- The current write limiter is in memory and resets when the server restarts.
+- Successful remote create calls emit a safe audit event to server logs by default. The audit event omits tokens and auth headers, but server logs are not a durable production audit store.
+
+Example remote create call when writes are enabled:
+
+```sh
+curl -X POST "https://your-app.example/api/mcp" \
+  -H "Authorization: Bearer <PocketBase token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "makimono_create_interest",
+      "arguments": {
+        "category": "books",
+        "title": "Dune",
+        "notes": "Classic science fiction",
+        "tags": ["sci-fi", "books"]
+      }
+    }
+  }'
+```
+
 ## Troubleshooting
 
 | Symptom | Check |

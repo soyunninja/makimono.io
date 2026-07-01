@@ -30,12 +30,33 @@ type PocketBaseListResponse = {
 
 type RemoteMcpConfig = {
   authCollection: string
+  enableWrites: boolean
   pocketBaseUrl: string
+  writeLimitPerMinute: number
+}
+
+type RemoteMcpAuditEvent = {
+  createdItem: {
+    category: Category
+    id: string
+    title: string
+  }
+  outcome: 'success'
+  timestamp: string
+  toolName: 'makimono_create_interest'
+  userId: string
+}
+
+type RemoteMcpWriteLimiter = {
+  consume: (userId: string, limit: number, now: number) => boolean
 }
 
 export type RemoteMcpDependencies = {
+  auditSink?: (event: RemoteMcpAuditEvent) => void | Promise<void>
   env?: Record<string, string | undefined>
   fetch?: typeof fetch
+  now?: () => number
+  writeLimiter?: RemoteMcpWriteLimiter
 }
 
 const interestsCollection = 'interests'
@@ -54,6 +75,24 @@ const listTool = {
     },
   },
 }
+
+const createTool = {
+  name: 'makimono_create_interest' as const,
+  description: 'Create a pending PocketBase-backed Makimono interest for the authenticated user.',
+  inputSchema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['category', 'title'],
+    properties: {
+      category: { enum: itemCategories, type: 'string' },
+      notes: { type: 'string' },
+      tags: { items: { type: 'string' }, type: 'array' },
+      title: { type: 'string' },
+    },
+  },
+}
+
+const defaultWriteLimiter = createInMemoryWriteLimiter()
 
 export async function handleRemoteMcpRequest(request: Request, dependencies: RemoteMcpDependencies = {}) {
   if (request.method !== 'POST') {
@@ -109,12 +148,22 @@ export async function handleRemoteMcpRequest(request: Request, dependencies: Rem
   }
 
   if (body.method === 'tools/list') {
-    return jsonResponse({ id, jsonrpc: '2.0', result: { tools: [listTool] } })
+    return jsonResponse({ id, jsonrpc: '2.0', result: { tools: config.enableWrites ? [listTool, createTool] : [listTool] } })
   }
 
   if (body.method === 'tools/call') {
     try {
-      return jsonResponse(await handleToolCall({ config, fetcher, id, params: body.params, token, userId: auth.userId }))
+      return jsonResponse(await handleToolCall({
+        auditSink: dependencies.auditSink ?? writeSafeAuditEvent,
+        config,
+        fetcher,
+        id,
+        now: dependencies.now ?? Date.now,
+        params: body.params,
+        token,
+        userId: auth.userId,
+        writeLimiter: dependencies.writeLimiter ?? defaultWriteLimiter,
+      }))
     }
     catch {
       return jsonResponse(jsonRpcError(id, -32000, 'Remote MCP tool call failed.'), 500)
@@ -137,6 +186,7 @@ function getBearerToken(header: string | null) {
 function getRemoteMcpConfig(env = getProcessEnv()): RemoteMcpConfig {
   const pocketBaseUrl = (env.MAKIMONO_POCKETBASE_URL ?? env.VITE_POCKETBASE_URL)?.trim()
   const authCollection = env.MAKIMONO_POCKETBASE_AUTH_COLLECTION?.trim() || defaultAuthCollection
+  const writeLimitPerMinute = parsePositiveInteger(env.MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE, 5)
 
   if (!pocketBaseUrl) {
     throw new Error('Missing PocketBase URL for remote MCP. Set MAKIMONO_POCKETBASE_URL or VITE_POCKETBASE_URL.')
@@ -144,7 +194,9 @@ function getRemoteMcpConfig(env = getProcessEnv()): RemoteMcpConfig {
 
   return {
     authCollection,
+    enableWrites: env.MAKIMONO_REMOTE_MCP_ENABLE_WRITES === 'true',
     pocketBaseUrl: pocketBaseUrl.replace(/\/+$/, ''),
+    writeLimitPerMinute,
   }
 }
 
@@ -172,16 +224,60 @@ async function resolvePocketBaseUser({ config, fetcher, token }: { config: Remot
   return { ok: true as const, userId: record.id }
 }
 
-async function handleToolCall({ config, fetcher, id, params, token, userId }: {
+async function handleToolCall({ auditSink, config, fetcher, id, now, params, token, userId, writeLimiter }: {
+  auditSink: (event: RemoteMcpAuditEvent) => void | Promise<void>
   config: RemoteMcpConfig
   fetcher: typeof fetch
   id: unknown
+  now: () => number
   params: unknown
   token: string
   userId: string
+  writeLimiter: RemoteMcpWriteLimiter
 }) {
-  if (!isRecord(params) || params.name !== listTool.name) {
-    return jsonRpcError(id, -32601, 'Only makimono_list_interests is available on the remote read-only endpoint.')
+  if (!isRecord(params)) {
+    return jsonRpcError(id, -32602, 'MCP tool call params must be an object.')
+  }
+
+  if (params.name === createTool.name && !config.enableWrites) {
+    return jsonRpcError(id, -32601, 'makimono_create_interest is disabled for remote MCP. Set MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true to enable guarded remote writes.')
+  }
+
+  if (params.name === createTool.name) {
+    const argumentsResult = parseCreateToolArguments(params.arguments)
+
+    if (!argumentsResult.ok) {
+      return jsonRpcError(id, -32602, argumentsResult.message)
+    }
+
+    if (!writeLimiter.consume(userId, config.writeLimitPerMinute, now())) {
+      return jsonRpcError(id, -32029, `Remote MCP write rate limit exceeded. Try again later; limit is ${config.writeLimitPerMinute} writes per minute.`)
+    }
+
+    const item = await createPocketBaseInterest({ config, fetcher, input: argumentsResult.arguments, token, userId })
+
+    await auditSink({
+      createdItem: { category: item.category, id: item.id, title: item.title },
+      outcome: 'success',
+      timestamp: new Date(now()).toISOString(),
+      toolName: createTool.name,
+      userId,
+    })
+
+    const output = { item }
+
+    return {
+      id,
+      jsonrpc: '2.0',
+      result: {
+        content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
+        structuredContent: output,
+      },
+    }
+  }
+
+  if (params.name !== listTool.name) {
+    return jsonRpcError(id, -32601, 'Only makimono_list_interests and currently enabled remote MCP tools are available.')
   }
 
   const argumentsResult = parseListToolArguments(params.arguments)
@@ -202,6 +298,48 @@ async function handleToolCall({ config, fetcher, id, params, token, userId }: {
     result: {
       content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
       structuredContent: output,
+    },
+  }
+}
+
+function parseCreateToolArguments(value: unknown) {
+  if (!isRecord(value)) {
+    return { ok: false as const, message: 'makimono_create_interest arguments must be an object.' }
+  }
+
+  const allowedKeys = new Set(['category', 'notes', 'tags', 'title'])
+
+  for (const key of Object.keys(value)) {
+    if (!allowedKeys.has(key)) {
+      return { ok: false as const, message: `Unsupported makimono_create_interest argument: ${key}.` }
+    }
+  }
+
+  if (!isCategory(value.category)) {
+    return { ok: false as const, message: 'category must be one of the supported Makimono categories.' }
+  }
+
+  if (!isString(value.title) || value.title.trim().length === 0) {
+    return { ok: false as const, message: 'title must be a non-empty string.' }
+  }
+
+  if (value.notes !== undefined && !isString(value.notes)) {
+    return { ok: false as const, message: 'notes must be a string when provided.' }
+  }
+
+  if (value.tags !== undefined && !isStringArray(value.tags)) {
+    return { ok: false as const, message: 'tags must be an array of strings when provided.' }
+  }
+
+  const notes = value.notes?.trim()
+
+  return {
+    ok: true as const,
+    arguments: {
+      category: value.category,
+      notes: notes && notes.length > 0 ? notes : null,
+      tags: normalizeTags(value.tags),
+      title: value.title.trim(),
     },
   }
 }
@@ -267,6 +405,79 @@ async function listPocketBaseInterests({ config, fetcher, token, userId }: {
   }
 
   return (result as { items: unknown[] }).items.map(mapPocketBaseRecord)
+}
+
+async function createPocketBaseInterest({ config, fetcher, input, token, userId }: {
+  config: RemoteMcpConfig
+  fetcher: typeof fetch
+  input: {
+    category: Category
+    notes: string | null
+    tags: string[]
+    title: string
+  }
+  token: string
+  userId: string
+}) {
+  const response = await fetcher(`${config.pocketBaseUrl}/api/collections/${interestsCollection}/records`, {
+    body: JSON.stringify({
+      category: input.category,
+      notes: input.notes,
+      status: 'pending',
+      tags: input.tags,
+      title: input.title,
+      user: userId,
+    }),
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    throw new Error(`PocketBase create request failed with status ${response.status}.`)
+  }
+
+  return mapPocketBaseRecord(await response.json() as unknown)
+}
+
+function normalizeTags(value: string[] | undefined) {
+  if (!value) {
+    return []
+  }
+
+  return Array.from(new Set(value.map((tag) => tag.trim()).filter(Boolean)))
+}
+
+function createInMemoryWriteLimiter(): RemoteMcpWriteLimiter {
+  const buckets = new Map<string, { count: number, windowStart: number }>()
+
+  return {
+    consume(userId, limit, now) {
+      const windowStart = Math.floor(now / 60_000) * 60_000
+      const bucket = buckets.get(userId)
+
+      if (!bucket || bucket.windowStart !== windowStart) {
+        buckets.set(userId, { count: 1, windowStart })
+        return true
+      }
+
+      if (bucket.count >= limit) {
+        return false
+      }
+
+      bucket.count += 1
+      return true
+    },
+  }
+}
+
+function parsePositiveInteger(value: string | undefined, fallback: number) {
+  const parsed = Number.parseInt(value ?? '', 10)
+
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
+}
+
+function writeSafeAuditEvent(event: RemoteMcpAuditEvent) {
+  console.info('[remote-mcp-audit]', JSON.stringify(event))
 }
 
 function quotePocketBaseFilterValue(value: string) {

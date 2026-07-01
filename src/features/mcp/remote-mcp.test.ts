@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { handleRemoteMcpRequest } from './remote-mcp'
 
 const env = { MAKIMONO_POCKETBASE_URL: 'https://pocketbase.example' }
+const writeEnv = { ...env, MAKIMONO_REMOTE_MCP_ENABLE_WRITES: 'true' }
 
 function jsonResponse(body: unknown, status = 200) {
   return Response.json(body, { status })
@@ -41,6 +42,36 @@ function createPocketBaseFetch() {
 
     return jsonResponse({ message: 'Unexpected request' }, 500)
   })
+}
+
+function createPocketBaseFetchWithCreate() {
+  return vi.fn(async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+    const url = input.toString()
+
+    if (url.endsWith('/api/collections/users/auth-refresh')) {
+      return jsonResponse({ record: { id: 'resolved-user' } })
+    }
+
+    if (url === 'https://pocketbase.example/api/collections/interests/records' && init?.method === 'POST') {
+      const payload = JSON.parse(init.body?.toString() ?? '{}') as Record<string, unknown>
+
+      return jsonResponse({
+        id: 'created-1',
+        category: payload.category,
+        created: '2026-01-03T00:00:00.000Z',
+        notes: payload.notes,
+        status: 'pending',
+        tags: payload.tags,
+        title: payload.title,
+      })
+    }
+
+    return jsonResponse({ message: 'Unexpected request' }, 500)
+  })
+}
+
+function createWriteLimiter(allowed: boolean) {
+  return { consume: vi.fn(() => allowed) }
 }
 
 function createPocketBaseFetchWithDeletedItem() {
@@ -90,7 +121,7 @@ describe('handleRemoteMcpRequest', () => {
     await expect(response.json()).resolves.toMatchObject({ error: { code: -32001 } })
   })
 
-  it('lists only the read-only remote tool', async () => {
+  it('omits the create tool when remote writes are disabled', async () => {
     const response = await handleRemoteMcpRequest(createRequest({ id: 1, jsonrpc: '2.0', method: 'tools/list' }), {
       env,
       fetch: createPocketBaseFetch(),
@@ -107,7 +138,7 @@ describe('handleRemoteMcpRequest', () => {
     })
   })
 
-  it('rejects write tool calls', async () => {
+  it('rejects create tool calls when remote writes are disabled', async () => {
     const response = await handleRemoteMcpRequest(createRequest({
       id: 2,
       jsonrpc: '2.0',
@@ -116,6 +147,21 @@ describe('handleRemoteMcpRequest', () => {
     }), { env, fetch: createPocketBaseFetch() })
 
     await expect(response.json()).resolves.toMatchObject({ error: { code: -32601 } })
+  })
+
+  it('includes the create tool when remote writes are enabled', async () => {
+    const response = await handleRemoteMcpRequest(createRequest({ id: 7, jsonrpc: '2.0', method: 'tools/list' }), {
+      env: writeEnv,
+      fetch: createPocketBaseFetch(),
+    })
+
+    await expect(response.json()).resolves.toMatchObject({
+      result: {
+        tools: expect.arrayContaining([
+          expect.objectContaining({ name: 'makimono_create_interest' }),
+        ]),
+      },
+    })
   })
 
   it('rejects userId in list tool input', async () => {
@@ -162,5 +208,92 @@ describe('handleRemoteMcpRequest', () => {
 
     await expect(defaultResponse.json()).resolves.toMatchObject({ result: { structuredContent: { count: 1 } } })
     await expect(includeDeletedResponse.json()).resolves.toMatchObject({ result: { structuredContent: { count: 2 } } })
+  })
+
+  it('creates interests with the resolved user id and normalized input', async () => {
+    const fetcher = createPocketBaseFetchWithCreate()
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 8,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        arguments: {
+          category: 'books',
+          notes: '   ',
+          tags: [' sci-fi ', '', 'books', 'sci-fi'],
+          title: '  Dune  ',
+        },
+        name: 'makimono_create_interest',
+      },
+    }), {
+      auditSink: vi.fn(),
+      env: writeEnv,
+      fetch: fetcher,
+      writeLimiter: createWriteLimiter(true),
+    })
+
+    await expect(response.json()).resolves.toMatchObject({
+      result: { structuredContent: { item: { id: 'created-1', title: 'Dune' } } },
+    })
+
+    const createCall = fetcher.mock.calls.find(([input, init]) => input.toString().endsWith('/api/collections/interests/records') && init?.method === 'POST')
+    const payload = JSON.parse(createCall?.[1]?.body?.toString() ?? '{}') as Record<string, unknown>
+
+    expect(payload).toMatchObject({
+      category: 'books',
+      notes: null,
+      status: 'pending',
+      tags: ['sci-fi', 'books'],
+      title: 'Dune',
+      user: 'resolved-user',
+    })
+  })
+
+  it('rejects create requests when the per-user write rate limit is exceeded', async () => {
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 9,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        arguments: { category: 'books', title: 'Dune' },
+        name: 'makimono_create_interest',
+      },
+    }), {
+      env: { ...writeEnv, MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE: '1' },
+      fetch: createPocketBaseFetchWithCreate(),
+      writeLimiter: createWriteLimiter(false),
+    })
+
+    await expect(response.json()).resolves.toMatchObject({ error: { code: -32029 } })
+  })
+
+  it('emits a safe audit event after successful remote create', async () => {
+    const auditSink = vi.fn()
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 10,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        arguments: { category: 'books', title: 'Dune' },
+        name: 'makimono_create_interest',
+      },
+    }), {
+      auditSink,
+      env: writeEnv,
+      fetch: createPocketBaseFetchWithCreate(),
+      now: () => Date.parse('2026-01-03T12:00:00.000Z'),
+      writeLimiter: createWriteLimiter(true),
+    })
+
+    await expect(response.json()).resolves.toMatchObject({ result: { structuredContent: { item: { id: 'created-1' } } } })
+
+    expect(auditSink).toHaveBeenCalledWith({
+      createdItem: { category: 'books', id: 'created-1', title: 'Dune' },
+      outcome: 'success',
+      timestamp: '2026-01-03T12:00:00.000Z',
+      toolName: 'makimono_create_interest',
+      userId: 'resolved-user',
+    })
+    expect(JSON.stringify(auditSink.mock.calls)).not.toContain('user-token')
   })
 })

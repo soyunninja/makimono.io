@@ -40,11 +40,11 @@ The remote MCP server should not reuse a copied browser token as a long-term cre
 | Tool | Remote availability | Guardrail |
 | --- | --- | --- |
 | `makimono_list_interests` | Yes | Authenticated user only. |
-| `makimono_create_interest` | Yes | Validate category/title; audit creation. |
-| `makimono_update_interest` | Yes | Reject no-op payloads; audit changed fields. |
-| `makimono_update_interest_status` | Yes | Validate status transitions; audit previous and next status. |
-| `makimono_delete_interest` | Yes, soft delete only | Audit and allow restore. |
-| `makimono_restore_interest` | Yes | Audit restore. |
+| `makimono_create_interest` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Validate category/title; use resolved user id; audit creation; rate limit writes. |
+| `makimono_update_interest` | Not yet | Reject no-op payloads; audit changed fields. |
+| `makimono_update_interest_status` | Not yet | Validate status transitions; audit previous and next status. |
+| `makimono_delete_interest` | Not yet | Soft delete only; audit and allow restore. |
+| `makimono_restore_interest` | Not yet | Audit restore. |
 | Bulk mutation tools | Not in first remote slice | Require explicit confirmation and stricter limits. |
 | Permanent delete | Not allowed initially | Add only with separate approval and recovery policy. |
 
@@ -80,28 +80,55 @@ Every request must include `Authorization: Bearer <PocketBase token>`. The endpo
 Caveats:
 
 - This is not the SDK streamable HTTP transport; it is a narrow JSON-RPC compatibility slice for the first read-only remote test.
-- Remote write tools remain unavailable.
+- Remote write tools are disabled by default.
 - Production exposure still requires HTTPS, safe platform logs, and verified PocketBase collection rules in addition to the explicit server-side user filter.
 
 ## Second remote slice
 
-Add low-risk writes after read-only remote access is proven.
+Add the first low-risk write after read-only remote access is proven.
 
 ### Scope
 
-- `makimono_create_interest`
-- `makimono_update_interest`
-- `makimono_update_interest_status`
-- audit events for every mutation
-- write rate limits
+- `makimono_create_interest` only
+- explicit remote write opt-in with `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true`
+- safe audit event for successful create
+- basic per-user write rate limit
 
 ### Acceptance checklist
 
-- [ ] Each mutation writes an audit event.
+- [x] Create writes a safe audit event.
+- [x] Create is scoped to the authenticated user resolved through PocketBase `auth-refresh`.
+- [x] Create ignores caller-provided user ids by rejecting unsupported input keys.
+- [x] Write rate limits return clear errors.
+- [ ] PocketBase rules prevent cross-user access even if the MCP server has a bug.
+
+### Current implementation status
+
+The remote endpoint now exposes `makimono_create_interest` only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` is set. When the flag is missing or set to any other value, `tools/list` still returns only `makimono_list_interests`, and remote create calls are rejected.
+
+Remote create continues to require `Authorization: Bearer <PocketBase token>`. The server resolves the user id with PocketBase `auth-refresh` and writes that resolved id to the `user` relation; `userId` is not accepted from tool input.
+
+Write limits default to 5 writes per minute per resolved user and can be changed with `MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE`. The current limiter is in memory, so it resets on server restart and does not coordinate across multiple app instances.
+
+Audit events include timestamp, tool name, resolved user id, created item id/title/category, and outcome. The default sink writes a safe server log event without tokens or auth headers. This is enough for the guarded slice, but it is not enough for production remote writes; add a durable audit store before broader or higher-risk write exposure.
+
+## Later guarded write slices
+
+Add remaining low-risk writes only after the guarded create slice has durable audit storage and production-ready rate limiting.
+
+### Scope
+
+- `makimono_update_interest`
+- `makimono_update_interest_status`
+- audit events for every mutation
+- shared rate limits across app instances
+
+### Acceptance checklist
+
+- [ ] Each mutation writes a durable audit event.
 - [ ] Mutations are scoped to the authenticated user.
 - [ ] No-op updates are rejected.
-- [ ] Write rate limits return clear errors.
-- [ ] PocketBase rules prevent cross-user access even if the MCP server has a bug.
+- [ ] Shared write rate limits return clear errors.
 
 ## Third remote slice
 
