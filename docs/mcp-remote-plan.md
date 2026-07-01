@@ -61,11 +61,27 @@ Build the smallest remote endpoint that can safely prove connectivity.
 
 ### Acceptance checklist
 
-- [ ] Unauthenticated calls are rejected.
-- [ ] The server never accepts `userId` as tool input.
-- [ ] Logs do not contain tokens or auth headers.
-- [ ] The list tool returns only the authenticated user's interests.
-- [ ] Local stdio MCP still works.
+- [x] Unauthenticated calls are rejected.
+- [x] The server never accepts `userId` as tool input.
+- [x] Logs do not contain tokens or auth headers.
+- [x] The list tool returns only the authenticated user's interests.
+- [x] Local stdio MCP still works.
+
+### Current implementation status
+
+The first remote slice is implemented at `POST /api/mcp` as a minimal JSON-RPC MCP compatibility endpoint. It intentionally supports only:
+
+- `initialize`
+- `tools/list`
+- `tools/call` for `makimono_list_interests`
+
+Every request must include `Authorization: Bearer <PocketBase token>`. The endpoint resolves the authenticated PocketBase user with the `users` collection `auth-refresh` endpoint by default, or `MAKIMONO_POCKETBASE_AUTH_COLLECTION` when the auth collection name differs. List calls use the caller token and add an explicit PocketBase filter for the resolved user id (`user="<id>"`) before applying local `includeDeleted` and `query` filtering.
+
+Caveats:
+
+- This is not the SDK streamable HTTP transport; it is a narrow JSON-RPC compatibility slice for the first read-only remote test.
+- Remote write tools remain unavailable.
+- Production exposure still requires HTTPS, safe platform logs, and verified PocketBase collection rules in addition to the explicit server-side user filter.
 
 ## Second remote slice
 

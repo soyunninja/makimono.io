@@ -15,6 +15,7 @@ import { Route as DashboardSuggestRouteImport } from './routes/dashboard.suggest
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardArchiveRouteImport } from './routes/dashboard.archive'
 import { Route as DashboardAddRouteImport } from './routes/dashboard.add'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as DashboardEditItemIdRouteImport } from './routes/dashboard.edit.$itemId'
 
 const DashboardRoute = DashboardRouteImport.update({
@@ -47,6 +48,11 @@ const DashboardAddRoute = DashboardAddRouteImport.update({
   path: '/add',
   getParentRoute: () => DashboardRoute,
 } as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardEditItemIdRoute = DashboardEditItemIdRouteImport.update({
   id: '/edit/$itemId',
   path: '/edit/$itemId',
@@ -56,6 +62,7 @@ const DashboardEditItemIdRoute = DashboardEditItemIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/api/mcp': typeof ApiMcpRoute
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/api/mcp': typeof ApiMcpRoute
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/api/mcp': typeof ApiMcpRoute
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/api/mcp'
     | '/dashboard/add'
     | '/dashboard/archive'
     | '/dashboard/settings'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/api/mcp'
     | '/dashboard/add'
     | '/dashboard/archive'
     | '/dashboard/settings'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/api/mcp'
     | '/dashboard/add'
     | '/dashboard/archive'
     | '/dashboard/settings'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  ApiMcpRoute: typeof ApiMcpRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -160,6 +173,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAddRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/edit/$itemId': {
       id: '/dashboard/edit/$itemId'
       path: '/edit/$itemId'
@@ -193,6 +213,7 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  ApiMcpRoute: ApiMcpRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
