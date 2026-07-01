@@ -11,12 +11,16 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OauthTokenRouteImport } from './routes/oauth.token'
+import { Route as OauthAuthorizeRouteImport } from './routes/oauth.authorize'
 import { Route as DashboardSuggestRouteImport } from './routes/dashboard.suggest'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardAuditRouteImport } from './routes/dashboard.audit'
 import { Route as DashboardArchiveRouteImport } from './routes/dashboard.archive'
 import { Route as DashboardAddRouteImport } from './routes/dashboard.add'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
+import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known.oauth-protected-resource'
+import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known.oauth-authorization-server'
 import { Route as DashboardEditItemIdRouteImport } from './routes/dashboard.edit.$itemId'
 
 const DashboardRoute = DashboardRouteImport.update({
@@ -27,6 +31,16 @@ const DashboardRoute = DashboardRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthTokenRoute = OauthTokenRouteImport.update({
+  id: '/oauth/token',
+  path: '/oauth/token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
+  id: '/oauth/authorize',
+  path: '/oauth/authorize',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardSuggestRoute = DashboardSuggestRouteImport.update({
@@ -59,6 +73,18 @@ const ApiMcpRoute = ApiMcpRouteImport.update({
   path: '/api/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotwellKnownOauthProtectedResourceRoute =
+  DotwellKnownOauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DotwellKnownOauthAuthorizationServerRoute =
+  DotwellKnownOauthAuthorizationServerRouteImport.update({
+    id: '/.well-known/oauth-authorization-server',
+    path: '/.well-known/oauth-authorization-server',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardEditItemIdRoute = DashboardEditItemIdRouteImport.update({
   id: '/edit/$itemId',
   path: '/edit/$itemId',
@@ -68,35 +94,47 @@ const DashboardEditItemIdRoute = DashboardEditItemIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRoute
   '/api/mcp': typeof ApiMcpRoute
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/token': typeof OauthTokenRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRoute
   '/api/mcp': typeof ApiMcpRoute
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/token': typeof OauthTokenRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/.well-known/oauth-authorization-server': typeof DotwellKnownOauthAuthorizationServerRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRoute
   '/api/mcp': typeof ApiMcpRoute
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/oauth/token': typeof OauthTokenRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
 }
 export interface FileRouteTypes {
@@ -104,41 +142,57 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/api/mcp'
     | '/dashboard/add'
     | '/dashboard/archive'
     | '/dashboard/audit'
     | '/dashboard/settings'
     | '/dashboard/suggest'
+    | '/oauth/authorize'
+    | '/oauth/token'
     | '/dashboard/edit/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/api/mcp'
     | '/dashboard/add'
     | '/dashboard/archive'
     | '/dashboard/audit'
     | '/dashboard/settings'
     | '/dashboard/suggest'
+    | '/oauth/authorize'
+    | '/oauth/token'
     | '/dashboard/edit/$itemId'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/.well-known/oauth-authorization-server'
+    | '/.well-known/oauth-protected-resource'
     | '/api/mcp'
     | '/dashboard/add'
     | '/dashboard/archive'
     | '/dashboard/audit'
     | '/dashboard/settings'
     | '/dashboard/suggest'
+    | '/oauth/authorize'
+    | '/oauth/token'
     | '/dashboard/edit/$itemId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  DotwellKnownOauthAuthorizationServerRoute: typeof DotwellKnownOauthAuthorizationServerRoute
+  DotwellKnownOauthProtectedResourceRoute: typeof DotwellKnownOauthProtectedResourceRoute
   ApiMcpRoute: typeof ApiMcpRoute
+  OauthAuthorizeRoute: typeof OauthAuthorizeRoute
+  OauthTokenRoute: typeof OauthTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -155,6 +209,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/token': {
+      id: '/oauth/token'
+      path: '/oauth/token'
+      fullPath: '/oauth/token'
+      preLoaderRoute: typeof OauthTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oauth/authorize': {
+      id: '/oauth/authorize'
+      path: '/oauth/authorize'
+      fullPath: '/oauth/authorize'
+      preLoaderRoute: typeof OauthAuthorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/suggest': {
@@ -199,6 +267,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMcpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-authorization-server': {
+      id: '/.well-known/oauth-authorization-server'
+      path: '/.well-known/oauth-authorization-server'
+      fullPath: '/.well-known/oauth-authorization-server'
+      preLoaderRoute: typeof DotwellKnownOauthAuthorizationServerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/edit/$itemId': {
       id: '/dashboard/edit/$itemId'
       path: '/edit/$itemId'
@@ -234,7 +316,13 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  DotwellKnownOauthAuthorizationServerRoute:
+    DotwellKnownOauthAuthorizationServerRoute,
+  DotwellKnownOauthProtectedResourceRoute:
+    DotwellKnownOauthProtectedResourceRoute,
   ApiMcpRoute: ApiMcpRoute,
+  OauthAuthorizeRoute: OauthAuthorizeRoute,
+  OauthTokenRoute: OauthTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

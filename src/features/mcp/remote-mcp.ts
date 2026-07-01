@@ -1,4 +1,5 @@
 import { itemCategories, itemStatuses, type Category, type InterestItem, type ItemStatus } from '@/features/items/types'
+import { getOAuthBridgeResourceMetadataUrl, resolveOAuthBridgeAccessToken } from '@/features/oauth/oauth-bridge'
 
 type JsonRpcRequest = {
   id?: unknown
@@ -34,6 +35,15 @@ type RemoteMcpConfig = {
   enableWrites: boolean
   pocketBaseUrl: string
   writeLimitPerMinute: number
+}
+
+type RemoteMcpAuth = {
+  ok: true
+  readOnly: boolean
+  token: string
+  userId: string
+} | {
+  ok: false
 }
 
 type RemoteMcpAuditEvent = {
@@ -162,7 +172,7 @@ export async function handleRemoteMcpRequest(request: Request, dependencies: Rem
   const token = getBearerToken(request.headers.get('Authorization'))
 
   if (!token) {
-    return jsonResponse(jsonRpcError(null, -32001, 'Missing bearer token.'), 401)
+    return unauthorizedMcpResponse(request, null, 'Missing bearer token.')
   }
 
   let body: unknown
@@ -181,18 +191,18 @@ export async function handleRemoteMcpRequest(request: Request, dependencies: Rem
   const id = body.id ?? null
   const fetcher = dependencies.fetch ?? fetch
   let config: RemoteMcpConfig
-  let auth: Awaited<ReturnType<typeof resolvePocketBaseUser>>
+  let auth: RemoteMcpAuth
 
   try {
     config = getRemoteMcpConfig(dependencies.env)
-    auth = await resolvePocketBaseUser({ config, fetcher, token })
+    auth = await resolveRemoteMcpAuth({ config, fetcher, token })
   }
   catch {
-    return jsonResponse(jsonRpcError(id, -32000, 'Remote MCP authentication could not be completed.'), 500)
+    return unauthorizedMcpResponse(request, id, 'Remote MCP authentication could not be completed.')
   }
 
   if (!auth.ok) {
-    return jsonResponse(jsonRpcError(id, -32001, 'Unauthorized.'), 401)
+    return unauthorizedMcpResponse(request, id, 'Unauthorized.')
   }
 
   if (body.method === 'initialize') {
@@ -208,19 +218,20 @@ export async function handleRemoteMcpRequest(request: Request, dependencies: Rem
   }
 
   if (body.method === 'tools/list') {
-    return jsonResponse({ id, jsonrpc: '2.0', result: { tools: config.enableWrites ? [listTool, createTool, updateTool, updateStatusTool, deleteTool, restoreTool] : [listTool] } })
+    return jsonResponse({ id, jsonrpc: '2.0', result: { tools: config.enableWrites && !auth.readOnly ? [listTool, createTool, updateTool, updateStatusTool, deleteTool, restoreTool] : [listTool] } })
   }
 
   if (body.method === 'tools/call') {
     try {
       return jsonResponse(await handleToolCall({
-        auditSink: dependencies.auditSink ?? createPocketBaseAuditSink({ config, fetcher, token }),
+        auditSink: dependencies.auditSink ?? createPocketBaseAuditSink({ config, fetcher, token: auth.token }),
         config,
         fetcher,
         id,
         now: dependencies.now ?? Date.now,
         params: body.params,
-        token,
+        readOnly: auth.readOnly,
+        token: auth.token,
         userId: auth.userId,
         writeLimiter: dependencies.writeLimiter ?? defaultWriteLimiter,
       }))
@@ -285,13 +296,40 @@ async function resolvePocketBaseUser({ config, fetcher, token }: { config: Remot
   return { ok: true as const, userId: record.id }
 }
 
-async function handleToolCall({ auditSink, config, fetcher, id, now, params, token, userId, writeLimiter }: {
+async function resolveRemoteMcpAuth({ config, fetcher, token }: { config: RemoteMcpConfig, fetcher: typeof fetch, token: string }): Promise<RemoteMcpAuth> {
+  const oauthToken = resolveOAuthBridgeAccessToken(token)
+
+  if (oauthToken) {
+    return {
+      ok: true,
+      readOnly: true,
+      token: oauthToken.pocketBaseToken,
+      userId: oauthToken.userId,
+    }
+  }
+
+  const pocketBaseAuth = await resolvePocketBaseUser({ config, fetcher, token })
+
+  if (!pocketBaseAuth.ok) {
+    return { ok: false }
+  }
+
+  return {
+    ok: true,
+    readOnly: false,
+    token,
+    userId: pocketBaseAuth.userId,
+  }
+}
+
+async function handleToolCall({ auditSink, config, fetcher, id, now, params, readOnly, token, userId, writeLimiter }: {
   auditSink: (event: RemoteMcpAuditEvent) => void | Promise<void>
   config: RemoteMcpConfig
   fetcher: typeof fetch
   id: unknown
   now: () => number
   params: unknown
+  readOnly: boolean
   token: string
   userId: string
   writeLimiter: RemoteMcpWriteLimiter
@@ -300,8 +338,14 @@ async function handleToolCall({ auditSink, config, fetcher, id, now, params, tok
     return jsonRpcError(id, -32602, 'MCP tool call params must be an object.')
   }
 
-  if ((params.name === createTool.name || params.name === updateTool.name || params.name === updateStatusTool.name || params.name === deleteTool.name || params.name === restoreTool.name) && !config.enableWrites) {
-    return jsonRpcError(id, -32601, `${params.name} is disabled for remote MCP. Set MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true to enable guarded remote writes.`)
+  if (params.name === createTool.name || params.name === updateTool.name || params.name === updateStatusTool.name || params.name === deleteTool.name || params.name === restoreTool.name) {
+    if (readOnly) {
+      return jsonRpcError(id, -32601, `${params.name} is not available for read-only OAuth MCP tokens.`)
+    }
+
+    if (!config.enableWrites) {
+      return jsonRpcError(id, -32601, `${params.name} is disabled for remote MCP. Set MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true to enable guarded remote writes.`)
+    }
   }
 
   if (params.name === createTool.name) {
@@ -1126,6 +1170,15 @@ function isPocketBaseInterestRecord(value: unknown): value is PocketBaseInterest
 
 function jsonRpcError(id: unknown, code: number, message: string) {
   return { error: { code, message }, id, jsonrpc: '2.0' }
+}
+
+function unauthorizedMcpResponse(request: Request, id: unknown, message: string) {
+  return Response.json(jsonRpcError(id, -32001, message), {
+    headers: {
+      'WWW-Authenticate': `Bearer resource_metadata="${getOAuthBridgeResourceMetadataUrl(request)}"`,
+    },
+    status: 401,
+  })
 }
 
 function jsonResponse(body: unknown, status = 200) {

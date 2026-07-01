@@ -116,6 +116,41 @@ OpenCode remote configuration example:
 
 Use the `makimono-remote` connector, not `makimono-local`, when validating that remote writes appear in `/dashboard/audit`.
 
+## ChatGPT Pro read-only OAuth setup
+
+ChatGPT Pro custom MCP apps use OAuth discovery instead of a static bearer header. Makimono exposes a minimal authorization-code + PKCE bridge for read-only ChatGPT access:
+
+- OAuth authorization server metadata: `GET /.well-known/oauth-authorization-server`
+- OAuth protected resource metadata: `GET /.well-known/oauth-protected-resource`
+- Authorization endpoint: `GET /oauth/authorize`
+- Token endpoint: `POST /oauth/token`
+- MCP endpoint: `POST /api/mcp`
+
+Required server environment:
+
+```sh
+MAKIMONO_OAUTH_CLIENT_IDS="chatgpt-client-id"
+MAKIMONO_OAUTH_REDIRECT_URIS="https://chat.openai.com/aip/.../oauth/callback"
+MAKIMONO_OAUTH_POCKETBASE_TOKEN="server-side-pocketbase-user-token"
+MAKIMONO_POCKETBASE_URL="https://your-pocketbase.example"
+```
+
+Optional server environment:
+
+```sh
+MAKIMONO_OAUTH_ISSUER="https://www.makimono.io"
+MAKIMONO_OAUTH_CODE_TTL_SECONDS=300
+MAKIMONO_OAUTH_ACCESS_TOKEN_TTL_SECONDS=900
+```
+
+Security notes:
+
+- Redirect URIs and client ids are exact-match allowlists. Do not use wildcards.
+- The bridge issues opaque Makimono OAuth access tokens and keeps the PocketBase token server-side.
+- OAuth bridge tokens are scoped to `mcp.read`. Even when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true`, ChatGPT OAuth tokens only see `makimono_list_interests` and write tool calls are rejected.
+- This first slice is read-only for ChatGPT Pro. Write actions remain available through OpenCode remote MCP with the existing bearer-token path; ChatGPT write actions require Business/Enterprise/Edu/full MCP support and a later authorization design.
+- The in-memory authorization code and access token store is intentionally minimal. A multi-instance deployment needs a durable server-side store with code, token hash, expiry, user id, scope, client id, redirect URI, and PKCE challenge fields.
+
 By default, remote MCP exposes only `makimono_list_interests`. Enable guarded remote create, update, status update, soft delete, and restore explicitly:
 
 ```sh

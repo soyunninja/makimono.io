@@ -1,9 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { handleOAuthAuthorize, handleOAuthToken, resetOAuthBridgeStateForTests } from '@/features/oauth/oauth-bridge'
+
 import { handleRemoteMcpRequest } from './remote-mcp'
 
 const env = { MAKIMONO_POCKETBASE_URL: 'https://pocketbase.example' }
 const writeEnv = { ...env, MAKIMONO_REMOTE_MCP_ENABLE_WRITES: 'true' }
+const oauthEnv = {
+  ...writeEnv,
+  MAKIMONO_OAUTH_CLIENT_IDS: 'chatgpt-client',
+  MAKIMONO_OAUTH_POCKETBASE_TOKEN: 'server-pocketbase-token',
+  MAKIMONO_OAUTH_REDIRECT_URIS: 'https://chat.openai.com/aip/g-123/oauth/callback',
+}
+const oauthVerifier = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~'
+const oauthChallenge = 'ImpiCd8pp4MveCNnbIS7-GXEtB0xF5HMIDoWqvGA5ig'
 
 function jsonResponse(body: unknown, status = 200) {
   return Response.json(body, { status })
@@ -42,6 +52,35 @@ function createPocketBaseFetch() {
 
     return jsonResponse({ message: 'Unexpected request' }, 500)
   })
+}
+
+async function createOAuthAccessToken(fetcher: typeof fetch) {
+  resetOAuthBridgeStateForTests()
+
+  const authorizeUrl = new URL('https://app.example/oauth/authorize')
+  authorizeUrl.searchParams.set('response_type', 'code')
+  authorizeUrl.searchParams.set('client_id', 'chatgpt-client')
+  authorizeUrl.searchParams.set('redirect_uri', 'https://chat.openai.com/aip/g-123/oauth/callback')
+  authorizeUrl.searchParams.set('code_challenge', oauthChallenge)
+  authorizeUrl.searchParams.set('code_challenge_method', 'S256')
+  authorizeUrl.searchParams.set('scope', 'mcp.read')
+
+  const authorizeResponse = await handleOAuthAuthorize(new Request(authorizeUrl), { env: oauthEnv })
+  const code = new URL(authorizeResponse.headers.get('Location') ?? '').searchParams.get('code') ?? ''
+  const tokenResponse = await handleOAuthToken(new Request('https://app.example/oauth/token', {
+    body: new URLSearchParams({
+      client_id: 'chatgpt-client',
+      code,
+      code_verifier: oauthVerifier,
+      grant_type: 'authorization_code',
+      redirect_uri: 'https://chat.openai.com/aip/g-123/oauth/callback',
+    }),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    method: 'POST',
+  }), { env: oauthEnv, fetch: fetcher })
+  const body = await tokenResponse.json() as { access_token: string }
+
+  return body.access_token
 }
 
 function createPocketBaseFetchWithCreate() {
@@ -195,6 +234,7 @@ describe('handleRemoteMcpRequest', () => {
     }), { env, fetch: createPocketBaseFetch() })
 
     expect(response.status).toBe(401)
+    expect(response.headers.get('WWW-Authenticate')).toContain('/.well-known/oauth-protected-resource')
     await expect(response.json()).resolves.toMatchObject({ error: { code: -32001 } })
   })
 
@@ -283,6 +323,30 @@ describe('handleRemoteMcpRequest', () => {
         ]),
       },
     })
+  })
+
+  it('keeps OAuth bridge tokens read-only even when remote writes are enabled', async () => {
+    const fetcher = createPocketBaseFetch()
+    const accessToken = await createOAuthAccessToken(fetcher)
+    const listResponse = await handleRemoteMcpRequest(createRequest({ id: 40, jsonrpc: '2.0', method: 'tools/list' }, `Bearer ${accessToken}`), {
+      env: oauthEnv,
+      fetch: fetcher,
+    })
+    const writeResponse = await handleRemoteMcpRequest(createRequest({
+      id: 41,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { category: 'books', title: 'Dune' }, name: 'makimono_create_interest' },
+    }, `Bearer ${accessToken}`), { env: oauthEnv, fetch: fetcher })
+
+    await expect(listResponse.json()).resolves.toMatchObject({
+      result: {
+        tools: [
+          { name: 'makimono_list_interests' },
+        ],
+      },
+    })
+    await expect(writeResponse.json()).resolves.toMatchObject({ error: { code: -32601 } })
   })
 
   it('rejects userId in list tool input', async () => {
