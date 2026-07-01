@@ -18,6 +18,13 @@ const env = {
   MAKIMONO_OAUTH_REDIRECT_URIS: 'https://chat.openai.com/aip/g-123/oauth/callback',
   MAKIMONO_POCKETBASE_URL: 'https://pocketbase.example',
 }
+const chatGptRedirectUri = 'https://chatgpt.com/connector/oauth/M9q1SOaDd_T2'
+const envWithoutPkce = {
+  ...env,
+  MAKIMONO_OAUTH_CLIENT_IDS: 'chatgpt-makimono',
+  MAKIMONO_OAUTH_REDIRECT_URIS: chatGptRedirectUri,
+  MAKIMONO_OAUTH_REQUIRE_PKCE: 'false',
+}
 
 function createAuthorizeRequest(overrides: Record<string, string> = {}) {
   const url = new URL('https://app.example/oauth/authorize')
@@ -47,6 +54,28 @@ function createTokenRequest(body: Record<string, string>) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     method: 'POST',
   })
+}
+
+function createChatGptAuthorizeRequest(overrides: Record<string, string> = {}) {
+  const url = new URL('https://www.makimono.io/oauth/authorize')
+  url.searchParams.set('response_type', 'code')
+  url.searchParams.set('client_id', 'chatgpt-makimono')
+  url.searchParams.set('redirect_uri', chatGptRedirectUri)
+  url.searchParams.set('scope', 'mcp.read')
+  url.searchParams.set('resource', 'https://www.makimono.io/api/mcp')
+  url.searchParams.set('state', 'oauth_s_6a45194c9018819183df4ba238111b0f')
+  url.searchParams.set('ui_locales', 'es-ES')
+
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value) {
+      url.searchParams.set(key, value)
+    }
+    else {
+      url.searchParams.delete(key)
+    }
+  }
+
+  return new Request(url)
 }
 
 function createPocketBaseFetch() {
@@ -106,6 +135,29 @@ describe('OAuth authorize endpoint', () => {
     expect(location.searchParams.get('code')).toMatch(/^mk_code_/)
     expect(location.searchParams.get('state')).toBe('opaque-state')
   })
+
+  it('allows ChatGPT-style authorization without PKCE when explicitly disabled', async () => {
+    const response = await handleOAuthAuthorize(createChatGptAuthorizeRequest(), { env: envWithoutPkce, now: () => 1_000 })
+
+    expect(response.status).toBe(302)
+    const location = new URL(response.headers.get('Location') ?? '')
+    expect(location.origin + location.pathname).toBe(chatGptRedirectUri)
+    expect(location.searchParams.get('code')).toMatch(/^mk_code_/)
+    expect(location.searchParams.get('state')).toBe('oauth_s_6a45194c9018819183df4ba238111b0f')
+  })
+
+  it('still rejects invalid client, redirect, and scope when PKCE is disabled', async () => {
+    const clientResponse = await handleOAuthAuthorize(createChatGptAuthorizeRequest({ client_id: 'unknown-client' }), { env: envWithoutPkce })
+    const redirectResponse = await handleOAuthAuthorize(createChatGptAuthorizeRequest({ redirect_uri: 'https://evil.example/callback' }), { env: envWithoutPkce })
+    const scopeResponse = await handleOAuthAuthorize(createChatGptAuthorizeRequest({ scope: 'mcp.write' }), { env: envWithoutPkce })
+
+    expect(clientResponse.status).toBe(400)
+    expect(redirectResponse.status).toBe(400)
+    expect(scopeResponse.status).toBe(400)
+    await expect(clientResponse.json()).resolves.toMatchObject({ error: 'unauthorized_client' })
+    await expect(redirectResponse.json()).resolves.toMatchObject({ error: 'invalid_request' })
+    await expect(scopeResponse.json()).resolves.toMatchObject({ error: 'invalid_scope' })
+  })
 })
 
 describe('OAuth token endpoint', () => {
@@ -151,6 +203,41 @@ describe('OAuth token endpoint', () => {
 
     expect(validResponse.status).toBe(200)
     await expect(validResponse.json()).resolves.toMatchObject({
+      access_token: expect.stringMatching(/^mk_oauth_/),
+      expires_in: 900,
+      scope: 'mcp.read',
+      token_type: 'Bearer',
+    })
+  })
+
+  it('rejects a missing code verifier for PKCE authorization codes', async () => {
+    const authorizeResponse = await handleOAuthAuthorize(createAuthorizeRequest(), { env, now: () => 1_000 })
+    const code = new URL(authorizeResponse.headers.get('Location') ?? '').searchParams.get('code') ?? ''
+
+    const response = await handleOAuthToken(createTokenRequest({
+      client_id: 'chatgpt-client',
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: 'https://chat.openai.com/aip/g-123/oauth/callback',
+    }), { env, fetch: createPocketBaseFetch(), now: () => 2_000 })
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toMatchObject({ error: 'invalid_grant' })
+  })
+
+  it('exchanges a non-PKCE authorization code without a verifier when PKCE is disabled', async () => {
+    const authorizeResponse = await handleOAuthAuthorize(createChatGptAuthorizeRequest(), { env: envWithoutPkce, now: () => 1_000 })
+    const code = new URL(authorizeResponse.headers.get('Location') ?? '').searchParams.get('code') ?? ''
+
+    const response = await handleOAuthToken(createTokenRequest({
+      client_id: 'chatgpt-makimono',
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: chatGptRedirectUri,
+    }), { env: envWithoutPkce, fetch: createPocketBaseFetch(), now: () => 2_000 })
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toMatchObject({
       access_token: expect.stringMatching(/^mk_oauth_/),
       expires_in: 900,
       scope: 'mcp.read',

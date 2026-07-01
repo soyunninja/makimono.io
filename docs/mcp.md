@@ -141,11 +141,22 @@ Optional server environment:
 MAKIMONO_OAUTH_ISSUER="https://www.makimono.io"
 MAKIMONO_OAUTH_CODE_TTL_SECONDS=300
 MAKIMONO_OAUTH_ACCESS_TOKEN_TTL_SECONDS=900
+# Keep the default unless ChatGPT's custom app OAuth flow does not send PKCE.
+MAKIMONO_OAUTH_REQUIRE_PKCE=true
 ```
+
+If ChatGPT sends an authorization request without `code_challenge` and `code_challenge_method`, set this explicitly on the server:
+
+```sh
+MAKIMONO_OAUTH_REQUIRE_PKCE=false
+```
+
+Only use this compatibility mode for the exact ChatGPT app registration that needs it. The bridge still requires exact `MAKIMONO_OAUTH_CLIENT_IDS`, exact `MAKIMONO_OAUTH_REDIRECT_URIS`, `response_type=code`, scope `mcp.read`, and short-lived in-memory authorization codes; these mitigations reduce risk but do not provide the same protection as PKCE.
 
 Security notes:
 
 - Redirect URIs and client ids are exact-match allowlists. Do not use wildcards.
+- PKCE is required by default. Disabling it is a ChatGPT compatibility tradeoff, not a general OAuth recommendation.
 - The bridge issues opaque Makimono OAuth access tokens and keeps the PocketBase token server-side.
 - OAuth bridge tokens are scoped to `mcp.read`. Even when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true`, ChatGPT OAuth tokens only see `makimono_list_interests` and write tool calls are rejected.
 - This first slice is read-only for ChatGPT Pro. Write actions remain available through OpenCode remote MCP with the existing bearer-token path; ChatGPT write actions require Business/Enterprise/Edu/full MCP support and a later authorization design.

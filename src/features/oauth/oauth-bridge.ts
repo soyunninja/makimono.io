@@ -5,6 +5,7 @@ type OAuthBridgeConfig = {
   allowedClientIds: Set<string>
   allowedRedirectUris: Set<string>
   codeTtlSeconds: number
+  requirePkce: boolean
   issuer: string
   pocketBaseToken: string
   pocketBaseUrl: string
@@ -12,7 +13,7 @@ type OAuthBridgeConfig = {
 }
 
 type AuthorizationCode = {
-  challenge: string
+  challenge?: string
   clientId: string
   expiresAt: number
   redirectUri: string
@@ -139,7 +140,7 @@ export async function handleOAuthToken(request: Request, dependencies: OAuthBrid
   const clientId = form.get('client_id')?.trim() ?? ''
   const codeVerifier = form.get('code_verifier')?.trim() ?? ''
 
-  if (grantType !== 'authorization_code' || !code || !redirectUri || !clientId || !codeVerifier) {
+  if (grantType !== 'authorization_code' || !code || !redirectUri || !clientId) {
     return jsonResponse({ error: 'invalid_request' }, 400)
   }
 
@@ -155,7 +156,7 @@ export async function handleOAuthToken(request: Request, dependencies: OAuthBrid
     return jsonResponse({ error: 'invalid_grant' }, 400)
   }
 
-  if (createS256Challenge(codeVerifier) !== authorizationCode.challenge) {
+  if (authorizationCode.challenge && (!codeVerifier || createS256Challenge(codeVerifier) !== authorizationCode.challenge)) {
     authorizationCodes.delete(code)
     return jsonResponse({ error: 'invalid_grant' }, 400)
   }
@@ -234,6 +235,7 @@ function getOAuthBridgeConfig(request: Request, env = getProcessEnv()): OAuthBri
     issuer,
     pocketBaseToken,
     pocketBaseUrl,
+    requirePkce: env.MAKIMONO_OAUTH_REQUIRE_PKCE?.trim() !== 'false',
   }
 }
 
@@ -258,7 +260,11 @@ function validateAuthorizeSearchParams(params: URLSearchParams, config: OAuthBri
     return { ok: false as const, error: 'invalid_request' }
   }
 
-  if (codeChallengeMethod !== 'S256' || !isPkceValue(codeChallenge)) {
+  if (config.requirePkce && (codeChallengeMethod !== 'S256' || !isPkceValue(codeChallenge))) {
+    return { ok: false as const, error: 'invalid_request' }
+  }
+
+  if (!config.requirePkce && (codeChallenge || codeChallengeMethod) && (codeChallengeMethod !== 'S256' || !isPkceValue(codeChallenge))) {
     return { ok: false as const, error: 'invalid_request' }
   }
 
