@@ -13,6 +13,7 @@ import { PocketBaseAuthProvider } from '@/features/auth/pocketbase-auth-provider
 import { resetAppInterestRepository } from '@/features/items/mock-repository'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { DashboardAddRoutePage } from '@/routes/dashboard.add'
+import { DashboardAuditRoutePage } from '@/routes/dashboard.audit'
 import { DashboardArchiveRoutePage } from '@/routes/dashboard.archive'
 import { DashboardEditRoutePage } from '@/routes/dashboard.edit.$itemId'
 import { DashboardSettingsRoutePage } from '@/routes/dashboard.settings'
@@ -89,6 +90,12 @@ const dashboardArchiveRoute = createRoute({
   component: DashboardArchiveRoutePage,
 })
 
+const dashboardAuditRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: '/audit',
+  component: DashboardAuditRoutePage,
+})
+
 const dashboardSettingsRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: '/settings',
@@ -106,13 +113,14 @@ const routeTree = rootRoute.addChildren([
     dashboardAddRoute,
     dashboardSuggestRoute,
     dashboardArchiveRoute,
+    dashboardAuditRoute,
     dashboardSettingsRoute,
     dashboardEditRoute,
   ]),
 ])
 
 async function renderRoute(
-  pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive' | '/dashboard/settings' | '/dashboard/edit/movie-arrival',
+  pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive' | '/dashboard/audit' | '/dashboard/settings' | '/dashboard/edit/movie-arrival',
   options: { withPocketBaseAuthProvider?: boolean } = {},
 ) {
   shouldUsePocketBaseAuthProvider = options.withPocketBaseAuthProvider ?? false
@@ -217,6 +225,7 @@ describe('dashboard nested routes', () => {
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
+    expect(await screen.findByRole('menuitem', { name: 'Audit' })).toHaveAttribute('href', '/dashboard/audit')
     expect(await screen.findByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
@@ -242,8 +251,23 @@ describe('dashboard nested routes', () => {
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
     expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'Audit' })).toHaveAttribute('href', '/dashboard/audit')
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
+  })
+
+  it('renders the audit route as a full replacement and omits Audit from its overflow menu', async () => {
+    await renderRoute('/dashboard/audit')
+
+    expect(await screen.findByRole('link', { name: 'MCP audit' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
+    expect(screen.getByText('No MCP audit events yet')).toBeInTheDocument()
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
   })
 
   it('requires PocketBase auth before rendering the settings route content', async () => {
@@ -264,6 +288,16 @@ describe('dashboard nested routes', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Logout' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Salir' })).not.toBeInTheDocument()
+  })
+
+  it('requires PocketBase auth before rendering the audit route content', async () => {
+    pocketBaseMock.enabled = true
+
+    await renderRoute('/dashboard/audit', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'MCP audit' })).not.toBeInTheDocument()
+    expect(screen.queryByText('No MCP audit events yet')).not.toBeInTheDocument()
   })
 
   it('does not expose a logout action on the authenticated archive route', async () => {
@@ -307,6 +341,7 @@ describe('dashboard nested routes', () => {
 
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'Audit' })).toHaveAttribute('href', '/dashboard/audit')
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/dashboard')

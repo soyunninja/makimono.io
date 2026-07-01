@@ -1,10 +1,10 @@
-import { Box, EllipsisVertical, Settings } from 'lucide-react'
+import { Box, EllipsisVertical, ScrollText, Settings } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useLocale } from '@/i18n/locale-provider'
 
-type DashboardOverflowMenuView = 'archive' | 'dashboard' | 'settings'
+type DashboardOverflowMenuView = 'archive' | 'audit' | 'dashboard' | 'settings'
 
 type DashboardOverflowMenuProps = {
   currentView: DashboardOverflowMenuView
@@ -21,6 +21,10 @@ function DashboardOverflowMenuIcon({ itemKey }: { itemKey: DashboardOverflowMenu
     return <Box aria-hidden={'true'} />
   }
 
+  if (itemKey === 'audit') {
+    return <ScrollText aria-hidden={'true'} />
+  }
+
   return <Settings aria-hidden={'true'} />
 }
 
@@ -31,6 +35,11 @@ export function DashboardOverflowMenu({ currentView }: DashboardOverflowMenuProp
       href: '/dashboard/archive',
       key: 'archive',
       label: t('dashboard.archiveAction'),
+    },
+    {
+      href: '/dashboard/audit',
+      key: 'audit',
+      label: t('dashboard.auditAction'),
     },
     {
       href: '/dashboard/settings',

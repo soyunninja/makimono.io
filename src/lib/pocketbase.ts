@@ -16,6 +16,12 @@ type PocketBaseRequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH'
 }
 
+type PocketBaseListOptions = {
+  limit?: number
+  perPage?: number
+  sort?: string
+}
+
 type PocketBaseListResponse = {
   items: unknown[]
   page?: unknown
@@ -162,9 +168,13 @@ class MinimalPocketBaseClient {
         body: data,
         method: 'POST',
       }),
-      getFullList: async (options?: { sort?: string }): Promise<unknown[]> => {
+      getFullList: async (options?: PocketBaseListOptions): Promise<unknown[]> => {
         const items: unknown[] = []
         let page = 1
+        const perPage = options?.perPage && Number.isInteger(options.perPage) && options.perPage > 0
+          ? Math.min(options.perPage, fullListPerPage)
+          : fullListPerPage
+        const limit = options?.limit && Number.isInteger(options.limit) && options.limit > 0 ? options.limit : null
 
         while (true) {
           const searchParams = new URLSearchParams()
@@ -174,7 +184,7 @@ class MinimalPocketBaseClient {
           }
 
           searchParams.set('page', String(page))
-          searchParams.set('perPage', String(fullListPerPage))
+          searchParams.set('perPage', String(perPage))
           searchParams.set('skipTotal', '1')
 
           const response = await this.#request<unknown>(`/api/collections/${encodeURIComponent(name)}/records?${searchParams.toString()}`, { method: 'GET' })
@@ -189,6 +199,10 @@ class MinimalPocketBaseClient {
 
           items.push(...response.items)
 
+          if (limit !== null && items.length >= limit) {
+            return items.slice(0, limit)
+          }
+
           const totalPages = getPositiveInteger(response.totalPages)
 
           if (totalPages !== null) {
@@ -196,7 +210,7 @@ class MinimalPocketBaseClient {
               return items
             }
           }
-          else if (response.items.length < fullListPerPage) {
+          else if (response.items.length < perPage) {
             return items
           }
 

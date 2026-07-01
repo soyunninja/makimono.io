@@ -106,6 +106,7 @@ Notes:
 - The current write limiter is in memory and resets when the server restarts.
 - Remote `makimono_delete_interest` is soft delete only and requires `confirm` to be exactly `soft-delete`. It sets `deletedAt`; it never physically deletes records.
 - Successful remote create, update, status update, soft delete, and restore calls first try to create a durable audit record in PocketBase. If the audit collection is missing or the audit write fails, the user-facing write still succeeds and the server falls back to a safe log event. Audit payloads omit tokens and auth headers.
+- Authenticated users can review their durable remote MCP audit events at `/dashboard/audit` without opening PocketBase admin. The screen reads `remote_mcp_audit_events` through the app's PocketBase session and relies on collection rules to scope events to the current user.
 
 ## PocketBase collection import
 

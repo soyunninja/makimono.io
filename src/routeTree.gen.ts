@@ -13,6 +13,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardSuggestRouteImport } from './routes/dashboard.suggest'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
+import { Route as DashboardAuditRouteImport } from './routes/dashboard.audit'
 import { Route as DashboardArchiveRouteImport } from './routes/dashboard.archive'
 import { Route as DashboardAddRouteImport } from './routes/dashboard.add'
 import { Route as ApiMcpRouteImport } from './routes/api/mcp'
@@ -36,6 +37,11 @@ const DashboardSuggestRoute = DashboardSuggestRouteImport.update({
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAuditRoute = DashboardAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardArchiveRoute = DashboardArchiveRouteImport.update({
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/api/mcp': typeof ApiMcpRoute
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
+  '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/api/mcp': typeof ApiMcpRoute
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
+  '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/api/mcp': typeof ApiMcpRoute
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
+  '/dashboard/audit': typeof DashboardAuditRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/api/mcp'
     | '/dashboard/add'
     | '/dashboard/archive'
+    | '/dashboard/audit'
     | '/dashboard/settings'
     | '/dashboard/suggest'
     | '/dashboard/edit/$itemId'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/api/mcp'
     | '/dashboard/add'
     | '/dashboard/archive'
+    | '/dashboard/audit'
     | '/dashboard/settings'
     | '/dashboard/suggest'
     | '/dashboard/edit/$itemId'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/api/mcp'
     | '/dashboard/add'
     | '/dashboard/archive'
+    | '/dashboard/audit'
     | '/dashboard/settings'
     | '/dashboard/suggest'
     | '/dashboard/edit/$itemId'
@@ -159,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/audit': {
+      id: '/dashboard/audit'
+      path: '/audit'
+      fullPath: '/dashboard/audit'
+      preLoaderRoute: typeof DashboardAuditRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/archive': {
       id: '/dashboard/archive'
       path: '/archive'
@@ -193,6 +212,7 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteChildren {
   DashboardAddRoute: typeof DashboardAddRoute
   DashboardArchiveRoute: typeof DashboardArchiveRoute
+  DashboardAuditRoute: typeof DashboardAuditRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSuggestRoute: typeof DashboardSuggestRoute
   DashboardEditItemIdRoute: typeof DashboardEditItemIdRoute
@@ -201,6 +221,7 @@ interface DashboardRouteChildren {
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAddRoute: DashboardAddRoute,
   DashboardArchiveRoute: DashboardArchiveRoute,
+  DashboardAuditRoute: DashboardAuditRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSuggestRoute: DashboardSuggestRoute,
   DashboardEditItemIdRoute: DashboardEditItemIdRoute,

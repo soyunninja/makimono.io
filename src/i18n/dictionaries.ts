@@ -77,6 +77,7 @@ export type Dictionary = {
     addAction: string
     suggestAction: string
     archiveAction: string
+    auditAction: string
     settingsAction: string
     moreActions: string
     editAction: string
@@ -111,6 +112,18 @@ export type Dictionary = {
     backAction: string
     searchLabel: string
     searchPlaceholder: string
+  }
+  mcpAudit: {
+    title: string
+    loading: string
+    emptyTitle: string
+    emptyDescription: string
+    errorTitle: string
+    errorDescription: string
+    actionLabel: string
+    outcomeLabel: string
+    targetIdLabel: string
+    emptyValue: string
   }
   settings: {
     title: string
@@ -258,6 +271,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addAction: 'Add interest',
       suggestAction: 'Get suggestions',
       archiveAction: 'Archive',
+      auditAction: 'Audit',
       settingsAction: 'Settings',
       moreActions: 'More actions',
       editAction: 'Edit',
@@ -292,6 +306,18 @@ export const dictionaries: Record<Locale, Dictionary> = {
       backAction: 'Back to dashboard',
       searchLabel: 'Search archived items by title, tag, or notes',
       searchPlaceholder: 'Search title, tag, or notes',
+    },
+    mcpAudit: {
+      title: 'MCP audit',
+      loading: 'Loading MCP audit events…',
+      emptyTitle: 'No MCP audit events yet',
+      emptyDescription: 'Remote MCP write events will appear here after they are recorded in PocketBase.',
+      errorTitle: 'Could not load MCP audit events',
+      errorDescription: 'Check your PocketBase session and audit collection rules, then try again.',
+      actionLabel: 'Action',
+      outcomeLabel: 'Outcome',
+      targetIdLabel: 'Target ID',
+      emptyValue: 'Not provided',
     },
     settings: {
       title: 'Settings',
@@ -487,6 +513,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addAction: 'Añadir interés',
       suggestAction: 'Pedir sugerencias',
       archiveAction: 'Archivo',
+      auditAction: 'Auditoría',
       settingsAction: 'Ajustes',
       moreActions: 'Más acciones',
       editAction: 'Editar',
@@ -521,6 +548,18 @@ export const dictionaries: Record<Locale, Dictionary> = {
       backAction: 'Volver al dashboard',
       searchLabel: 'Buscar archivados por título, etiqueta o notas',
       searchPlaceholder: 'Buscar por título, etiqueta o notas',
+    },
+    mcpAudit: {
+      title: 'Auditoría MCP',
+      loading: 'Cargando eventos de auditoría MCP…',
+      emptyTitle: 'Todavía no hay eventos de auditoría MCP',
+      emptyDescription: 'Los eventos de escritura del MCP remoto aparecerán aquí cuando PocketBase los registre.',
+      errorTitle: 'No se han podido cargar los eventos de auditoría MCP',
+      errorDescription: 'Revisa tu sesión de PocketBase y las reglas de la colección de auditoría, e inténtalo de nuevo.',
+      actionLabel: 'Acción',
+      outcomeLabel: 'Resultado',
+      targetIdLabel: 'ID objetivo',
+      emptyValue: 'No indicado',
     },
     settings: {
       title: 'Ajustes',
