@@ -249,7 +249,8 @@
         "type": "select",
         "values": [
           "makimono_create_interest",
-          "makimono_update_interest"
+          "makimono_update_interest",
+          "makimono_update_interest_status"
         ]
       },
       {
@@ -308,7 +309,8 @@
         "type": "select",
         "values": [
           "create",
-          "update"
+          "update",
+          "update_status"
         ]
       },
       {

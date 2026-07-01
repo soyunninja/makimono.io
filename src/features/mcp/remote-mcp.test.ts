@@ -131,7 +131,7 @@ function createPocketBaseFetchWithUpdateAndAudit(options: { scopedItems?: unknow
         category: 'books',
         created: '2026-01-01T00:00:00.000Z',
         notes: payload.notes,
-        status: 'pending',
+        status: payload.status ?? 'pending',
         tags: payload.tags ?? ['architecture'],
         title: payload.title ?? 'Clean Architecture',
       })
@@ -235,6 +235,17 @@ describe('handleRemoteMcpRequest', () => {
     await expect(response.json()).resolves.toMatchObject({ error: { code: -32601 } })
   })
 
+  it('rejects status update tool calls when remote writes are disabled', async () => {
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 23,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1', status: 'completed' }, name: 'makimono_update_interest_status' },
+    }), { env, fetch: createPocketBaseFetch() })
+
+    await expect(response.json()).resolves.toMatchObject({ error: { code: -32601 } })
+  })
+
   it('includes write tools when remote writes are enabled', async () => {
     const response = await handleRemoteMcpRequest(createRequest({ id: 7, jsonrpc: '2.0', method: 'tools/list' }), {
       env: writeEnv,
@@ -246,6 +257,7 @@ describe('handleRemoteMcpRequest', () => {
         tools: expect.arrayContaining([
           expect.objectContaining({ name: 'makimono_create_interest' }),
           expect.objectContaining({ name: 'makimono_update_interest' }),
+          expect.objectContaining({ name: 'makimono_update_interest_status' }),
         ]),
       },
     })
@@ -289,6 +301,38 @@ describe('handleRemoteMcpRequest', () => {
     }), { env: writeEnv, fetch: createPocketBaseFetchWithUpdateAndAudit(), writeLimiter: createWriteLimiter(true) })
 
     await expect(response.json()).resolves.toMatchObject({ error: { code: -32602 } })
+  })
+
+  it('rejects invalid status update input', async () => {
+    const unsupportedKeyResponse = await handleRemoteMcpRequest(createRequest({
+      id: 24,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1', status: 'completed', userId: 'attacker' }, name: 'makimono_update_interest_status' },
+    }), { env: writeEnv, fetch: createPocketBaseFetchWithUpdateAndAudit(), writeLimiter: createWriteLimiter(true) })
+    const invalidStatusResponse = await handleRemoteMcpRequest(createRequest({
+      id: 25,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1', status: 'deleted' }, name: 'makimono_update_interest_status' },
+    }), { env: writeEnv, fetch: createPocketBaseFetchWithUpdateAndAudit(), writeLimiter: createWriteLimiter(true) })
+    const noIdResponse = await handleRemoteMcpRequest(createRequest({
+      id: 26,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: '', status: 'completed' }, name: 'makimono_update_interest_status' },
+    }), { env: writeEnv, fetch: createPocketBaseFetchWithUpdateAndAudit(), writeLimiter: createWriteLimiter(true) })
+    const titleResponse = await handleRemoteMcpRequest(createRequest({
+      id: 27,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1', status: 'completed', title: 'Dune' }, name: 'makimono_update_interest_status' },
+    }), { env: writeEnv, fetch: createPocketBaseFetchWithUpdateAndAudit(), writeLimiter: createWriteLimiter(true) })
+
+    await expect(unsupportedKeyResponse.json()).resolves.toMatchObject({ error: { code: -32602 } })
+    await expect(invalidStatusResponse.json()).resolves.toMatchObject({ error: { code: -32602 } })
+    await expect(noIdResponse.json()).resolves.toMatchObject({ error: { code: -32602 } })
+    await expect(titleResponse.json()).resolves.toMatchObject({ error: { code: -32602 } })
   })
 
   it('applies authenticated user scope to the PocketBase list request', async () => {
@@ -432,6 +476,39 @@ describe('handleRemoteMcpRequest', () => {
     expect(fetcher.mock.calls.some(([input, init]) => input.toString().endsWith('/api/collections/interests/records/item-1') && init?.method === 'PATCH')).toBe(false)
   })
 
+  it('applies authenticated user scope before status update', async () => {
+    const fetcher = createPocketBaseFetchWithUpdateAndAudit()
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 28,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1', status: 'completed' }, name: 'makimono_update_interest_status' },
+    }), { auditSink: vi.fn(), env: writeEnv, fetch: fetcher, writeLimiter: createWriteLimiter(true) })
+
+    await expect(response.json()).resolves.toMatchObject({ result: { structuredContent: { item: { id: 'item-1', status: 'completed' } } } })
+
+    const lookupUrl = fetcher.mock.calls.map(([input]) => input.toString()).find((url) => url.includes('/api/collections/interests/records?'))
+    const patchCall = fetcher.mock.calls.find(([input, init]) => input.toString().endsWith('/api/collections/interests/records/item-1') && init?.method === 'PATCH')
+    const payload = JSON.parse(patchCall?.[1]?.body?.toString() ?? '{}') as Record<string, unknown>
+
+    expect(lookupUrl).toBeDefined()
+    expect(new URL(lookupUrl ?? '').searchParams.get('filter')).toBe('id="item-1" && user="resolved-user"')
+    expect(payload).toEqual({ status: 'completed' })
+  })
+
+  it('does not status update interests outside the authenticated user scope', async () => {
+    const fetcher = createPocketBaseFetchWithUpdateAndAudit({ scopedItems: [] })
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 29,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { id: 'item-1', status: 'completed' }, name: 'makimono_update_interest_status' },
+    }), { auditSink: vi.fn(), env: writeEnv, fetch: fetcher, writeLimiter: createWriteLimiter(true) })
+
+    await expect(response.json()).resolves.toMatchObject({ error: { code: -32004 } })
+    expect(fetcher.mock.calls.some(([input, init]) => input.toString().endsWith('/api/collections/interests/records/item-1') && init?.method === 'PATCH')).toBe(false)
+  })
+
   it('rejects create requests when the per-user write rate limit is exceeded', async () => {
     const response = await handleRemoteMcpRequest(createRequest({
       id: 9,
@@ -458,6 +535,24 @@ describe('handleRemoteMcpRequest', () => {
       params: {
         arguments: { id: 'item-1', title: 'Dune' },
         name: 'makimono_update_interest',
+      },
+    }), {
+      env: { ...writeEnv, MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE: '1' },
+      fetch: createPocketBaseFetchWithUpdateAndAudit(),
+      writeLimiter: createWriteLimiter(false),
+    })
+
+    await expect(response.json()).resolves.toMatchObject({ error: { code: -32029 } })
+  })
+
+  it('rejects status update requests when the per-user write rate limit is exceeded', async () => {
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 30,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        arguments: { id: 'item-1', status: 'completed' },
+        name: 'makimono_update_interest_status',
       },
     }), {
       env: { ...writeEnv, MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE: '1' },
@@ -564,6 +659,42 @@ describe('handleRemoteMcpRequest', () => {
       targetId: 'item-1',
       timestamp: '2026-01-03T12:00:00.000Z',
       toolName: 'makimono_update_interest',
+      user: 'resolved-user',
+    })
+    expect(JSON.stringify(payload)).not.toContain('user-token')
+    expect(JSON.stringify(payload)).not.toContain('Bearer')
+  })
+
+  it('creates a durable audit record after successful remote status update by default', async () => {
+    const fetcher = createPocketBaseFetchWithUpdateAndAudit()
+    const response = await handleRemoteMcpRequest(createRequest({
+      id: 31,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        arguments: { id: 'item-1', status: 'completed' },
+        name: 'makimono_update_interest_status',
+      },
+    }), {
+      env: writeEnv,
+      fetch: fetcher,
+      now: () => Date.parse('2026-01-03T12:00:00.000Z'),
+      writeLimiter: createWriteLimiter(true),
+    })
+
+    await expect(response.json()).resolves.toMatchObject({ result: { structuredContent: { item: { id: 'item-1', status: 'completed' } } } })
+
+    const auditCall = fetcher.mock.calls.find(([input, init]) => input.toString().endsWith('/api/collections/remote_mcp_audit_events/records') && init?.method === 'POST')
+    const payload = JSON.parse(auditCall?.[1]?.body?.toString() ?? '{}') as Record<string, unknown>
+
+    expect(payload).toMatchObject({
+      action: 'update_status',
+      outcome: 'success',
+      summary: { nextStatus: 'completed', previousStatus: 'pending' },
+      targetCollection: 'interests',
+      targetId: 'item-1',
+      timestamp: '2026-01-03T12:00:00.000Z',
+      toolName: 'makimono_update_interest_status',
       user: 'resolved-user',
     })
     expect(JSON.stringify(payload)).not.toContain('user-token')

@@ -35,7 +35,7 @@ export function FoundationLandingScreen() {
   return (
     <main className="flex min-h-screen flex-col items-center px-6 pb-8 pt-24">
       <section className="flex w-full flex-col items-center text-center">
-        <div className="w-full max-w-[900px] border-[12px] border-white">
+        <div className="w-full max-w-[900px]">
           <div className="grid w-full overflow-hidden rounded-[4rem] bg-home-panel text-paper-foreground shadow-2xl shadow-night/20 md:grid-cols-2">
             <div className="flex flex-col items-center justify-center px-12 py-10">
               <MakimonoAnimatedLogo className="mx-auto" />

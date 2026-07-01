@@ -42,7 +42,7 @@ The remote MCP server should not reuse a copied browser token as a long-term cre
 | `makimono_list_interests` | Yes | Authenticated user only. |
 | `makimono_create_interest` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Validate category/title; use resolved user id; audit creation; rate limit writes. |
 | `makimono_update_interest` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Scope lookup to resolved user; reject no-op payloads; audit changed fields; rate limit writes. |
-| `makimono_update_interest_status` | Not yet | Validate status transitions; audit previous and next status. |
+| `makimono_update_interest_status` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Scope lookup to resolved user; validate status; audit previous and next status; rate limit writes. |
 | `makimono_delete_interest` | Not yet | Soft delete only; audit and allow restore. |
 | `makimono_restore_interest` | Not yet | Audit restore. |
 | Bulk mutation tools | Not in first remote slice | Require explicit confirmation and stricter limits. |
@@ -151,15 +151,21 @@ Add remaining low-risk writes only after the guarded create and update slices ha
 
 ### Scope
 
-- `makimono_update_interest_status`
+- `makimono_update_interest_status` implemented with the same guarded remote write flag as create/update
 - audit events for every mutation
 - shared rate limits across app instances
 
 ### Acceptance checklist
 
-- [ ] Each mutation writes a durable audit event and keeps a safe fallback path.
-- [ ] Mutations are scoped to the authenticated user.
+- [x] Status update writes a durable audit event and keeps a safe fallback path.
+- [x] Status update is scoped to the authenticated user.
 - [ ] Shared write rate limits return clear errors.
+
+### Current implementation status
+
+The remote endpoint now exposes `makimono_update_interest_status` alongside create and update only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` is set. It accepts only `id` and a status of `pending`, `in_progress`, or `completed`; fields such as `userId`, `deletedAt`, title, notes, and tags are rejected for this tool.
+
+Before issuing the PocketBase `PATCH`, the endpoint performs the same scoped lookup with `id="<interest-id>" && user="<resolved-user-id>"`. Successful status updates use the existing per-user write limiter and emit durable audit events with action `update_status`, tool name `makimono_update_interest_status`, target id, timestamp, and previous/next status summary without token or auth header data.
 
 ## Fourth remote slice
 

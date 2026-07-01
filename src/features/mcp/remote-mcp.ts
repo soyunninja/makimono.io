@@ -37,7 +37,7 @@ type RemoteMcpConfig = {
 }
 
 type RemoteMcpAuditEvent = {
-  action: 'create' | 'update'
+  action: 'create' | 'update' | 'update_status'
   clientLabel?: string
   outcome: 'success'
   requestId?: string
@@ -45,7 +45,7 @@ type RemoteMcpAuditEvent = {
   targetCollection: typeof interestsCollection
   targetId: string
   timestamp: string
-  toolName: 'makimono_create_interest' | 'makimono_update_interest'
+  toolName: 'makimono_create_interest' | 'makimono_update_interest' | 'makimono_update_interest_status'
   userId: string
 }
 
@@ -111,6 +111,20 @@ const updateTool = {
   },
 }
 
+const updateStatusTool = {
+  name: 'makimono_update_interest_status' as const,
+  description: 'Update a PocketBase-backed Makimono interest status for the authenticated user.',
+  inputSchema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['id', 'status'],
+    properties: {
+      id: { type: 'string' },
+      status: { enum: itemStatuses, type: 'string' },
+    },
+  },
+}
+
 const defaultWriteLimiter = createInMemoryWriteLimiter()
 
 export async function handleRemoteMcpRequest(request: Request, dependencies: RemoteMcpDependencies = {}) {
@@ -167,7 +181,7 @@ export async function handleRemoteMcpRequest(request: Request, dependencies: Rem
   }
 
   if (body.method === 'tools/list') {
-    return jsonResponse({ id, jsonrpc: '2.0', result: { tools: config.enableWrites ? [listTool, createTool, updateTool] : [listTool] } })
+    return jsonResponse({ id, jsonrpc: '2.0', result: { tools: config.enableWrites ? [listTool, createTool, updateTool, updateStatusTool] : [listTool] } })
   }
 
   if (body.method === 'tools/call') {
@@ -259,7 +273,7 @@ async function handleToolCall({ auditSink, config, fetcher, id, now, params, tok
     return jsonRpcError(id, -32602, 'MCP tool call params must be an object.')
   }
 
-  if ((params.name === createTool.name || params.name === updateTool.name) && !config.enableWrites) {
+  if ((params.name === createTool.name || params.name === updateTool.name || params.name === updateStatusTool.name) && !config.enableWrites) {
     return jsonRpcError(id, -32601, `${params.name} is disabled for remote MCP. Set MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true to enable guarded remote writes.`)
   }
 
@@ -328,6 +342,46 @@ async function handleToolCall({ auditSink, config, fetcher, id, now, params, tok
     })
 
     const output = { item }
+
+    return {
+      id,
+      jsonrpc: '2.0',
+      result: {
+        content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
+        structuredContent: output,
+      },
+    }
+  }
+
+  if (params.name === updateStatusTool.name) {
+    const argumentsResult = parseUpdateStatusToolArguments(params.arguments)
+
+    if (!argumentsResult.ok) {
+      return jsonRpcError(id, -32602, argumentsResult.message)
+    }
+
+    if (!writeLimiter.consume(userId, config.writeLimitPerMinute, now())) {
+      return jsonRpcError(id, -32029, `Remote MCP write rate limit exceeded. Try again later; limit is ${config.writeLimitPerMinute} writes per minute.`)
+    }
+
+    const result = await updatePocketBaseInterestStatus({ config, fetcher, input: argumentsResult.arguments, token, userId })
+
+    if (!result) {
+      return jsonRpcError(id, -32004, 'Interest was not found for the authenticated user.')
+    }
+
+    await auditSink({
+      action: 'update_status',
+      outcome: 'success',
+      summary: { nextStatus: result.item.status, previousStatus: result.previousStatus },
+      targetCollection: interestsCollection,
+      targetId: result.item.id,
+      timestamp: new Date(now()).toISOString(),
+      toolName: updateStatusTool.name,
+      userId,
+    })
+
+    const output = { item: result.item }
 
     return {
       id,
@@ -424,6 +478,36 @@ function parseUpdateToolArguments(value: unknown) {
       payload,
     },
     changedFields,
+  }
+}
+
+function parseUpdateStatusToolArguments(value: unknown) {
+  if (!isRecord(value)) {
+    return { ok: false as const, message: 'makimono_update_interest_status arguments must be an object.' }
+  }
+
+  const allowedKeys = new Set(['id', 'status'])
+
+  for (const key of Object.keys(value)) {
+    if (!allowedKeys.has(key)) {
+      return { ok: false as const, message: `Unsupported makimono_update_interest_status argument: ${key}.` }
+    }
+  }
+
+  if (!isString(value.id) || value.id.trim().length === 0) {
+    return { ok: false as const, message: 'id must be a non-empty string.' }
+  }
+
+  if (!isItemStatus(value.status)) {
+    return { ok: false as const, message: 'status must be one of: pending, in_progress, completed.' }
+  }
+
+  return {
+    ok: true as const,
+    arguments: {
+      id: value.id.trim(),
+      status: value.status,
+    },
   }
 }
 
@@ -595,6 +679,43 @@ async function updatePocketBaseInterest({ config, fetcher, input, token, userId 
   }
 
   return mapPocketBaseRecord(await response.json() as unknown)
+}
+
+async function updatePocketBaseInterestStatus({ config, fetcher, input, token, userId }: {
+  config: RemoteMcpConfig
+  fetcher: typeof fetch
+  input: {
+    id: string
+    status: ItemStatus
+  }
+  token: string
+  userId: string
+}) {
+  const scopedRecord = await getScopedPocketBaseInterest({ config, fetcher, id: input.id, token, userId })
+
+  if (!scopedRecord) {
+    return null
+  }
+
+  const previousItem = mapPocketBaseRecord(scopedRecord)
+  const response = await fetcher(`${config.pocketBaseUrl}/api/collections/${interestsCollection}/records/${encodeURIComponent(input.id)}`, {
+    body: JSON.stringify({ status: input.status }),
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    method: 'PATCH',
+  })
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (!response.ok) {
+    throw new Error(`PocketBase status update request failed with status ${response.status}.`)
+  }
+
+  return {
+    item: mapPocketBaseRecord(await response.json() as unknown),
+    previousStatus: previousItem.status,
+  }
 }
 
 async function getScopedPocketBaseInterest({ config, fetcher, id, token, userId }: {
