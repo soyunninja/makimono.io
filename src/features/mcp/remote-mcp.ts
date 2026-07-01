@@ -37,7 +37,7 @@ type RemoteMcpConfig = {
 }
 
 type RemoteMcpAuditEvent = {
-  action: 'create'
+  action: 'create' | 'update'
   clientLabel?: string
   outcome: 'success'
   requestId?: string
@@ -45,7 +45,7 @@ type RemoteMcpAuditEvent = {
   targetCollection: typeof interestsCollection
   targetId: string
   timestamp: string
-  toolName: 'makimono_create_interest'
+  toolName: 'makimono_create_interest' | 'makimono_update_interest'
   userId: string
 }
 
@@ -88,6 +88,22 @@ const createTool = {
     required: ['category', 'title'],
     properties: {
       category: { enum: itemCategories, type: 'string' },
+      notes: { type: 'string' },
+      tags: { items: { type: 'string' }, type: 'array' },
+      title: { type: 'string' },
+    },
+  },
+}
+
+const updateTool = {
+  name: 'makimono_update_interest' as const,
+  description: 'Edit a PocketBase-backed Makimono interest title, notes, or tags for the authenticated user.',
+  inputSchema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['id'],
+    properties: {
+      id: { type: 'string' },
       notes: { type: 'string' },
       tags: { items: { type: 'string' }, type: 'array' },
       title: { type: 'string' },
@@ -151,7 +167,7 @@ export async function handleRemoteMcpRequest(request: Request, dependencies: Rem
   }
 
   if (body.method === 'tools/list') {
-    return jsonResponse({ id, jsonrpc: '2.0', result: { tools: config.enableWrites ? [listTool, createTool] : [listTool] } })
+    return jsonResponse({ id, jsonrpc: '2.0', result: { tools: config.enableWrites ? [listTool, createTool, updateTool] : [listTool] } })
   }
 
   if (body.method === 'tools/call') {
@@ -243,8 +259,8 @@ async function handleToolCall({ auditSink, config, fetcher, id, now, params, tok
     return jsonRpcError(id, -32602, 'MCP tool call params must be an object.')
   }
 
-  if (params.name === createTool.name && !config.enableWrites) {
-    return jsonRpcError(id, -32601, 'makimono_create_interest is disabled for remote MCP. Set MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true to enable guarded remote writes.')
+  if ((params.name === createTool.name || params.name === updateTool.name) && !config.enableWrites) {
+    return jsonRpcError(id, -32601, `${params.name} is disabled for remote MCP. Set MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true to enable guarded remote writes.`)
   }
 
   if (params.name === createTool.name) {
@@ -283,6 +299,46 @@ async function handleToolCall({ auditSink, config, fetcher, id, now, params, tok
     }
   }
 
+  if (params.name === updateTool.name) {
+    const argumentsResult = parseUpdateToolArguments(params.arguments)
+
+    if (!argumentsResult.ok) {
+      return jsonRpcError(id, -32602, argumentsResult.message)
+    }
+
+    if (!writeLimiter.consume(userId, config.writeLimitPerMinute, now())) {
+      return jsonRpcError(id, -32029, `Remote MCP write rate limit exceeded. Try again later; limit is ${config.writeLimitPerMinute} writes per minute.`)
+    }
+
+    const item = await updatePocketBaseInterest({ config, fetcher, input: argumentsResult.arguments, token, userId })
+
+    if (!item) {
+      return jsonRpcError(id, -32004, 'Interest was not found for the authenticated user.')
+    }
+
+    await auditSink({
+      action: 'update',
+      outcome: 'success',
+      summary: { changedFields: argumentsResult.changedFields },
+      targetCollection: interestsCollection,
+      targetId: item.id,
+      timestamp: new Date(now()).toISOString(),
+      toolName: updateTool.name,
+      userId,
+    })
+
+    const output = { item }
+
+    return {
+      id,
+      jsonrpc: '2.0',
+      result: {
+        content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
+        structuredContent: output,
+      },
+    }
+  }
+
   if (params.name !== listTool.name) {
     return jsonRpcError(id, -32601, 'Only makimono_list_interests and currently enabled remote MCP tools are available.')
   }
@@ -306,6 +362,68 @@ async function handleToolCall({ auditSink, config, fetcher, id, now, params, tok
       content: [{ type: 'text', text: JSON.stringify(output, null, 2) }],
       structuredContent: output,
     },
+  }
+}
+
+function parseUpdateToolArguments(value: unknown) {
+  if (!isRecord(value)) {
+    return { ok: false as const, message: 'makimono_update_interest arguments must be an object.' }
+  }
+
+  const allowedKeys = new Set(['id', 'notes', 'tags', 'title'])
+
+  for (const key of Object.keys(value)) {
+    if (!allowedKeys.has(key)) {
+      return { ok: false as const, message: `Unsupported makimono_update_interest argument: ${key}.` }
+    }
+  }
+
+  if (!isString(value.id) || value.id.trim().length === 0) {
+    return { ok: false as const, message: 'id must be a non-empty string.' }
+  }
+
+  if (value.title !== undefined && (!isString(value.title) || value.title.trim().length === 0)) {
+    return { ok: false as const, message: 'title must be a non-empty string when provided.' }
+  }
+
+  if (value.notes !== undefined && !isString(value.notes)) {
+    return { ok: false as const, message: 'notes must be a string when provided.' }
+  }
+
+  if (value.tags !== undefined && !isStringArray(value.tags)) {
+    return { ok: false as const, message: 'tags must be an array of strings when provided.' }
+  }
+
+  const payload: JsonObject = {}
+  const changedFields: string[] = []
+
+  if (value.title !== undefined) {
+    payload.title = value.title.trim()
+    changedFields.push('title')
+  }
+
+  if (value.notes !== undefined) {
+    const notes = value.notes.trim()
+    payload.notes = notes.length > 0 ? notes : null
+    changedFields.push('notes')
+  }
+
+  if (value.tags !== undefined) {
+    payload.tags = normalizeTags(value.tags)
+    changedFields.push('tags')
+  }
+
+  if (changedFields.length === 0) {
+    return { ok: false as const, message: 'Provide at least one editable field: title, notes, or tags.' }
+  }
+
+  return {
+    ok: true as const,
+    arguments: {
+      id: value.id.trim(),
+      payload,
+    },
+    changedFields,
   }
 }
 
@@ -446,6 +564,68 @@ async function createPocketBaseInterest({ config, fetcher, input, token, userId 
   return mapPocketBaseRecord(await response.json() as unknown)
 }
 
+async function updatePocketBaseInterest({ config, fetcher, input, token, userId }: {
+  config: RemoteMcpConfig
+  fetcher: typeof fetch
+  input: {
+    id: string
+    payload: JsonObject
+  }
+  token: string
+  userId: string
+}) {
+  const scopedRecord = await getScopedPocketBaseInterest({ config, fetcher, id: input.id, token, userId })
+
+  if (!scopedRecord) {
+    return null
+  }
+
+  const response = await fetcher(`${config.pocketBaseUrl}/api/collections/${interestsCollection}/records/${encodeURIComponent(input.id)}`, {
+    body: JSON.stringify(input.payload),
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    method: 'PATCH',
+  })
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (!response.ok) {
+    throw new Error(`PocketBase update request failed with status ${response.status}.`)
+  }
+
+  return mapPocketBaseRecord(await response.json() as unknown)
+}
+
+async function getScopedPocketBaseInterest({ config, fetcher, id, token, userId }: {
+  config: RemoteMcpConfig
+  fetcher: typeof fetch
+  id: string
+  token: string
+  userId: string
+}) {
+  const searchParams = new URLSearchParams({
+    filter: `id=${quotePocketBaseFilterValue(id)} && user=${quotePocketBaseFilterValue(userId)}`,
+    perPage: '1',
+  })
+  const response = await fetcher(`${config.pocketBaseUrl}/api/collections/${interestsCollection}/records?${searchParams.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    method: 'GET',
+  })
+
+  if (!response.ok) {
+    throw new Error(`PocketBase scoped interest lookup failed with status ${response.status}.`)
+  }
+
+  const result = await response.json() as unknown
+
+  if (!isRecord(result) || !Array.isArray((result as PocketBaseListResponse).items)) {
+    throw new Error('PocketBase returned an invalid scoped interest lookup response.')
+  }
+
+  return (result as { items: unknown[] }).items.length > 0 ? (result as { items: unknown[] }).items[0] : null
+}
+
 function normalizeTags(value: string[] | undefined) {
   if (!value) {
     return []
@@ -506,6 +686,7 @@ async function createPocketBaseAuditEvent({ config, event, fetcher, token }: {
     summary: event.summary,
     targetCollection: event.targetCollection,
     targetId: event.targetId,
+    timestamp: event.timestamp,
     toolName: event.toolName,
     user: event.userId,
   }

@@ -90,7 +90,7 @@ The hosted app also exposes a narrow JSON-RPC MCP compatibility endpoint at `POS
 
 Remote requests must include `Authorization: Bearer <PocketBase token>`. The server resolves the user id through PocketBase `auth-refresh`; remote tool input must not include a user id.
 
-By default, remote MCP exposes only `makimono_list_interests`. Enable the guarded remote create slice explicitly:
+By default, remote MCP exposes only `makimono_list_interests`. Enable guarded remote create and update explicitly:
 
 ```sh
 MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true
@@ -100,11 +100,11 @@ MAKIMONO_REMOTE_MCP_AUDIT_COLLECTION=remote_mcp_audit_events
 
 Notes:
 
-- `MAKIMONO_REMOTE_MCP_ENABLE_WRITES` must be exactly `true`; otherwise remote create is omitted from `tools/list` and rejected on call.
+- `MAKIMONO_REMOTE_MCP_ENABLE_WRITES` must be exactly `true`; otherwise remote create and update are omitted from `tools/list` and rejected on call.
 - `MAKIMONO_REMOTE_MCP_WRITE_LIMIT_PER_MINUTE` defaults to 5 writes per minute per resolved user.
 - `MAKIMONO_REMOTE_MCP_AUDIT_COLLECTION` defaults to `remote_mcp_audit_events`.
 - The current write limiter is in memory and resets when the server restarts.
-- Successful remote create calls first try to create a durable audit record in PocketBase. If the audit collection is missing or the audit write fails, the user-facing create still succeeds and the server falls back to a safe log event. Audit payloads omit tokens and auth headers.
+- Successful remote create and update calls first try to create a durable audit record in PocketBase. If the audit collection is missing or the audit write fails, the user-facing write still succeeds and the server falls back to a safe log event. Audit payloads omit tokens and auth headers.
 
 ## PocketBase collection import
 
@@ -134,6 +134,28 @@ curl -X POST "https://your-app.example/api/mcp" \
         "category": "books",
         "title": "Dune",
         "notes": "Classic science fiction",
+        "tags": ["sci-fi", "books"]
+      }
+    }
+  }'
+```
+
+Example remote update call when writes are enabled:
+
+```sh
+curl -X POST "https://your-app.example/api/mcp" \
+  -H "Authorization: Bearer <PocketBase token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "makimono_update_interest",
+      "arguments": {
+        "id": "<interest-id>",
+        "title": "Dune Messiah",
+        "notes": "",
         "tags": ["sci-fi", "books"]
       }
     }

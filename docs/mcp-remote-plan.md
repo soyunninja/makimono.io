@@ -41,7 +41,7 @@ The remote MCP server should not reuse a copied browser token as a long-term cre
 | --- | --- | --- |
 | `makimono_list_interests` | Yes | Authenticated user only. |
 | `makimono_create_interest` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Validate category/title; use resolved user id; audit creation; rate limit writes. |
-| `makimono_update_interest` | Not yet | Reject no-op payloads; audit changed fields. |
+| `makimono_update_interest` | Yes, only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` | Scope lookup to resolved user; reject no-op payloads; audit changed fields; rate limit writes. |
 | `makimono_update_interest_status` | Not yet | Validate status transitions; audit previous and next status. |
 | `makimono_delete_interest` | Not yet | Soft delete only; audit and allow restore. |
 | `makimono_restore_interest` | Not yet | Audit restore. |
@@ -116,13 +116,41 @@ Audit events include tool name, action, outcome, resolved user id, target collec
 
 Import `docs/pocketbase-collections.json` into PocketBase before treating remote writes as production-ready. The file now includes `remote_mcp_audit_events` with per-user list/view/create rules and disabled client update/delete rules.
 
-## Later guarded write slices
+## Third remote slice
 
-Add remaining low-risk writes only after the guarded create slice has imported durable audit storage and production-ready rate limiting.
+Add guarded remote updates after the create slice.
 
 ### Scope
 
 - `makimono_update_interest`
+- explicit remote write opt-in with `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true`
+- scoped lookup by resolved user before PATCH
+- durable PocketBase audit event for successful update, with safe server-log fallback
+- basic per-user write rate limit
+
+### Acceptance checklist
+
+- [x] Update is omitted from `tools/list` and rejected unless remote writes are enabled.
+- [x] Update rejects unsupported fields such as `userId`, `status`, `deletedAt`, and cover metadata.
+- [x] Update normalizes tags, clears empty notes to `null`, and rejects no-op payloads.
+- [x] Update verifies the target belongs to the authenticated user before PATCH.
+- [x] Update writes a durable audit event with changed field names and no token/header data.
+- [x] Write rate limits return clear errors.
+
+### Current implementation status
+
+The remote endpoint now exposes `makimono_update_interest` alongside create only when `MAKIMONO_REMOTE_MCP_ENABLE_WRITES=true` is set. Remote update accepts `id` plus `title`, `notes`, and/or `tags` only. It trims titles, clears blank notes to `null`, trims/deduplicates tags, and rejects calls without editable fields.
+
+Before issuing the PocketBase `PATCH`, the endpoint performs a scoped lookup with `id="<interest-id>" && user="<resolved-user-id>"`. If the lookup does not find a record for the authenticated user, the endpoint returns a clear JSON-RPC not-found error and does not update.
+
+Successful updates use the same per-user write limiter and durable audit sink as create. Audit summaries include changed field names, not token or authorization header data.
+
+## Later guarded write slices
+
+Add remaining low-risk writes only after the guarded create and update slices have imported durable audit storage and production-ready rate limiting.
+
+### Scope
+
 - `makimono_update_interest_status`
 - audit events for every mutation
 - shared rate limits across app instances
@@ -131,10 +159,9 @@ Add remaining low-risk writes only after the guarded create slice has imported d
 
 - [ ] Each mutation writes a durable audit event and keeps a safe fallback path.
 - [ ] Mutations are scoped to the authenticated user.
-- [ ] No-op updates are rejected.
 - [ ] Shared write rate limits return clear errors.
 
-## Third remote slice
+## Fourth remote slice
 
 Add reversible destructive operations.
 

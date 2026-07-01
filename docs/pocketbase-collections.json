@@ -248,7 +248,8 @@
         "system": false,
         "type": "select",
         "values": [
-          "makimono_create_interest"
+          "makimono_create_interest",
+          "makimono_update_interest"
         ]
       },
       {
@@ -306,8 +307,21 @@
         "system": false,
         "type": "select",
         "values": [
-          "create"
+          "create",
+          "update"
         ]
+      },
+      {
+        "help": "Server-side event timestamp emitted by the MCP handler.",
+        "hidden": false,
+        "id": "date_audit_timestamp",
+        "max": "",
+        "min": "",
+        "name": "timestamp",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "date"
       },
       {
         "help": "Non-secret audit summary. Do not store tokens, auth headers, or credential material.",
@@ -374,6 +388,7 @@
     "indexes": [
       "CREATE INDEX `idx_remote_mcp_audit_user` ON `remote_mcp_audit_events` (`user`)",
       "CREATE INDEX `idx_remote_mcp_audit_user_created` ON `remote_mcp_audit_events` (`user`, `created`)",
+      "CREATE INDEX `idx_remote_mcp_audit_user_timestamp` ON `remote_mcp_audit_events` (`user`, `timestamp`)",
       "CREATE INDEX `idx_remote_mcp_audit_user_tool_created` ON `remote_mcp_audit_events` (`user`, `toolName`, `created`)"
     ],
     "system": false
