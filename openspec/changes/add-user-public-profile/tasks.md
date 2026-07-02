@@ -45,9 +45,9 @@ Chain strategy: stacked-to-main
 
 ## Phase 4: Behavior Tests and Verification
 
-- [ ] 4.1 Add provider tests proving FormData update, auth refresh, and no raw auth record/private-field exposure to settings UI.
-- [ ] 4.2 Add settings screen tests for centered avatar/username layout, fallback avatar, localized errors, and no bio/display name/list sharing/dedicated route behavior.
-- [ ] 4.3 Run `npx pnpm test`, `npx pnpm typecheck`, and `npx pnpm build`; document manual PocketBase schema/rule verification.
+- [x] 4.1 Add provider tests proving FormData update, auth refresh, and no raw auth record/private-field exposure to settings UI.
+- [x] 4.2 Add settings screen tests for centered avatar/username layout, fallback avatar, localized errors, and no bio/display name/list sharing/dedicated route behavior.
+- [x] 4.3 Run `npx pnpm test`, `npx pnpm typecheck`, and `npx pnpm build`; document manual PocketBase schema/rule verification.
 
 ## Explicit Non-Goals
 

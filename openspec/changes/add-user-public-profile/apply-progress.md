@@ -19,9 +19,15 @@
 - [x] 3.2 Modified `src/features/auth/pocketbase-auth-provider.tsx` to expose `publicProfile` and `updatePublicProfile`, send username/avatar updates as FormData, save the returned auth record, and refresh the derived public profile.
 - [x] 3.3 Modified `src/features/settings/settings-screen.tsx` with an authenticated settings-only public profile card showing a centered avatar or deterministic fallback with the username underneath plus username edit and avatar upload controls.
 - [x] 3.4 Updated `src/i18n/dictionaries.ts` with EN/ES profile labels, avatar upload guidance, username validation messages, avatar-processing failures, and generic save failure copy.
+- [x] 4.1 Verified provider tests cover FormData profile update, auth refresh, derived public profile, and private-field exclusion from rendered settings/provider output.
+- [x] 4.2 Verified settings tests and route/source inspection cover avatar/username presentation, fallback avatar, localized validation errors, private-field non-exposure, and absence of a dedicated public profile route.
+- [x] 4.3 Ran final full verification commands and documented live PocketBase schema/rule verification as a manual deployment prerequisite.
 
 ## Verification
 
+- Final SDD verification passed: `npx pnpm typecheck` (`tsc --noEmit` completed with no errors).
+- Final SDD verification passed: `npx pnpm test` (Vitest: 28 test files passed, 232 tests passed).
+- Final SDD verification passed: `npx pnpm build` (Vite client/SSR and Nitro production build completed successfully).
 - Passed for PR 3 targeted coverage: `npx pnpm test src/lib/pocketbase.test.ts src/features/auth/pocketbase-auth-provider.test.tsx src/features/settings/settings-screen.test.tsx` (3 test files, 20 tests before later full-suite verification).
 - Passed for PR 3 full type safety: `npx pnpm typecheck` (`tsc --noEmit` completed with no errors).
 - Passed for PR 3 full test suite: `npx pnpm test` (Vitest: 28 test files passed, 232 tests passed).
@@ -32,7 +38,7 @@
 ### Verification Warnings
 
 - `npx pnpm build` emitted Nitro's production-environment compatibility reminder: ensure the deployment environment matches the builder OS and architecture (`darwin-arm64`) to avoid native module issues.
-- Manual PocketBase schema/rule verification remains a separate follow-up because this slice changed app code and tests only.
+- Manual PocketBase schema/rule verification remains a deployment prerequisite because local verification requires PocketBase admin/deployment access that was not available during this pass. The documentation in `docs/pocketbase-collections.json` must be applied and checked before rollout.
 
 ## Deviations
 
@@ -40,7 +46,7 @@
 
 ## Next Slice
 
-- Phase 4 verification tasks remain unchecked in `tasks.md` because this apply batch was assigned only Phase 3 tasks. The next phase should run the dedicated verification/reporting pass, including manual PocketBase schema/rule verification if available.
+- No implementation slice remains for `add-user-public-profile`. Archive readiness is acceptable after the live PocketBase schema/rule prerequisite is confirmed in the deployment environment.
 
 ## Notes
 
