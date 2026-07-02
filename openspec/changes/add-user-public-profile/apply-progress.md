@@ -15,9 +15,15 @@
 
 ## Verification
 
-- Passed: `npx pnpm test src/features/auth/public-profile.test.ts`
-- Passed: `npx pnpm typecheck`
-- Passed: `node -e "JSON.parse(require('node:fs').readFileSync('docs/pocketbase-collections.json','utf8'))"`
+- Passed: `npx pnpm typecheck` (`tsc --noEmit` completed with no errors).
+- Passed: `npx pnpm test` (Vitest: 27 test files passed, 223 tests passed).
+- Passed: `npx pnpm build` (Vite/Nitro production build completed successfully).
+- Additional targeted evidence from the original slice remains valid: `npx pnpm test src/features/auth/public-profile.test.ts` and `node -e "JSON.parse(require('node:fs').readFileSync('docs/pocketbase-collections.json','utf8'))"` passed before the full verification follow-up.
+
+### Verification Warnings
+
+- `npx pnpm build` emitted Nitro's production-environment compatibility reminder: ensure the deployment environment matches the builder OS and architecture (`darwin-arm64`) to avoid native module issues.
+- No verification failures were observed, and no code changes were required.
 
 ## Deviations
 
@@ -31,3 +37,4 @@
 
 - No previous apply progress existed for this change, so this artifact starts the cumulative apply history.
 - The mapper accepts an optional avatar URL resolver but never exposes raw PocketBase auth records or file metadata through `UserPublicProfile`.
+- Follow-up after commit-hook review failure: this artifact now records the repo-required full verification commands without changing the Phase 1 slice scope.
