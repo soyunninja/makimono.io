@@ -32,9 +32,9 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Avatar Validation and Normalization
 
-- [ ] 2.1 Create `src/features/auth/avatar-normalization.ts` to reject unsupported formats and originals over 5 MB before storage.
-- [ ] 2.2 Implement static center-crop `200x200` WebP output capped at 200 KB; animated GIF inputs must store as static WebP.
-- [ ] 2.3 Add `src/features/auth/avatar-normalization.test.ts` for accepted formats, rejected size/type, output size/type/dimensions, and unchanged-current-avatar failure paths.
+- [x] 2.1 Create `src/features/auth/avatar-normalization.ts` to reject unsupported formats and originals over 5 MB before storage.
+- [x] 2.2 Implement static center-crop `200x200` WebP output capped at 200 KB; animated GIF inputs must store as static WebP.
+- [x] 2.3 Add `src/features/auth/avatar-normalization.test.ts` for accepted formats, rejected size/type, output size/type/dimensions, and unchanged-current-avatar failure paths.
 
 ## Phase 3: Auth and Settings Integration
 
