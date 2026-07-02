@@ -2,26 +2,26 @@ schema: spec-driven
 
 context: |
   Project: meinteresa
-  Stack: none detected (empty repository; no package manifests or source files found)
-  Architecture: not established yet
-  Testing: no test runner, linter, type checker, or formatter detected
-  Style: no project conventions detected
+  Stack: TanStack Start, React 19, TypeScript 6, Vite 8, Tailwind CSS v4
+  Architecture: feature-oriented TanStack Start app with localized item, auth, and dashboard flows; PocketBase-backed persistence alongside mock/local UI slices
+  Testing: Vitest + Testing Library with jsdom; route and component behavior tests are present
+  Style: strict TypeScript, named React function components, Tailwind v4 tokens, shadcn-compatible UI primitives
   Persistence: hybrid (OpenSpec + Engram)
 
 strict_tdd: false
 
 testing:
-  detected: "2026-06-27"
+  detected: "2026-07-02"
   runner:
-    command: null
-    framework: null
+    command: "npx pnpm test"
+    framework: vitest
   layers:
     unit:
-      available: false
-      tool: null
+      available: true
+      tool: vitest
     integration:
-      available: false
-      tool: null
+      available: true
+      tool: "vitest + @testing-library/react"
     e2e:
       available: false
       tool: null
@@ -33,8 +33,8 @@ testing:
       available: false
       command: null
     type_checker:
-      available: false
-      command: null
+      available: true
+      command: "npx pnpm typecheck"
     formatter:
       available: false
       command: null
@@ -51,8 +51,8 @@ rules:
     - Keep tasks small and session-sized.
   apply:
     - Follow existing code patterns.
-    - Strict TDD remains disabled until a test runner is introduced.
+    - Strict TDD remains disabled by explicit project config, even though Vitest is available.
   verify:
-    - No test runner is available yet.
+    - Run `npx pnpm test`, `npx pnpm typecheck`, and `npx pnpm build` before review-ready handoff.
   archive:
     - Warn before merging destructive deltas.

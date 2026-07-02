@@ -1,5 +1,59 @@
 [
   {
+    "id": "_pb_users_auth_",
+    "listRule": "@request.auth.id != \"\" && id = @request.auth.id",
+    "viewRule": "@request.auth.id != \"\" && id = @request.auth.id",
+    "createRule": "",
+    "updateRule": "@request.auth.id != \"\" && id = @request.auth.id",
+    "deleteRule": null,
+    "name": "users",
+    "type": "auth",
+    "fields": [
+      {
+        "autogeneratePattern": "",
+        "help": "Public handle. Normalize to lowercase before saving; keep private auth fields out of public profile responses.",
+        "hidden": false,
+        "id": "text_users_username",
+        "max": 30,
+        "min": 3,
+        "name": "username",
+        "pattern": "^[a-z0-9][a-z0-9_]{1,28}[a-z0-9]$",
+        "presentable": true,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "help": "Public avatar file. Store only the normalized static 200x200 WebP output, not the original upload.",
+        "hidden": false,
+        "id": "file_users_avatar",
+        "maxSelect": 1,
+        "maxSize": 204800,
+        "mimeTypes": [
+          "image/webp"
+        ],
+        "name": "avatar",
+        "presentable": false,
+        "protected": false,
+        "required": false,
+        "system": false,
+        "thumbs": [],
+        "type": "file"
+      }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_users_username` ON `users` (`username`) WHERE `username` != ''"
+    ],
+    "profileRuleRequirements": {
+      "avatar": "Single file only; accept stored image/webp files up to 200 KB after client normalization.",
+      "privacy": "Do not expose raw users records as public profile data; public profile models may expose only username and avatarUrl.",
+      "update": "Only the authenticated owner may update username/avatar on their users record.",
+      "username": "Trim and lowercase before save; enforce uniqueness, 3-30 characters, and the text field pattern."
+    },
+    "system": true
+  },
+  {
     "id": "pbc_kyoumi_intr",
     "listRule": "@request.auth.id != \"\" && user = @request.auth.id",
     "viewRule": "@request.auth.id != \"\" && user = @request.auth.id",
