@@ -9,6 +9,19 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'react-vendor', test: 'node_modules/react' },
+            { name: 'tanstack-vendor', test: 'node_modules/@tanstack' },
+            { name: 'radix-vendor', test: 'node_modules/@radix-ui' },
+          ],
+        },
+      },
+    },
+  },
   resolve: {
     tsconfigPaths: true,
   },

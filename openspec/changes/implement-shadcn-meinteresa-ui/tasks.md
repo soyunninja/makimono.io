@@ -63,4 +63,4 @@ Current local evidence is now aligned to reviewable work units. The local stack 
 7. `feat: add language toggle and archive fallback`
 8. `docs: add SDD evidence and README`
 
-No remote/base branch is configured, so stacked PR cleanliness against a real compare target still cannot be proven, but the local history now matches the documented work-unit slices and keeps verification with each unit.
+Remote `origin` is configured at `git@github.com:soyunninja/makimono.io.git`, and `main` tracks `origin/main`. No PRs were created and no remote compare proof was performed for this local evidence update, so stacked PR cleanliness remains documented from the local work-unit history only.

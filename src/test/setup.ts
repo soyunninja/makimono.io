@@ -10,6 +10,16 @@ if (typeof window !== 'undefined' && globalThis.CustomEvent !== window.CustomEve
   })
 }
 
+if (typeof window !== 'undefined') {
+  const scrollTo: Window['scrollTo'] = () => undefined
+
+  Object.defineProperty(window, 'scrollTo', {
+    configurable: true,
+    value: scrollTo,
+    writable: true,
+  })
+}
+
 afterEach(() => {
   cleanup()
 })

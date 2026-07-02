@@ -37,8 +37,8 @@
   7. `feat: add language toggle and archive fallback`
   8. `docs: add SDD evidence and README`
 - Each implementation unit was committed only after normal hooks ran and after local verification commands passed for that slice.
-- `git remote -v` still returns no remote, so there is no compareable base branch or PR target to prove stacked-to-main boundaries against a real remote.
-- Result: task 4.4 is COMPLETE for the local-history requirement. Remote PR-boundary proof remains unavailable until a remote/base branch exists.
+- `git remote -v` now shows `origin` at `git@github.com:soyunninja/makimono.io.git`, and `main` tracks `origin/main`.
+- Result: task 4.4 is COMPLETE for the local-history requirement. No PRs were created and no remote compare proof was performed for this evidence update, so remote-backed PR-boundary proof remains outside the current local evidence.
 
 ## Review Slice History
 
@@ -83,7 +83,7 @@ The mobile/desktop assertions are runtime DOM/class contract checks in jsdom, no
 - Dialog and Sheet primitives require localized `closeLabel` values from their consumers.
 - Touch-critical toggle controls now use the default `h-11` size in dashboard, add-flow, suggester, and locale switch surfaces so the runtime contract matches the touch-friendly spec language.
 - GGA/local review should include tests and OpenSpec evidence when evaluating visible behavior.
-- Local history now mirrors the documented work-unit slices, but remote-backed stacked PR proof is still impossible without configuring a remote/base branch.
+- Local history now mirrors the documented work-unit slices. Remote `origin` exists, but no PRs were created and no remote compare proof was performed for this local evidence update.
 
 ## Post-completion Maintenance
 
@@ -111,4 +111,4 @@ The mobile/desktop assertions are runtime DOM/class contract checks in jsdom, no
 
 ## Status
 
-14/14 tasks complete. Runtime coverage gaps called out by final verify are now backfilled; re-run verify before archive. Remote-backed PR boundary proof still remains unavailable because no remote/base branch is configured.
+14/14 tasks complete. Runtime coverage gaps called out by final verify are now backfilled; re-run verify before archive. Remote `origin` is configured, but this local evidence does not include created PRs or remote compare proof.
