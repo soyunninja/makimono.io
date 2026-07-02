@@ -5,7 +5,7 @@
 - Apply mode: Standard
 - Strict TDD: disabled by `openspec/config.yaml`
 - Artifact store: OpenSpec
-- Review strategy: stacked-to-main, PR 1 / Phase 1 complete; PR 2 / Phase 2 complete
+- Review strategy: stacked-to-main, PR 1 / Phase 1 complete; PR 2 / Phase 2 complete; PR 3 / Phase 3 complete
 
 ## Completed Tasks
 
@@ -15,32 +15,33 @@
 - [x] 2.1 Created `src/features/auth/avatar-normalization.ts` with typed input validation that rejects unsupported avatar formats and original files over 5 MB before image decoding or storage preparation.
 - [x] 2.2 Implemented browser-isolated center-crop avatar normalization to static `200x200` WebP output, retrying WebP quality within the 200 KB cap and returning typed failures without mutating existing avatar state.
 - [x] 2.3 Added `src/features/auth/avatar-normalization.test.ts` covering accepted formats, rejected original size/type, output type/size/dimensions, animated GIF static WebP behavior, oversized normalized output, and unchanged-current-avatar failure handling.
+- [x] 3.1 Modified `src/lib/pocketbase.ts` with narrowed profile-aware auth record fields, a public PocketBase file URL helper, FormData update support, and JSON content-type preservation only for JSON bodies.
+- [x] 3.2 Modified `src/features/auth/pocketbase-auth-provider.tsx` to expose `publicProfile` and `updatePublicProfile`, send username/avatar updates as FormData, save the returned auth record, and refresh the derived public profile.
+- [x] 3.3 Modified `src/features/settings/settings-screen.tsx` with an authenticated settings-only public profile card showing a centered avatar or deterministic fallback with the username underneath plus username edit and avatar upload controls.
+- [x] 3.4 Updated `src/i18n/dictionaries.ts` with EN/ES profile labels, avatar upload guidance, username validation messages, avatar-processing failures, and generic save failure copy.
 
 ## Verification
 
-- Passed after the draw/canvas failure fix: `npx pnpm typecheck` (`tsc --noEmit` completed with no errors).
-- Passed after the draw/canvas failure fix: `npx pnpm test` (Vitest: 28 test files passed, 230 tests passed, including `src/features/auth/avatar-normalization.test.ts`).
-- Passed after the draw/canvas failure fix: `npx pnpm build` (Vite/Nitro production build completed successfully).
-- Previous targeted evidence remains consistent with the full verification: `npx pnpm test src/features/auth/avatar-normalization.test.ts` covered 7 avatar-normalization tests before the final full run.
-- Additional targeted evidence from the original slice remains valid: `npx pnpm test src/features/auth/public-profile.test.ts` and `node -e "JSON.parse(require('node:fs').readFileSync('docs/pocketbase-collections.json','utf8'))"` passed before the full verification follow-up.
+- Passed for PR 3 targeted coverage: `npx pnpm test src/lib/pocketbase.test.ts src/features/auth/pocketbase-auth-provider.test.tsx src/features/settings/settings-screen.test.tsx` (3 test files, 20 tests before later full-suite verification).
+- Passed for PR 3 full type safety: `npx pnpm typecheck` (`tsc --noEmit` completed with no errors).
+- Passed for PR 3 full test suite: `npx pnpm test` (Vitest: 28 test files passed, 232 tests passed).
+- Passed for PR 3 production build: `npx pnpm build` (Vite/Nitro production build completed successfully).
+- Previous PR 2 evidence remains valid: `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build` passed after the draw/canvas failure fix, including `src/features/auth/avatar-normalization.test.ts`.
+- Previous targeted PR 1/PR 2 evidence remains valid: `npx pnpm test src/features/auth/public-profile.test.ts`, `npx pnpm test src/features/auth/avatar-normalization.test.ts`, and JSON parsing of `docs/pocketbase-collections.json` passed before the full verification follow-up.
 
 ### Verification Warnings
 
 - `npx pnpm build` emitted Nitro's production-environment compatibility reminder: ensure the deployment environment matches the builder OS and architecture (`darwin-arm64`) to avoid native module issues.
-- No verification failures were observed, and no code changes were required.
+- Manual PocketBase schema/rule verification remains a separate follow-up because this slice changed app code and tests only.
 
 ## Deviations
 
-- None. PR 2 intentionally stops at avatar validation and normalization; provider update wiring, settings UI, i18n copy, and public routes remain out of scope.
+- None. PR 3 intentionally stays in the authenticated settings/account area and does not add public routes, bio, display name, list sharing, or additional public fields.
 
 ## Next Slice
 
-- PR 3 / Phase 3: wire profile updates into the auth provider and settings-only UI card while keeping public routes, bio, display name, and list sharing out of scope.
+- Phase 4 verification tasks remain unchecked in `tasks.md` because this apply batch was assigned only Phase 3 tasks. The next phase should run the dedicated verification/reporting pass, including manual PocketBase schema/rule verification if available.
 
 ## Notes
 
-- No previous apply progress existed for this change, so this artifact starts the cumulative apply history.
-- The mapper accepts an optional avatar URL resolver but never exposes raw PocketBase auth records or file metadata through `UserPublicProfile`.
-- Follow-up after commit-hook review failure: this artifact now records the repo-required full verification commands without changing the Phase 1 slice scope.
-- Avatar normalization uses dependency-injected browser image/canvas seams so jsdom tests can exercise crop and conversion behavior deterministically without adding a runtime image dependency.
-- Fresh gate-review blocker fixed: browser canvas/draw/output processing exceptions now return typed normalization failures that preserve the current avatar; focused avatar tests and typecheck passed after the fix.
+- Prior slice evidence is preserved above; PR 3 provider/settings tests cover FormData refresh, privacy boundaries, fallback avatar, localized errors, and unchanged-avatar failure handling.

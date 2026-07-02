@@ -12,7 +12,7 @@ type PocketBaseAuthStorageData = {
 }
 
 type PocketBaseRequestOptions = {
-  body?: unknown
+  body?: FormData | Record<string, unknown>
   method?: 'GET' | 'POST' | 'PATCH'
 }
 
@@ -40,7 +40,12 @@ const hasOwn = Object.prototype.hasOwnProperty
 let cachedPocketBaseUrl: string | null = null
 let cachedPocketBaseClient: MinimalPocketBaseClient | null = null
 
-export type PocketBaseAuthRecord = Record<string, unknown> & { email?: string, id: string }
+export type PocketBaseAuthRecord = Record<string, unknown> & {
+  avatar?: unknown
+  email?: string
+  id: string
+  username?: unknown
+}
 
 export class PocketBaseClientResponseError extends Error {
   readonly response: unknown
@@ -217,7 +222,7 @@ class MinimalPocketBaseClient {
           page += 1
         }
       },
-      update: (id: string, data: Record<string, unknown>) => this.#request(`/api/collections/${encodeURIComponent(name)}/records/${encodeURIComponent(id)}`, {
+      update: (id: string, data: FormData | Record<string, unknown>) => this.#request(`/api/collections/${encodeURIComponent(name)}/records/${encodeURIComponent(id)}`, {
         body: data,
         method: 'PATCH',
       }),
@@ -226,17 +231,19 @@ class MinimalPocketBaseClient {
 
   async #request<T>(path: string, options: PocketBaseRequestOptions): Promise<T> {
     const headers: Record<string, string> = {}
+    const isFormDataBody = typeof FormData !== 'undefined' && options.body instanceof FormData
+    const requestBody = resolveRequestBody(options.body)
 
     if (this.authStore.token) {
       headers.Authorization = `Bearer ${this.authStore.token}`
     }
 
-    if (options.body !== undefined) {
+    if (options.body !== undefined && !isFormDataBody) {
       headers['Content-Type'] = 'application/json'
     }
 
     const response = await fetch(`${this.baseUrl}${path}`, {
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: requestBody,
       headers,
       method: options.method ?? 'GET',
     })
@@ -248,6 +255,14 @@ class MinimalPocketBaseClient {
 
     return responseBody as T
   }
+}
+
+function resolveRequestBody(body: PocketBaseRequestOptions['body']): BodyInit | undefined {
+  if (body === undefined) {
+    return undefined
+  }
+
+  return typeof FormData !== 'undefined' && body instanceof FormData ? body : JSON.stringify(body)
 }
 
 export function getPocketBaseUrl(): string | null {
@@ -277,11 +292,21 @@ export function getPocketBaseClient(): MinimalPocketBaseClient | null {
   return cachedPocketBaseClient
 }
 
+export function getPocketBaseFileUrl(collectionName: string, recordId: string, fileName: string): string | null {
+  const pocketBaseUrl = getPocketBaseUrl()
+
+  if (!pocketBaseUrl || !collectionName || !recordId || !fileName) {
+    return null
+  }
+
+  return `${pocketBaseUrl}/api/files/${encodeURIComponent(collectionName)}/${encodeURIComponent(recordId)}/${encodeURIComponent(fileName)}`
+}
+
 function getBrowserLocalStorage() {
   return typeof window === 'undefined' ? null : window.localStorage
 }
 
-function isPocketBaseAuthRecord(value: unknown): value is PocketBaseAuthRecord {
+export function isPocketBaseAuthRecord(value: unknown): value is PocketBaseAuthRecord {
   return typeof value === 'object' && value !== null && hasOwn.call(value, 'id') && typeof (value as { id: unknown }).id === 'string'
 }
 

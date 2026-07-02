@@ -143,6 +143,17 @@ export type Dictionary = {
     dashboardDisplayCards: string
     dashboardDisplayList: string
     dashboardDisplayCovers: string
+    profileTitle: string
+    profileAvatarAlt: string
+    profileAvatarFallbackLabel: string
+    profileUsernameLabel: string
+    profileUsernamePlaceholder: string
+    profileUsernameFallback: string
+    profileAvatarInputLabel: string
+    profileSaveAction: string
+    profileErrorGeneric: string
+    profileUsernameError: Record<'invalid_format' | 'required' | 'too_long' | 'too_short', string>
+    profileAvatarError: Record<'browser_unsupported' | 'canvas_unavailable' | 'conversion_failed' | 'file_too_large' | 'normalized_file_too_large' | 'unsupported_type', string>
     sessionTitle: string
     sessionDescription: string
     versionTitle: string
@@ -344,6 +355,29 @@ export const dictionaries: Record<Locale, Dictionary> = {
       dashboardDisplayCards: 'Cards',
       dashboardDisplayList: 'List',
       dashboardDisplayCovers: 'Covers',
+      profileTitle: 'Public profile',
+      profileAvatarAlt: 'Public profile avatar',
+      profileAvatarFallbackLabel: 'Public profile avatar placeholder',
+      profileUsernameLabel: 'Username',
+      profileUsernamePlaceholder: 'mariano_99',
+      profileUsernameFallback: 'Choose a username',
+      profileAvatarInputLabel: 'Upload avatar',
+      profileSaveAction: 'Save public profile',
+      profileErrorGeneric: 'We could not save your public profile. Try again in a moment.',
+      profileUsernameError: {
+        invalid_format: 'Use lowercase letters, numbers, or underscores. Start and end with a letter or number.',
+        required: 'Choose a public username.',
+        too_long: 'Use 30 characters or fewer.',
+        too_short: 'Use at least 3 characters.',
+      },
+      profileAvatarError: {
+        browser_unsupported: 'This browser could not read the selected image. Try another image.',
+        canvas_unavailable: 'This browser cannot prepare the avatar image. Try another browser or device.',
+        conversion_failed: 'We could not prepare that avatar. The current avatar was not changed.',
+        file_too_large: 'Choose an image up to 5 MB. The current avatar was not changed.',
+        normalized_file_too_large: 'The prepared avatar is still too large. Try a simpler image.',
+        unsupported_type: 'Choose a JPG, PNG, GIF, or WebP image. The current avatar was not changed.',
+      },
       sessionTitle: 'Session',
       sessionDescription: 'Sign out of the current PocketBase session.',
       versionTitle: 'Version',
@@ -593,6 +627,29 @@ export const dictionaries: Record<Locale, Dictionary> = {
       dashboardDisplayCards: 'Tarjetas',
       dashboardDisplayList: 'Listado',
       dashboardDisplayCovers: 'Carátulas',
+      profileTitle: 'Perfil público',
+      profileAvatarAlt: 'Avatar del perfil público',
+      profileAvatarFallbackLabel: 'Marcador de avatar del perfil público',
+      profileUsernameLabel: 'Nombre de usuario',
+      profileUsernamePlaceholder: 'mariano_99',
+      profileUsernameFallback: 'Elige un nombre de usuario',
+      profileAvatarInputLabel: 'Subir avatar',
+      profileSaveAction: 'Guardar perfil público',
+      profileErrorGeneric: 'No hemos podido guardar tu perfil público. Inténtalo de nuevo en un momento.',
+      profileUsernameError: {
+        invalid_format: 'Usa minúsculas, números o guiones bajos. Empieza y termina con una letra o número.',
+        required: 'Elige un nombre de usuario público.',
+        too_long: 'Usa 30 caracteres o menos.',
+        too_short: 'Usa al menos 3 caracteres.',
+      },
+      profileAvatarError: {
+        browser_unsupported: 'Este navegador no ha podido leer la imagen seleccionada. Prueba otra imagen.',
+        canvas_unavailable: 'Este navegador no puede preparar el avatar. Prueba otro navegador o dispositivo.',
+        conversion_failed: 'No hemos podido preparar ese avatar. El avatar actual no ha cambiado.',
+        file_too_large: 'Elige una imagen de hasta 5 MB. El avatar actual no ha cambiado.',
+        normalized_file_too_large: 'El avatar preparado sigue siendo demasiado grande. Prueba una imagen más simple.',
+        unsupported_type: 'Elige una imagen JPG, PNG, GIF o WebP. El avatar actual no ha cambiado.',
+      },
       sessionTitle: 'Sesión',
       sessionDescription: 'Cierra la sesión actual de PocketBase.',
       versionTitle: 'Versión',

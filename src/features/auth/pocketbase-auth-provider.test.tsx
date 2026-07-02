@@ -7,8 +7,10 @@ import { PocketBaseAuthProvider, usePocketBaseAuth } from '@/features/auth/pocke
 import { LocaleProvider } from '@/i18n/locale-provider'
 
 type MockAuthRecord = {
+  avatar?: string
   email: string
   id: string
+  username?: string
 }
 
 type AuthChangeCallback = (token: string, record: MockAuthRecord | null) => void
@@ -22,6 +24,7 @@ const pocketBaseMock = vi.hoisted(() => ({
       model: unknown
       onChange: ReturnType<typeof vi.fn>
       record: unknown
+      save: ReturnType<typeof vi.fn>
       token: string
     }
     collection: ReturnType<typeof vi.fn>
@@ -29,11 +32,18 @@ const pocketBaseMock = vi.hoisted(() => ({
   enabled: true,
   loginRecord: { email: 'mariano@example.com', id: 'user-login' } as MockAuthRecord,
   registerRecord: { email: 'new@example.com', id: 'user-register' } as MockAuthRecord,
+  usersCollection: null as null | {
+    authWithPassword: ReturnType<typeof vi.fn>
+    create: ReturnType<typeof vi.fn>
+    update: ReturnType<typeof vi.fn>
+  },
 }))
 
 vi.mock('@/lib/pocketbase', () => ({
+  getPocketBaseFileUrl: (_collectionName: string, recordId: string, fileName: string) => `/api/files/users/${recordId}/${fileName}`,
   getPocketBaseClient: () => pocketBaseMock.client,
   getPocketBaseErrorMessage: (_error: unknown, fallbackMessage: string) => fallbackMessage,
+  isPocketBaseAuthRecord: (value: unknown) => typeof value === 'object' && value !== null && 'id' in value,
   isPocketBaseEnabled: () => pocketBaseMock.enabled,
 }))
 
@@ -67,6 +77,7 @@ function AuthProbe() {
       <div>enabled: {String(auth.enabled)}</div>
       <div>loading: {String(auth.isLoading)}</div>
       <div>authenticated: {String(auth.isAuthenticated)}</div>
+      <div>public profile: {auth.publicProfile ? `${auth.publicProfile.username}|${auth.publicProfile.avatarUrl ?? 'none'}` : 'none'}</div>
       <div>user: {auth.user?.email ?? 'none'}</div>
       <button onClick={() => void auth.login('mariano@example.com', 'super-secret')} type={'button'}>
         Login
@@ -76,6 +87,9 @@ function AuthProbe() {
       </button>
       <button onClick={() => void auth.logout()} type={'button'}>
         Logout
+      </button>
+      <button onClick={() => void auth.updatePublicProfile({ avatarFile: new File(['avatar'], 'avatar.webp', { type: 'image/webp' }), username: ' Updated_User ' })} type={'button'}>
+        Update profile
       </button>
     </div>
   )
@@ -98,6 +112,24 @@ beforeEach(() => {
   pocketBaseMock.enabled = true
   pocketBaseMock.loginRecord = { email: 'mariano@example.com', id: 'user-login' }
   pocketBaseMock.registerRecord = { email: 'new@example.com', id: 'user-register' }
+  pocketBaseMock.usersCollection = {
+    authWithPassword: vi.fn(async (email: string) => {
+      const record = email === pocketBaseMock.registerRecord.email ? pocketBaseMock.registerRecord : pocketBaseMock.loginRecord
+
+      publishAuthChange(`token-${record.id}`, record)
+    }),
+    create: vi.fn(async () => pocketBaseMock.registerRecord),
+    update: vi.fn(async (id: string, data: FormData) => ({
+        avatar: data.get('avatar') instanceof File ? 'avatar.webp' : undefined,
+        bio: 'Private biography must not enter publicProfile.',
+        collectionId: '_pb_users_auth_',
+        collectionName: 'users',
+        displayName: 'Private display name',
+        email: 'profile@example.com',
+        id,
+        username: String(data.get('username') ?? ''),
+      } satisfies MockAuthRecord & Record<string, unknown>)),
+  }
   pocketBaseMock.client = {
     authStore: {
       clear: vi.fn(() => {
@@ -111,6 +143,7 @@ beforeEach(() => {
         return vi.fn()
       }),
       record: null,
+      save: vi.fn((token: string, record: MockAuthRecord | null) => publishAuthChange(token, record)),
       token: '',
     },
     collection: vi.fn((collectionName: string) => {
@@ -118,14 +151,7 @@ beforeEach(() => {
         throw new Error(`Unexpected collection: ${collectionName}`)
       }
 
-      return {
-        authWithPassword: vi.fn(async (email: string) => {
-          const record = email === pocketBaseMock.registerRecord.email ? pocketBaseMock.registerRecord : pocketBaseMock.loginRecord
-
-          publishAuthChange(`token-${record.id}`, record)
-        }),
-        create: vi.fn(async () => pocketBaseMock.registerRecord),
-      }
+      return pocketBaseMock.usersCollection
     }),
   }
 })
@@ -208,6 +234,34 @@ describe('PocketBaseAuthProvider', () => {
       expect(screen.getByText('authenticated: true')).toBeInTheDocument()
     })
     expect(screen.getByText('user: new@example.com')).toBeInTheDocument()
+  })
+
+  it('derives a safe public profile and refreshes it after FormData profile updates', async () => {
+    const record = { avatar: 'old-avatar.webp', email: 'profile@example.com', id: 'user-profile', username: 'Mariano' }
+
+    pocketBaseMock.client!.authStore.token = 'profile-token'
+    pocketBaseMock.client!.authStore.isValid = true
+    pocketBaseMock.client!.authStore.model = record
+    pocketBaseMock.client!.authStore.record = record
+
+    renderProviderProbe()
+
+    expect(await screen.findByText('public profile: mariano|/api/files/users/user-profile/old-avatar.webp')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Update profile' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('public profile: updated_user|/api/files/users/user-profile/avatar.webp')).toBeInTheDocument()
+    })
+
+    expect(pocketBaseMock.usersCollection?.update).toHaveBeenCalledTimes(1)
+    const [recordId, payload] = pocketBaseMock.usersCollection?.update.mock.calls[0] as [string, FormData]
+    expect(recordId).toBe('user-profile')
+    expect(payload).toBeInstanceOf(FormData)
+    expect(payload.get('username')).toBe('updated_user')
+    expect(payload.get('avatar')).toBeInstanceOf(File)
+    expect(screen.queryByText('Private display name')).not.toBeInTheDocument()
+    expect(screen.queryByText('Private biography must not enter publicProfile.')).not.toBeInTheDocument()
   })
 
   it('uses the disabled local fallback when PocketBase is not configured', async () => {

@@ -38,10 +38,10 @@ Chain strategy: stacked-to-main
 
 ## Phase 3: Auth and Settings Integration
 
-- [ ] 3.1 Modify `src/lib/pocketbase.ts` with narrowed auth typing, avatar file URL helper, and FormData update support without exposing file metadata.
-- [ ] 3.2 Modify `src/features/auth/pocketbase-auth-provider.tsx` to expose `publicProfile` and `updatePublicProfile`, then refresh the derived profile after update.
-- [ ] 3.3 Modify `src/features/settings/settings-screen.tsx` with a settings-only profile card: centered avatar, username underneath, fallback avatar, edit/upload controls.
-- [ ] 3.4 Update `src/i18n/dictionaries.ts` with EN/ES labels and validation/error copy.
+- [x] 3.1 Modify `src/lib/pocketbase.ts` with narrowed auth typing, avatar file URL helper, and FormData update support without exposing file metadata.
+- [x] 3.2 Modify `src/features/auth/pocketbase-auth-provider.tsx` to expose `publicProfile` and `updatePublicProfile`, then refresh the derived profile after update.
+- [x] 3.3 Modify `src/features/settings/settings-screen.tsx` with a settings-only profile card: centered avatar, username underneath, fallback avatar, edit/upload controls.
+- [x] 3.4 Update `src/i18n/dictionaries.ts` with EN/ES labels and validation/error copy.
 
 ## Phase 4: Behavior Tests and Verification
 
