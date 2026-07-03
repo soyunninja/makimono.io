@@ -78,7 +78,7 @@ export function MyPublicListsScreen({ repository }: MyPublicListsScreenProps = {
         </div>
       )}
       contentVariant={'plain'}
-      headerVariant={'plain'}
+      eyebrow={'Makimono'}
       title={t('myPublicLists.title')}
     >
       {state.status === 'loading' ? (

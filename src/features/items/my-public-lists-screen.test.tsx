@@ -51,6 +51,7 @@ describe('MyPublicListsScreen', () => {
     renderScreen(createRepository(vi.fn(() => deferred.promise)))
 
     expect(screen.getByRole('heading', { level: 1, name: 'My public lists' })).toBeInTheDocument()
+    expect(screen.getByText('Makimono')).toBeInTheDocument()
     expect(screen.getByText('Loading your public lists…')).toBeInTheDocument()
 
     deferred.resolve([])

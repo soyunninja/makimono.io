@@ -50,6 +50,7 @@ describe('public list route', () => {
     expect(router.state.location.pathname).toBe('/u/ana/lista/summer-books')
     expect(repository.getByOwnerAndSlug).toHaveBeenCalledWith('ana', 'summer-books')
     expect(await screen.findByRole('heading', { level: 1, name: 'Summer Books' })).toBeInTheDocument()
+    expect(screen.getAllByText('makimono.io').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Published by')).toBeInTheDocument()
     expect(screen.getByText('ana')).toBeInTheDocument()
     expect(screen.getByText('Books for the summer break.')).toBeInTheDocument()

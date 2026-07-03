@@ -170,6 +170,17 @@ export type Dictionary = {
     editorAddPending: string
     editorAddSuccess: string
     editorAddError: string
+    editorCreateListOnlyTitle: string
+    editorCreateListOnlyDescription: string
+    editorCreateListOnlyCategoryLabel: string
+    editorCreateListOnlyTitleLabel: string
+    editorCreateListOnlyTitlePlaceholder: string
+    editorCreateListOnlySubmitAction: string
+    editorCreateListOnlySubmittingAction: string
+    editorCreateListOnlyPending: string
+    editorCreateListOnlySuccess: string
+    editorCreateListOnlyError: string
+    editorCreateListOnlyValidationError: string
   }
   archive: {
     eyebrow: string
@@ -462,6 +473,17 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editorAddPending: 'Saving the selected interest to this public list…',
       editorAddSuccess: 'Saved. The public list now shows the added interest.',
       editorAddError: 'We could not save that interest. The public list was left unchanged.',
+      editorCreateListOnlyTitle: 'Add a list-only interest',
+      editorCreateListOnlyDescription: 'Create an item that exists only inside this public list, without adding it to your private dashboard.',
+      editorCreateListOnlyCategoryLabel: 'Category',
+      editorCreateListOnlyTitleLabel: 'Title',
+      editorCreateListOnlyTitlePlaceholder: 'What should appear in this public list?',
+      editorCreateListOnlySubmitAction: 'Add list-only item',
+      editorCreateListOnlySubmittingAction: 'Adding…',
+      editorCreateListOnlyPending: 'Saving the list-only item to this public list…',
+      editorCreateListOnlySuccess: 'Saved. The public list now shows the list-only item.',
+      editorCreateListOnlyError: 'We could not save that list-only item. The public list was left unchanged.',
+      editorCreateListOnlyValidationError: 'Add a title before creating a list-only item.',
     },
     archive: {
       eyebrow: 'Archive',
@@ -814,6 +836,17 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editorAddPending: 'Guardando el interés seleccionado en esta lista pública…',
       editorAddSuccess: 'Guardado. La lista pública ya muestra el interés añadido.',
       editorAddError: 'No hemos podido guardar ese interés. La lista pública no ha cambiado.',
+      editorCreateListOnlyTitle: 'Añadir un interés solo de lista',
+      editorCreateListOnlyDescription: 'Crea un elemento que existe solo dentro de esta lista pública, sin añadirlo a tu dashboard privado.',
+      editorCreateListOnlyCategoryLabel: 'Categoría',
+      editorCreateListOnlyTitleLabel: 'Título',
+      editorCreateListOnlyTitlePlaceholder: '¿Qué debe aparecer en esta lista pública?',
+      editorCreateListOnlySubmitAction: 'Añadir elemento solo de lista',
+      editorCreateListOnlySubmittingAction: 'Añadiendo…',
+      editorCreateListOnlyPending: 'Guardando el elemento solo de lista en esta lista pública…',
+      editorCreateListOnlySuccess: 'Guardado. La lista pública ya muestra el elemento solo de lista.',
+      editorCreateListOnlyError: 'No hemos podido guardar ese elemento solo de lista. La lista pública no ha cambiado.',
+      editorCreateListOnlyValidationError: 'Añade un título antes de crear un elemento solo de lista.',
     },
     archive: {
       eyebrow: 'Archivo',

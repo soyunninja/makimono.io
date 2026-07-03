@@ -1,3 +1,4 @@
+import { AppShell } from '@/components/app/app-shell'
 import type { PublicList, PublicListItem } from '@/features/items/public-list-types'
 import { getCategoryMetadata } from '@/features/items/metadata'
 import { useLocale } from '@/i18n/locale-provider'
@@ -10,20 +11,28 @@ export function PublicListPage({ list }: PublicListPageProps) {
 
   if (!list) {
     return (
-      <main className="min-h-screen bg-background px-4 py-10 text-foreground sm:px-6 lg:px-8">
+      <AppShell
+        contentVariant="plain"
+        description={dictionary.publicList.notFoundDescription}
+        eyebrow="Makimono"
+        title={dictionary.publicList.notFoundTitle}
+      >
         <section className="mx-auto flex max-w-2xl flex-col items-center rounded-3xl border bg-card p-8 text-center shadow-sm">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">Makimono</p>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">{dictionary.publicList.notFoundTitle}</h1>
-          <p className="mt-3 max-w-xl text-base text-muted-foreground">{dictionary.publicList.notFoundDescription}</p>
         </section>
-      </main>
+      </AppShell>
     )
   }
 
   const formattedDate = formatPublicListDate(list.listDate, locale)
 
   return (
-    <main className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
+    <AppShell
+      contentVariant="plain"
+      description={list.description}
+      eyebrow="Makimono"
+      title={list.title}
+    >
       <article className="mx-auto max-w-4xl overflow-hidden rounded-[2rem] border bg-card shadow-sm">
         <header className="border-b bg-gradient-to-br from-accent-purple/15 via-accent-red/10 to-accent-yellow/15 p-6 sm:p-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
@@ -34,16 +43,12 @@ export function PublicListPage({ list }: PublicListPageProps) {
                 {' '}
                 <span className="font-semibold text-foreground">{list.owner.displayName}</span>
               </p>
-              <h1 className="mt-3 break-words text-4xl font-bold tracking-tight sm:text-5xl">{list.title}</h1>
               <p className="mt-4 text-sm font-medium text-muted-foreground">
                 <span className="sr-only">{dictionary.publicList.listDateLabel}: </span>
                 <time dateTime={list.listDate}>{formattedDate}</time>
               </p>
             </div>
           </div>
-          {list.description ? (
-            <p className="mt-6 max-w-3xl whitespace-pre-wrap text-base leading-7 text-muted-foreground">{list.description}</p>
-          ) : null}
         </header>
 
         <section className="p-6 sm:p-8" aria-labelledby="public-list-items-heading">
@@ -64,7 +69,7 @@ export function PublicListPage({ list }: PublicListPageProps) {
           )}
         </section>
       </article>
-    </main>
+    </AppShell>
   )
 }
 

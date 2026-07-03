@@ -23,6 +23,7 @@ describe('AppShell', () => {
     )
 
     expect(screen.getByRole('main')).toBeInTheDocument()
+    expect(screen.getByRole('banner')).toHaveTextContent('makimono.io')
     expect(screen.getByText('Foundation slice')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', {
@@ -47,7 +48,7 @@ describe('AppShell', () => {
       </AppShell>,
     )
 
-    const header = screen.getByRole('heading', { level: 1, name: 'Dashboard' }).closest('header') as HTMLElement
+    const header = screen.getByRole('heading', { level: 1, name: 'Dashboard' }).closest('[data-variant]') as HTMLElement
     const section = screen.getByText('Plain child content').closest('section') as HTMLElement
 
     expect(screen.queryByText('Foundation slice')).not.toBeInTheDocument()

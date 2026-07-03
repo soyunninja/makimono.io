@@ -142,7 +142,7 @@
         "maxSize": 0,
         "name": "items",
         "presentable": false,
-        "required": true,
+        "required": false,
         "system": false,
         "type": "json"
       },

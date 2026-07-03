@@ -1,18 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Check, ExternalLink, Plus } from 'lucide-react'
 
 import { AppShell } from '@/components/app/app-shell'
 import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provider'
 import { useAppInterestRepository } from '@/features/items/app-interest-repository'
 import { getCategoryMetadata } from '@/features/items/metadata'
 import { createPocketBasePublicListRepository } from '@/features/items/pocketbase-public-list-repository'
 import { appendPublicListItemSnapshot } from '@/features/items/public-list-item-mapper'
-import type { PublicList } from '@/features/items/public-list-types'
+import { normalizePublicRoutePart, type PublicList, type PublicListItem } from '@/features/items/public-list-types'
 import type { PublicListRepository } from '@/features/items/public-list-repository'
-import type { InterestItem, InterestRepository } from '@/features/items/types'
+import { itemCategories, type Category, type InterestItem, type InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 import { getPocketBaseFileUrl, type PocketBaseAuthRecord } from '@/lib/pocketbase'
@@ -58,6 +60,8 @@ export function PublicListEditorScreen({
   }, [client, publicListRepository, user])
 
   const [state, setState] = useState<EditorState>({ status: 'loading' })
+  const [listOnlyCategory, setListOnlyCategory] = useState<Category>('books')
+  const [listOnlyTitle, setListOnlyTitle] = useState('')
 
   useEffect(() => {
     let isMounted = true
@@ -137,6 +141,52 @@ export function PublicListEditorScreen({
     })
   }
 
+  async function handleCreateListOnlyItem(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (state.status !== 'ready' || !runtimePublicListRepository || !user) {
+      return
+    }
+
+    const title = listOnlyTitle.trim()
+
+    if (!title) {
+      setState({ ...state, message: t('myPublicLists.editorCreateListOnlyValidationError'), pendingItemId: null })
+      return
+    }
+
+    const committedList = state.list
+    const item: PublicListItem = {
+      category: listOnlyCategory,
+      id: createListOnlyPublicItemId(committedList.items, listOnlyCategory, title),
+      tags: [],
+      title,
+    }
+    const nextItems = [...committedList.items, item]
+
+    setState({ ...state, message: t('myPublicLists.editorCreateListOnlyPending'), pendingItemId: item.id })
+
+    const result = await runtimePublicListRepository.updateManagedList({
+      authenticatedOwnerId: user.id,
+      id: committedList.id,
+      items: nextItems,
+    })
+
+    if (!result.ok) {
+      setState({ ...state, list: committedList, message: t('myPublicLists.editorCreateListOnlyError'), pendingItemId: null })
+      return
+    }
+
+    setListOnlyTitle('')
+    setState({
+      eligibleItems: state.eligibleItems.filter((eligibleItem) => !result.list.items.some((publicItem) => publicItem.id === eligibleItem.id)),
+      list: result.list,
+      message: t('myPublicLists.editorCreateListOnlySuccess'),
+      pendingItemId: null,
+      status: 'ready',
+    })
+  }
+
   return (
     <AppShell
       actions={(
@@ -202,6 +252,45 @@ export function PublicListEditorScreen({
           </Card>
 
           {state.message ? <p className={'text-sm text-muted-foreground'} role={state.pendingItemId ? 'status' : 'alert'}>{state.message}</p> : null}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('myPublicLists.editorCreateListOnlyTitle')}</CardTitle>
+              <CardDescription>{t('myPublicLists.editorCreateListOnlyDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className={'grid gap-4 sm:grid-cols-[minmax(0,12rem)_1fr_auto] sm:items-end'} onSubmit={(event) => void handleCreateListOnlyItem(event)}>
+                <div className={'grid gap-2'}>
+                  <Label htmlFor={'public-list-only-category'}>{t('myPublicLists.editorCreateListOnlyCategoryLabel')}</Label>
+                  <select
+                    className={'flex h-11 w-full rounded-xl border border-input bg-background/80 px-3 py-2 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50'}
+                    disabled={state.pendingItemId !== null}
+                    id={'public-list-only-category'}
+                    onChange={(event) => setListOnlyCategory(event.target.value as Category)}
+                    value={listOnlyCategory}
+                  >
+                    {itemCategories.map((category) => (
+                      <option key={category} value={category}>{getCategoryMetadata(category, locale).label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={'grid gap-2'}>
+                  <Label htmlFor={'public-list-only-title'}>{t('myPublicLists.editorCreateListOnlyTitleLabel')}</Label>
+                  <Input
+                    disabled={state.pendingItemId !== null}
+                    id={'public-list-only-title'}
+                    onChange={(event) => setListOnlyTitle(event.target.value)}
+                    placeholder={dictionary.myPublicLists.editorCreateListOnlyTitlePlaceholder}
+                    value={listOnlyTitle}
+                  />
+                </div>
+                <Button disabled={state.pendingItemId !== null} type={'submit'}>
+                  <Plus aria-hidden={'true'} />
+                  {state.pendingItemId?.startsWith('public-list-only-') ? dictionary.myPublicLists.editorCreateListOnlySubmittingAction : dictionary.myPublicLists.editorCreateListOnlySubmitAction}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader>
@@ -272,4 +361,22 @@ function getEligibleItems(items: InterestItem[], list: PublicList) {
   const existingItemIds = new Set(list.items.map((item) => item.id))
 
   return items.filter((item) => !item.deletedAt && !existingItemIds.has(item.id))
+}
+
+function createListOnlyPublicItemId(items: PublicListItem[], category: Category, title: string) {
+  const normalizedTitle = normalizePublicRoutePart(title)
+  const baseId = `public-list-only-${category}-${normalizedTitle.ok ? normalizedTitle.value : 'item'}`
+  const existingIds = new Set(items.map((item) => item.id))
+
+  if (!existingIds.has(baseId)) {
+    return baseId
+  }
+
+  let suffix = 2
+
+  while (existingIds.has(`${baseId}-${suffix}`)) {
+    suffix += 1
+  }
+
+  return `${baseId}-${suffix}`
 }

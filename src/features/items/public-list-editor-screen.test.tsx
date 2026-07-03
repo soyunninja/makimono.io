@@ -95,6 +95,38 @@ describe('PublicListEditorScreen', () => {
     expect(screen.queryByRole('button', { name: 'Add to list: Arrival' })).not.toBeInTheDocument()
   })
 
+  it('creates a list-only item through the public list repository without creating a private interest', async () => {
+    const repository = createInMemoryPublicListRepository([createManagedList()], { ownerId: ownerUser.id })
+    const updateManagedList = vi.spyOn(repository, 'updateManagedList')
+    const interestRepository = createMockInterestRepository(createCurrentUserItems())
+    const createItem = vi.spyOn(interestRepository, 'createItem')
+
+    renderEditorScreen({ interestRepository, publicListRepository: repository })
+
+    await screen.findByRole('heading', { level: 1, name: 'Summer Books' })
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'music' } })
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Kind of Blue' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add list-only item' }))
+
+    expect(await screen.findByText('Saved. The public list now shows the list-only item.')).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(updateManagedList).toHaveBeenCalledWith(expect.objectContaining({
+        authenticatedOwnerId: ownerUser.id,
+        id: 'list-summer-books',
+        items: expect.arrayContaining([
+          expect.objectContaining({ category: 'music', id: 'public-list-only-music-kind-of-blue', tags: [], title: 'Kind of Blue' }),
+        ]),
+      }))
+    })
+
+    expect(createItem).not.toHaveBeenCalled()
+
+    const savedItems = screen.getByRole('list', { name: 'Saved public list interests' })
+
+    expect(within(savedItems).getByText('Kind of Blue')).toBeInTheDocument()
+  })
+
   it('preserves the prior committed membership when add-interest persistence fails', async () => {
     const currentList = createManagedList()
     const repository: PublicListRepository = {
@@ -118,6 +150,31 @@ describe('PublicListEditorScreen', () => {
     expect(within(savedItems).getByText('Refactoring')).toBeInTheDocument()
     expect(within(savedItems).queryByText('Arrival')).not.toBeInTheDocument()
     expect(within(eligibleItems).getByText('Arrival')).toBeInTheDocument()
+  })
+
+  it('preserves the prior committed membership when list-only item persistence fails', async () => {
+    const currentList = createManagedList()
+    const repository: PublicListRepository = {
+      createManagedList: vi.fn(),
+      getByOwnerAndSlug: vi.fn(async () => null),
+      getManagedList: vi.fn(async () => currentList),
+      listMine: vi.fn(async () => []),
+      publishList: vi.fn(),
+      updateManagedList: vi.fn<PublicListRepository['updateManagedList']>(async () => ({ error: { type: 'operation_failed' }, ok: false })),
+    }
+
+    renderEditorScreen({ publicListRepository: repository })
+
+    await screen.findByRole('heading', { level: 1, name: 'Summer Books' })
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Dune' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add list-only item' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('We could not save that list-only item. The public list was left unchanged.')
+
+    const savedItems = screen.getByRole('list', { name: 'Saved public list interests' })
+
+    expect(within(savedItems).getByText('Refactoring')).toBeInTheDocument()
+    expect(within(savedItems).queryByText('Dune')).not.toBeInTheDocument()
   })
 })
 

@@ -936,7 +936,7 @@ describe('DashboardScreen', () => {
       </LocaleProvider>,
     )
 
-    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('[data-variant]') as HTMLElement
     const addAction = within(header).getByRole('button', { name: 'Add interest' })
     const moreActions = within(header).getByRole('button', { name: 'More actions' })
 

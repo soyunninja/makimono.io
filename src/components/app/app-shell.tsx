@@ -30,7 +30,14 @@ export function AppShell({
   return (
     <main className="flex min-h-screen flex-col p-4 sm:px-6 sm:py-8 lg:px-8">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8">
-        <header
+        <header className="flex items-center justify-between gap-4">
+          <a className="flex min-w-0 items-center gap-3" href="/dashboard">
+            <img alt="" aria-hidden="true" className="h-10 w-auto object-contain" src="/makimono.png" />
+            <span className="truncate text-lg font-semibold tracking-tight text-foreground">makimono.io</span>
+          </a>
+        </header>
+
+        <section
           className={cn(
             headerVariant === 'card'
               ? 'rounded-3xl border border-border/70 bg-card/80 p-6 shadow-2xl shadow-night/20 backdrop-blur sm:p-8'
@@ -62,7 +69,7 @@ export function AppShell({
 
             {actions ? <div className="flex shrink-0 items-center gap-3">{actions}</div> : null}
           </div>
-        </header>
+        </section>
 
         <section
           className={cn(

@@ -470,7 +470,7 @@ describe('dashboard nested routes', () => {
   it('opens and closes the local add flow from the dashboard without changing the route', async () => {
     const router = await renderRoute('/dashboard')
 
-    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('[data-variant]') as HTMLElement
 
     fireEvent.click(within(header).getByRole('button', { name: 'Add interest' }))
 
@@ -492,7 +492,7 @@ describe('dashboard nested routes', () => {
   it('does not expose the hidden suggester action from the dashboard actions menu', async () => {
     const router = await renderRoute('/dashboard')
 
-    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('[data-variant]') as HTMLElement
 
     fireEvent.pointerDown(within(header).getByRole('button', { name: 'More actions' }))
 
@@ -591,7 +591,7 @@ describe('dashboard nested routes', () => {
   it('shows a created item on the dashboard after the local add flow closes without leaving /dashboard', async () => {
     const router = await renderRoute('/dashboard')
 
-    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('[data-variant]') as HTMLElement
 
     fireEvent.click(within(header).getByRole('button', { name: 'Add interest' }))
 
