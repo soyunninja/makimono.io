@@ -80,6 +80,7 @@ export type Dictionary = {
     auditAction: string
     settingsAction: string
     moreActions: string
+    profileAvatarLabel: string
     editAction: string
     deleteAction: string
     deleteEditAction: string
@@ -292,6 +293,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       auditAction: 'Audit',
       settingsAction: 'Settings',
       moreActions: 'More actions',
+      profileAvatarLabel: 'Public profile avatar',
       editAction: 'Edit',
       deleteAction: 'Delete',
       deleteEditAction: 'Delete interest',
@@ -564,6 +566,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       auditAction: 'Auditoría',
       settingsAction: 'Ajustes',
       moreActions: 'Más acciones',
+      profileAvatarLabel: 'Avatar del perfil público',
       editAction: 'Editar',
       deleteAction: 'Eliminar',
       deleteEditAction: 'Eliminar interés',

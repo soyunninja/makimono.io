@@ -14,6 +14,14 @@ import type { CreateInterestItemInput, InterestItem, InterestRepository } from '
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
+const authMock = vi.hoisted(() => ({
+  publicProfile: null as null | { avatarUrl: string | null, username: string },
+}))
+
+vi.mock('@/features/auth/pocketbase-auth-provider', () => ({
+  useOptionalPocketBaseAuth: () => authMock,
+}))
+
 function formatCardDate(createdAt: string, locale: 'en' | 'es') {
   return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
@@ -38,6 +46,7 @@ function createDeferred<T>() {
 }
 
 beforeEach(() => {
+  authMock.publicProfile = null
   installMockLocalStorage()
   window.localStorage.clear()
   resetAppInterestRepository()
@@ -217,6 +226,33 @@ describe('DashboardScreen', () => {
 
     expect(screen.queryByText('Track mock items by category and move them through the backlog.')).not.toBeInTheDocument()
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+  })
+
+  it('shows the dashboard header avatar image when the public profile has an avatar URL', async () => {
+    authMock.publicProfile = { avatarUrl: '/api/files/users/user-1/avatar.webp', username: 'mariano' }
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Public profile avatar' })).toHaveAttribute('src', '/api/files/users/user-1/avatar.webp')
+    expect(screen.queryByText('mariano@example.com')).not.toBeInTheDocument()
+  })
+
+  it('shows a deterministic dashboard header fallback initial when the public profile has no avatar URL', async () => {
+    authMock.publicProfile = { avatarUrl: null, username: 'mariano' }
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Public profile avatar' })).toHaveTextContent('M')
   })
 
   it('groups list display items by category and renders only the colored action icon plus title', async () => {

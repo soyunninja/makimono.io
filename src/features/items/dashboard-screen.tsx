@@ -6,6 +6,7 @@ import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provider'
 import { CategoryFilters } from '@/features/items/category-filters'
 import type { InterestCoverResolver } from '@/features/items/cover-metadata'
 import { DashboardCoverItem } from '@/features/items/dashboard-cover-item'
@@ -76,6 +77,42 @@ function DashboardLogoTitle({ preference, title }: DashboardLogoTitleProps) {
   )
 }
 
+type DashboardHeaderAvatarProps = {
+  avatarUrl: string | null
+  label: string
+  username: string
+}
+
+function DashboardHeaderAvatar({ avatarUrl, label, username }: DashboardHeaderAvatarProps) {
+  if (avatarUrl) {
+    return (
+      <img
+        alt={label}
+        className={'size-9 rounded-full border border-white/20 bg-white/10 object-cover sm:size-11'}
+        src={avatarUrl}
+        title={label}
+      />
+    )
+  }
+
+  const fallbackInitial = username.trim().charAt(0).toUpperCase()
+
+  if (!fallbackInitial) {
+    return null
+  }
+
+  return (
+    <span
+      aria-label={label}
+      className={'flex size-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-semibold text-white sm:size-11 sm:text-base'}
+      role={'img'}
+      title={label}
+    >
+      {fallbackInitial}
+    </span>
+  )
+}
+
 export function DashboardScreen({
   reloadKey,
   repository = getAppInterestRepository(),
@@ -84,7 +121,9 @@ export function DashboardScreen({
   onEditItem,
 }: DashboardScreenProps) {
   const { locale, t } = useLocale()
+  const { publicProfile } = useOptionalPocketBaseAuth()
   const addActionLabel = t('dashboard.addAction')
+  const profileAvatarLabel = t('dashboard.profileAvatarLabel')
   const repositoryRef = useRef<InterestRepository>(repository)
   const starterPackCreationRef = useRef(false)
   const [items, setItems] = useState<InterestItem[]>([])
@@ -258,6 +297,13 @@ export function DashboardScreen({
               </a>
             </Button>
           )}
+          {publicProfile ? (
+            <DashboardHeaderAvatar
+              avatarUrl={publicProfile.avatarUrl}
+              label={profileAvatarLabel}
+              username={publicProfile.username}
+            />
+          ) : null}
           <DashboardOverflowMenu currentView={'dashboard'} />
         </div>
       )}
