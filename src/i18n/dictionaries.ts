@@ -92,6 +92,21 @@ export type Dictionary = {
     searchLabel: string
     searchPlaceholder: string
   }
+  publicList: {
+    ownerLabel: string
+    listDateLabel: string
+    itemsHeading: string
+    emptyTitle: string
+    emptyDescription: string
+    notFoundTitle: string
+    notFoundDescription: string
+    avatarAlt: string
+    avatarFallbackLabel: string
+    categoryLabel: string
+    notesLabel: string
+    tagsLabel: string
+    coverAlt: string
+  }
   archive: {
     eyebrow: string
     title: string
@@ -304,6 +319,21 @@ export const dictionaries: Record<Locale, Dictionary> = {
       completeWarning: 'This will remove the item from your dashboard and move it to the archive.',
       searchLabel: 'Search by title, tag, or notes',
       searchPlaceholder: 'Search title, tag, or notes',
+    },
+    publicList: {
+      ownerLabel: 'Published by',
+      listDateLabel: 'List date',
+      itemsHeading: 'List items',
+      emptyTitle: 'This public list is empty',
+      emptyDescription: 'The owner has not added any visible items to this published list yet.',
+      notFoundTitle: 'Public list not found',
+      notFoundDescription: 'This published list may not exist, may be private, or may have moved.',
+      avatarAlt: '{owner} public avatar',
+      avatarFallbackLabel: '{owner} public avatar fallback',
+      categoryLabel: 'Category',
+      notesLabel: 'Notes',
+      tagsLabel: 'Tags',
+      coverAlt: '{title} cover',
     },
     archive: {
       eyebrow: 'Archive',
@@ -577,6 +607,21 @@ export const dictionaries: Record<Locale, Dictionary> = {
       completeWarning: 'Esto quitará el elemento de tu dashboard y lo moverá al archivo.',
       searchLabel: 'Buscar por título, etiqueta o notas',
       searchPlaceholder: 'Buscar por título, etiqueta o notas',
+    },
+    publicList: {
+      ownerLabel: 'Publicada por',
+      listDateLabel: 'Fecha de la lista',
+      itemsHeading: 'Elementos de la lista',
+      emptyTitle: 'Esta lista pública está vacía',
+      emptyDescription: 'La persona propietaria todavía no ha añadido elementos visibles a esta lista publicada.',
+      notFoundTitle: 'Lista pública no encontrada',
+      notFoundDescription: 'Puede que esta lista publicada no exista, sea privada o se haya movido.',
+      avatarAlt: 'Avatar público de {owner}',
+      avatarFallbackLabel: 'Marcador de avatar público de {owner}',
+      categoryLabel: 'Categoría',
+      notesLabel: 'Notas',
+      tagsLabel: 'Etiquetas',
+      coverAlt: 'Portada de {title}',
     },
     archive: {
       eyebrow: 'Archivo',

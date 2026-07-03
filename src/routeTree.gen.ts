@@ -22,6 +22,7 @@ import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known.oauth-protected-resource'
 import { Route as DotwellKnownOauthAuthorizationServerRouteImport } from './routes/[.]well-known.oauth-authorization-server'
 import { Route as DashboardEditItemIdRouteImport } from './routes/dashboard.edit.$itemId'
+import { Route as UUsernameListaSlugRouteImport } from './routes/u.$username.lista.$slug'
 
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
@@ -90,6 +91,11 @@ const DashboardEditItemIdRoute = DashboardEditItemIdRouteImport.update({
   path: '/edit/$itemId',
   getParentRoute: () => DashboardRoute,
 } as any)
+const UUsernameListaSlugRoute = UUsernameListaSlugRouteImport.update({
+  id: '/u/$username/lista/$slug',
+  path: '/u/$username/lista/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/token': typeof OauthTokenRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
+  '/u/$username/lista/$slug': typeof UUsernameListaSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/token': typeof OauthTokenRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
+  '/u/$username/lista/$slug': typeof UUsernameListaSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/oauth/authorize': typeof OauthAuthorizeRoute
   '/oauth/token': typeof OauthTokenRoute
   '/dashboard/edit/$itemId': typeof DashboardEditItemIdRoute
+  '/u/$username/lista/$slug': typeof UUsernameListaSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -153,6 +162,7 @@ export interface FileRouteTypes {
     | '/oauth/authorize'
     | '/oauth/token'
     | '/dashboard/edit/$itemId'
+    | '/u/$username/lista/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/oauth/authorize'
     | '/oauth/token'
     | '/dashboard/edit/$itemId'
+    | '/u/$username/lista/$slug'
   id:
     | '__root__'
     | '/'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/oauth/authorize'
     | '/oauth/token'
     | '/dashboard/edit/$itemId'
+    | '/u/$username/lista/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -193,6 +205,7 @@ export interface RootRouteChildren {
   ApiMcpRoute: typeof ApiMcpRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
   OauthTokenRoute: typeof OauthTokenRoute
+  UUsernameListaSlugRoute: typeof UUsernameListaSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -288,6 +301,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardEditItemIdRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/u/$username/lista/$slug': {
+      id: '/u/$username/lista/$slug'
+      path: '/u/$username/lista/$slug'
+      fullPath: '/u/$username/lista/$slug'
+      preLoaderRoute: typeof UUsernameListaSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -323,6 +343,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMcpRoute: ApiMcpRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
   OauthTokenRoute: OauthTokenRoute,
+  UUsernameListaSlugRoute: UUsernameListaSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

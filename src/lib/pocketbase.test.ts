@@ -139,6 +139,21 @@ describe('minimal PocketBase REST client', () => {
     ])
   })
 
+  it('forwards PocketBase list filters for public read projections', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([{ id: 'public-list-1' }]))
+    const client = getPocketBaseClient()
+
+    await expect(client?.collection('public_lists').getFullList({
+      filter: 'published = true && ownerNamespace = "ana" && slug = "summer-books"',
+      perPage: 1,
+      sort: '-publishedAt',
+    })).resolves.toEqual([{ id: 'public-list-1' }])
+
+    expect(fetchMock.mock.calls[0]?.[0]).toEqual(expect.stringMatching(
+      /\/api\/collections\/public_lists\/records\?sort=-publishedAt&filter=published\+%3D\+true\+%26%26\+ownerNamespace\+%3D\+%22ana%22\+%26%26\+slug\+%3D\+%22summer-books%22&page=1&perPage=1&skipTotal=1$/,
+    ))
+  })
+
   it('keeps fetching list pages when totalPages is omitted and the page is full', async () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ items: Array.from({ length: 200 }, (_, index) => ({ id: `interest-${index + 1}` })) }))

@@ -17,6 +17,7 @@ type PocketBaseRequestOptions = {
 }
 
 type PocketBaseListOptions = {
+  filter?: string
   limit?: number
   perPage?: number
   sort?: string
@@ -188,6 +189,10 @@ class MinimalPocketBaseClient {
             searchParams.set('sort', options.sort)
           }
 
+          if (options?.filter) {
+            searchParams.set('filter', options.filter)
+          }
+
           searchParams.set('page', String(page))
           searchParams.set('perPage', String(perPage))
           searchParams.set('skipTotal', '1')
@@ -278,7 +283,7 @@ export function isPocketBaseEnabled() {
 export function getPocketBaseClient(): MinimalPocketBaseClient | null {
   const pocketBaseUrl = getPocketBaseUrl()
 
-  if (!pocketBaseUrl || typeof window === 'undefined') {
+  if (!pocketBaseUrl) {
     return null
   }
 

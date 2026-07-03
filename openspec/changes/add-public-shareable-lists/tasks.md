@@ -34,9 +34,9 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Public Read UI and Routing
 
-- [ ] 2.1 Create `src/features/items/public-list-page.tsx` for read-only title, date, description, items, owner name, avatar, and gradient initial fallback.
-- [ ] 2.2 Create `src/routes/u.$username.lista.$slug.tsx` with unauthenticated lookup and not-found state; do not wrap with `PocketBaseAuthGate`.
-- [ ] 2.3 Update `src/i18n/dictionaries.ts` with public list labels, empty/not-found text, and privacy-safe owner copy.
+- [x] 2.1 Create `src/features/items/public-list-page.tsx` for read-only title, date, description, items, owner name, avatar, and gradient initial fallback.
+- [x] 2.2 Create `src/routes/u.$username.lista.$slug.tsx` with unauthenticated lookup and not-found state; do not wrap with `PocketBaseAuthGate`.
+- [x] 2.3 Update `src/i18n/dictionaries.ts` with public list labels, empty/not-found text, and privacy-safe owner copy.
 
 ## Phase 3: Authenticated Publish Entry Point
 
@@ -49,7 +49,7 @@ Chain strategy: stacked-to-main
 - [x] 4.1 Add unit tests for slug/namespace normalization, same-owner collision errors, cross-owner slug allowance, and empty normalization rejection.
 - [x] 4.2 Add privacy/projection tests proving no full email, owner relation, raw auth IDs, sessions, tokens, provider metadata, or private fields reach `PublicList`.
 - [x] 4.3 Add owner projection tests for username preference, email-prefix-only fallback, avatar image, and gradient initial fallback.
-- [ ] 4.4 Add page/route tests for `/u/ana/lista/summer-books`, missing list not-found, read-only item rendering, and absent out-of-scope actions.
+- [x] 4.4 Add page/route tests for `/u/ana/lista/summer-books`, missing list not-found, read-only item rendering, and absent out-of-scope actions.
 - [ ] 4.5 Add publish tests for authenticated creation, unauthenticated rejection, deterministic collision handling, and private source remaining private.
 - [x] 4.6 Verify PocketBase schema/rules evidence covers public-read-only published records plus owner-only create/update/delete/unpublish.
 - [x] 4.7 Run `npx pnpm test`, `npx pnpm typecheck`, and `npx pnpm build`; document any manual inspection limitations.
