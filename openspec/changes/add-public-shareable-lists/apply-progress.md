@@ -31,6 +31,7 @@
 - `npx pnpm typecheck` — passed.
 - `npx pnpm test` — passed, 32 files / 252 tests.
 - `npx pnpm build` — passed.
+- Manual mobile/desktop inspection was not performed for the new responsive public list page in this slice; responsive behavior is limited to source-level Tailwind review plus route/page behavior tests in jsdom.
 
 ## Deviations
 
