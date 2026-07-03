@@ -1,16 +1,9 @@
-import { createFileRoute } from '@tanstack/react-router'
-
-import { PocketBaseAuthGate } from '@/features/auth/pocketbase-auth-gate'
-import { MyPublicListsScreen } from '@/features/items/my-public-lists-screen'
+import { Outlet, createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/dashboard/public-lists')({
-  component: DashboardPublicListsRoutePage,
+  component: DashboardPublicListsRouteLayout,
 })
 
-export function DashboardPublicListsRoutePage() {
-  return (
-    <PocketBaseAuthGate>
-      <MyPublicListsScreen />
-    </PocketBaseAuthGate>
-  )
+export function DashboardPublicListsRouteLayout() {
+  return <Outlet />
 }

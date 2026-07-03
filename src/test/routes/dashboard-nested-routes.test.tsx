@@ -17,8 +17,9 @@ import { DashboardAuditRoutePage } from '@/routes/dashboard.audit'
 import { DashboardArchiveRoutePage } from '@/routes/dashboard.archive'
 import { DashboardEditRoutePage } from '@/routes/dashboard.edit.$itemId'
 import { DashboardPublicListEditorRoutePage } from '@/routes/dashboard.public-lists.$listId'
+import { DashboardPublicListsIndexRoutePage } from '@/routes/dashboard.public-lists.index'
 import { DashboardPublicListCreateRoutePage } from '@/routes/dashboard.public-lists.new'
-import { DashboardPublicListsRoutePage } from '@/routes/dashboard.public-lists'
+import { DashboardPublicListsRouteLayout } from '@/routes/dashboard.public-lists'
 import { DashboardSettingsRoutePage } from '@/routes/dashboard.settings'
 import { DashboardSuggestRoutePage } from '@/routes/dashboard.suggest'
 import { DashboardRoutePage } from '@/routes/dashboard'
@@ -111,18 +112,24 @@ const dashboardSettingsRoute = createRoute({
 const dashboardPublicListsRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: '/public-lists',
-  component: DashboardPublicListsRoutePage,
+  component: DashboardPublicListsRouteLayout,
+})
+
+const dashboardPublicListsIndexRoute = createRoute({
+  getParentRoute: () => dashboardPublicListsRoute,
+  path: '/',
+  component: DashboardPublicListsIndexRoutePage,
 })
 
 const dashboardPublicListCreateRoute = createRoute({
-  getParentRoute: () => dashboardRoute,
-  path: '/public-lists/new',
+  getParentRoute: () => dashboardPublicListsRoute,
+  path: '/new',
   component: DashboardPublicListCreateRoutePage,
 })
 
 const dashboardPublicListEditorRoute = createRoute({
-  getParentRoute: () => dashboardRoute,
-  path: '/public-lists/$listId',
+  getParentRoute: () => dashboardPublicListsRoute,
+  path: '/$listId',
   component: DashboardPublicListEditorRoutePage,
 })
 
@@ -138,9 +145,11 @@ const routeTree = rootRoute.addChildren([
     dashboardSuggestRoute,
     dashboardArchiveRoute,
     dashboardAuditRoute,
-    dashboardPublicListCreateRoute,
-    dashboardPublicListEditorRoute,
-    dashboardPublicListsRoute,
+    dashboardPublicListsRoute.addChildren([
+      dashboardPublicListsIndexRoute,
+      dashboardPublicListCreateRoute,
+      dashboardPublicListEditorRoute,
+    ]),
     dashboardSettingsRoute,
     dashboardEditRoute,
   ]),
@@ -387,6 +396,7 @@ describe('dashboard nested routes', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Create public list' })).toBeInTheDocument()
     expect(screen.getByLabelText('Public list title')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: 'My public lists' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.queryByText('reader@example.com')).not.toBeInTheDocument()
   })
@@ -413,6 +423,7 @@ describe('dashboard nested routes', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Public Stack' })).toBeInTheDocument()
     expect(screen.queryByText('Other User List')).not.toBeInTheDocument()
     expect(screen.getByRole('list', { name: 'Eligible interests from your account' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: 'My public lists' })).not.toBeInTheDocument()
     expect(screen.queryByText('reader@example.com')).not.toBeInTheDocument()
   })
 
