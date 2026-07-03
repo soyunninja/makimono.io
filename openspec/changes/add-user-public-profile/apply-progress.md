@@ -21,7 +21,7 @@
 - [x] 3.4 Updated `src/i18n/dictionaries.ts` with EN/ES profile labels, avatar upload guidance, username validation messages, avatar-processing failures, and generic save failure copy.
 - [x] 4.1 Verified provider tests cover FormData profile update, auth refresh, derived public profile, and private-field exclusion from rendered settings/provider output.
 - [x] 4.2 Verified settings tests and route/source inspection cover avatar/username presentation, fallback avatar, localized validation errors, private-field non-exposure, and absence of a dedicated public profile route.
-- [x] 4.3 Ran final full verification commands and documented live PocketBase schema/rule verification as a manual deployment prerequisite.
+- [x] 4.3 Ran final full verification commands and documented completed live PocketBase schema verification for username, avatar, and unique-index constraints.
 
 ## Verification
 
@@ -34,11 +34,12 @@
 - Passed for PR 3 production build: `npx pnpm build` (Vite/Nitro production build completed successfully).
 - Previous PR 2 evidence remains valid: `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build` passed after the draw/canvas failure fix, including `src/features/auth/avatar-normalization.test.ts`.
 - Previous targeted PR 1/PR 2 evidence remains valid: `npx pnpm test src/features/auth/public-profile.test.ts`, `npx pnpm test src/features/auth/avatar-normalization.test.ts`, and JSON parsing of `docs/pocketbase-collections.json` passed before the full verification follow-up.
+- Live PocketBase schema verification completed after schema application: `users.username` is presentable text with min 3, max 30, pattern `^[a-z0-9][a-z0-9_]{1,28}[a-z0-9]$`; `users.avatar` is a single WebP file capped at 204800 bytes; unique non-empty username index `idx_users_username` exists.
 
 ### Verification Warnings
 
 - `npx pnpm build` emitted Nitro's production-environment compatibility reminder: ensure the deployment environment matches the builder OS and architecture (`darwin-arm64`) to avoid native module issues.
-- Manual PocketBase schema/rule verification remains a deployment prerequisite because local verification requires PocketBase admin/deployment access that was not available during this pass. The documentation in `docs/pocketbase-collections.json` must be applied and checked before rollout.
+- Live PocketBase rule behavior was not re-tested with end-user CRUD requests in this documentation-only update; this pass records schema/index evidence from the live admin verification without running additional admin operations.
 
 ## Deviations
 
@@ -46,7 +47,7 @@
 
 ## Next Slice
 
-- No implementation slice remains for `add-user-public-profile`. Archive readiness is acceptable after the live PocketBase schema/rule prerequisite is confirmed in the deployment environment.
+- No implementation slice remains for `add-user-public-profile`. Archive readiness is acceptable after final review of the updated verification evidence.
 
 ## Notes
 
