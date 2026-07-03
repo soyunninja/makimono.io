@@ -50,6 +50,14 @@ describe('PublicListRepository boundary', () => {
     ])
   })
 
+  it('returns null when public owner-plus-slug lookup matches an unpublished list', async () => {
+    const repository = createInMemoryPublicListRepository([
+      createPublicListSeed({ id: 'draft-list', ownerId: 'user-private', published: false }),
+    ])
+
+    await expect(repository.getByOwnerAndSlug('ana', 'summer-books')).resolves.toBeNull()
+  })
+
   it('does not grant management access through a matching owner namespace', async () => {
     const repository = createInMemoryPublicListRepository([
       createPublicListSeed({ id: 'namespace-collision', ownerId: 'other-user', ownerNamespace: 'ana' }),

@@ -14,6 +14,11 @@
 - [x] 3.1 Extended in-memory repository tests for summary shape, unpublished exclusion, namespace mismatch exclusion, and privacy-safe projection.
 - [x] 3.2 Extended PocketBase repository tests for owner-relation filtering, absence of `ownerNamespace` management filtering, sorting, and private-field stripping.
 
+## Post-Commit Review Fix
+
+- [x] Updated in-memory public owner/slug lookup to return only published seeded records, matching the PocketBase public lookup filter.
+- [x] Added a regression test proving unpublished seeded lists return `null` from public owner/slug lookup.
+
 ## Verification
 
 | Command | Result |
@@ -23,10 +28,12 @@
 | `npx pnpm vitest run src/features/items/public-list-repository.test.ts src/features/items/pocketbase-public-list-repository.test.ts src/features/items/dashboard-screen.test.tsx src/test/routes/public-list-route.test.tsx` | Passed — 4 files, 55 tests |
 | `npx pnpm test` | Passed — 32 files, 263 tests |
 | `npx pnpm build` | Passed |
+| `npx pnpm vitest run src/features/items/public-list-repository.test.ts src/features/items/pocketbase-public-list-repository.test.ts` | Passed after review fix — 2 files, 17 tests |
+| `npx pnpm typecheck` | Passed after review fix |
 
 ## Deviations
 
-- None. Implementation follows the design: management retrieval uses stored owner relation, summaries exclude full items/private fields, and public lookup by `ownerNamespace` plus slug remains unchanged.
+- None. Implementation follows the design: management retrieval uses stored owner relation, summaries exclude full items/private fields, and public lookup by `ownerNamespace` plus slug remains published-only.
 
 ## Notes
 

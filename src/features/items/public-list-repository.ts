@@ -129,7 +129,9 @@ export function createInMemoryPublicListRepository(
         return null
       }
 
-      const record = records.find(({ list }) => list.ownerNamespace === ownerNamespace.value && list.slug === slug.value)
+      const record = records.find((record) => record.published
+        && record.list.ownerNamespace === ownerNamespace.value
+        && record.list.slug === slug.value)
 
       return record ? clonePublicList(record.list) : null
     },
