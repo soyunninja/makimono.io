@@ -1,4 +1,7 @@
 import type { PocketBaseAuthRecord } from '@/lib/pocketbase'
+import type { PublicOwnerProjection } from '@/features/items/public-list-types'
+
+import { normalizePublicRoutePart } from '@/features/items/public-list-types'
 
 export type UserPublicProfile = {
   username: string
@@ -19,6 +22,23 @@ export type UsernameValidationResult =
 type MapAuthRecordOptions = {
   resolveAvatarUrl?: (avatarFileName: string) => string | null
 }
+
+type PublicOwnerProfileInput = Record<string, unknown> & {
+  avatar?: unknown
+  avatarUrl?: unknown
+  displayName?: unknown
+  email?: unknown
+  name?: unknown
+  username?: unknown
+}
+
+type MapPublicOwnerProjectionOptions = {
+  resolveAvatarUrl?: (avatarFileName: string) => string | null
+}
+
+export type PublicOwnerAvatarPresentation =
+  | { kind: 'image', url: string }
+  | { initial: string, kind: 'gradient-initial' }
 
 const usernamePattern = /^[a-z0-9][a-z0-9_]{1,28}[a-z0-9]$/
 
@@ -77,7 +97,93 @@ export function mapAuthRecordToUserPublicProfile(
   }
 }
 
-function readStringField(record: PocketBaseAuthRecord | null | undefined, field: string) {
+export function resolveEmailPrefixPublicName(email: string | null | undefined) {
+  const prefix = email?.split('@')[0]?.trim() ?? ''
+  const normalizedPrefix = normalizePublicRoutePart(prefix)
+
+  return normalizedPrefix.ok ? normalizedPrefix.value : null
+}
+
+export function resolvePublicOwnerDisplayName(owner: PublicOwnerProfileInput | null | undefined) {
+  const username = readStringField(owner, 'username')
+
+  if (username) {
+    return normalizeUsername(username)
+  }
+
+  const displayName = resolveSafePublicName(readStringField(owner, 'displayName') ?? readStringField(owner, 'name'))
+
+  if (displayName) {
+    return displayName
+  }
+
+  return resolveEmailPrefixPublicName(readStringField(owner, 'email')) ?? 'User'
+}
+
+export function resolvePublicOwnerAvatarUrl(
+  owner: PublicOwnerProfileInput | null | undefined,
+  options: MapPublicOwnerProjectionOptions = {},
+) {
+  const avatarUrl = readStringField(owner, 'avatarUrl')
+
+  if (avatarUrl && isSafePublicUrl(avatarUrl)) {
+    return avatarUrl
+  }
+
+  const avatarFileName = readStringField(owner, 'avatar')
+
+  return avatarFileName && options.resolveAvatarUrl ? options.resolveAvatarUrl(avatarFileName) : null
+}
+
+export function resolvePublicOwnerInitial(displayName: string) {
+  return displayName.trim().charAt(0).toUpperCase() || 'U'
+}
+
+export function mapPublicOwnerProjection(
+  owner: PublicOwnerProfileInput | null | undefined,
+  options: MapPublicOwnerProjectionOptions = {},
+): PublicOwnerProjection {
+  const displayName = resolvePublicOwnerDisplayName(owner)
+
+  return {
+    avatarUrl: resolvePublicOwnerAvatarUrl(owner, options),
+    displayName,
+    initial: resolvePublicOwnerInitial(displayName),
+  }
+}
+
+export function getPublicOwnerAvatarPresentation(owner: PublicOwnerProjection): PublicOwnerAvatarPresentation {
+  if (owner.avatarUrl) {
+    return { kind: 'image', url: owner.avatarUrl }
+  }
+
+  return { initial: owner.initial, kind: 'gradient-initial' }
+}
+
+function resolveSafePublicName(value: string | null) {
+  if (!value) {
+    return null
+  }
+
+  return value.includes('@') ? resolveEmailPrefixPublicName(value) : value.trim()
+}
+
+function isSafePublicUrl(value: string) {
+  if (value.startsWith('/')) {
+    return true
+  }
+
+  try {
+    const url = new URL(value)
+
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  }
+  catch {
+    return false
+  }
+}
+
+function readStringField(record: Record<string, unknown> | null | undefined, field: string) {
   if (!record) {
     return null
   }

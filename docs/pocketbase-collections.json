@@ -253,6 +253,43 @@
     "system": false
   },
   {
+    "id": "pbc_public_lists",
+    "listRule": "published = true",
+    "viewRule": "published = true",
+    "createRule": "@request.auth.id != \"\" && @request.body.owner = @request.auth.id",
+    "updateRule": "@request.auth.id != \"\" && owner = @request.auth.id && (@request.body.owner:isset = false || @request.body.owner = @request.auth.id)",
+    "deleteRule": "@request.auth.id != \"\" && owner = @request.auth.id",
+    "name": "public_lists",
+    "type": "base",
+    "fields": [
+      { "autogeneratePattern": "[a-z0-9]{15}", "hidden": false, "id": "text_public_lists_id", "max": 15, "min": 15, "name": "id", "pattern": "^[a-z0-9]+$", "presentable": false, "primaryKey": true, "required": true, "system": true, "type": "text" },
+      { "cascadeDelete": false, "collectionId": "_pb_users_auth_", "help": "Owner authorization relation for authenticated writes only; public projections must not expose this raw relation.", "hidden": true, "id": "relation_public_lists_owner", "maxSelect": 1, "minSelect": 1, "name": "owner", "presentable": false, "required": true, "system": false, "type": "relation" },
+      { "autogeneratePattern": "", "help": "Normalized route namespace from username or email prefix only; never store a full email here.", "hidden": false, "id": "text_public_lists_owner_namespace", "max": 120, "min": 1, "name": "ownerNamespace", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "presentable": true, "primaryKey": false, "required": true, "system": false, "type": "text" },
+      { "autogeneratePattern": "", "help": "Public owner display name: username, safe name, or email prefix only.", "hidden": false, "id": "text_public_lists_owner_display_name", "max": 120, "min": 1, "name": "ownerDisplayName", "pattern": "", "presentable": true, "primaryKey": false, "required": true, "system": false, "type": "text" },
+      { "exceptDomains": null, "help": "Public avatar URL or file URL representation only; do not expose auth metadata.", "hidden": false, "id": "url_public_lists_owner_avatar", "name": "ownerAvatar", "onlyDomains": null, "presentable": false, "required": false, "system": false, "type": "url" },
+      { "autogeneratePattern": "", "help": "Normalized list slug scoped by ownerNamespace.", "hidden": false, "id": "text_public_lists_slug", "max": 120, "min": 1, "name": "slug", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "presentable": true, "primaryKey": false, "required": true, "system": false, "type": "text" },
+      { "autogeneratePattern": "", "hidden": false, "id": "text_public_lists_title", "max": 240, "min": 1, "name": "title", "pattern": "", "presentable": true, "primaryKey": false, "required": true, "system": false, "type": "text" },
+      { "help": "List date shown on the public page.", "hidden": false, "id": "date_public_lists_list_date", "max": "", "min": "", "name": "listDate", "presentable": true, "required": true, "system": false, "type": "date" },
+      { "autogeneratePattern": "", "help": "Optional public description copied from display-only source data.", "hidden": false, "id": "text_public_lists_description", "max": 0, "min": 0, "name": "description", "pattern": "", "presentable": true, "primaryKey": false, "required": false, "system": false, "type": "text" },
+      { "help": "Read-only item display data: title, category, optional notes, tags, and cover metadata.", "hidden": false, "id": "json_public_lists_items", "maxSize": 0, "name": "items", "presentable": false, "required": true, "system": false, "type": "json" },
+      { "help": "Only published records are publicly readable.", "hidden": false, "id": "bool_public_lists_published", "name": "published", "presentable": false, "required": true, "system": false, "type": "bool" },
+      { "help": "Public publish timestamp.", "hidden": false, "id": "date_public_lists_published_at", "max": "", "min": "", "name": "publishedAt", "presentable": false, "required": true, "system": false, "type": "date" },
+      { "hidden": false, "id": "autodate_public_lists_created", "name": "created", "onCreate": true, "onUpdate": false, "presentable": false, "system": false, "type": "autodate" },
+      { "hidden": false, "id": "autodate_public_lists_updated", "name": "updated", "onCreate": true, "onUpdate": true, "presentable": false, "system": false, "type": "autodate" }
+    ],
+    "indexes": [
+      "CREATE UNIQUE INDEX `idx_public_lists_owner_namespace_slug` ON `public_lists` (`ownerNamespace`, `slug`)",
+      "CREATE INDEX `idx_public_lists_published_lookup` ON `public_lists` (`published`, `ownerNamespace`, `slug`)"
+    ],
+    "publicProjectionRuleRequirements": {
+      "privacy": "PublicList mapping must omit owner relation, full email, raw auth IDs, sessions, tokens, provider metadata, and private profile fields.",
+      "read": "Unauthenticated list/view rules allow only records with published = true.",
+      "slugCollision": "ownerNamespace + slug is unique for one owner namespace; the same slug may exist under different owner namespaces.",
+      "write": "Only the authenticated owner may create, update, delete, or unpublish records. The owner relation cannot be changed to another user."
+    },
+    "system": false
+  },
+  {
     "id": "pbc_mcp_audit",
     "listRule": "@request.auth.id != \"\" && user = @request.auth.id",
     "viewRule": "@request.auth.id != \"\" && user = @request.auth.id",

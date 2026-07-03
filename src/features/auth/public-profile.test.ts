@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  getPublicOwnerAvatarPresentation,
   mapAuthRecordToUserPublicProfile,
+  mapPublicOwnerProjection,
   normalizeUsername,
+  resolveEmailPrefixPublicName,
   validateUsername,
   type UserPublicProfile,
 } from '@/features/auth/public-profile'
@@ -57,6 +60,41 @@ describe('public profile boundary', () => {
     expect(validateUsername('ab')).toEqual({ error: 'too_short', ok: false, username: 'ab' })
     expect(validateUsername('a'.repeat(31))).toEqual({ error: 'too_long', ok: false, username: 'a'.repeat(31) })
     expect(validateUsername('display name')).toEqual({ error: 'invalid_format', ok: false, username: 'display name' })
+  })
+
+  it('prefers username for public owner display without exposing full email', () => {
+    const owner = mapPublicOwnerProjection({
+      avatarUrl: 'https://cdn.example.com/avatar.webp',
+      email: 'ana.private@example.com',
+      username: 'Ana',
+    })
+
+    expect(owner).toEqual({
+      avatarUrl: 'https://cdn.example.com/avatar.webp',
+      displayName: 'ana',
+      initial: 'A',
+    })
+    expect(JSON.stringify(owner)).not.toContain('ana.private@example.com')
+    expect(getPublicOwnerAvatarPresentation(owner)).toEqual({
+      kind: 'image',
+      url: 'https://cdn.example.com/avatar.webp',
+    })
+  })
+
+  it('uses only the normalized email prefix and a gradient initial fallback when no username or avatar exists', () => {
+    const owner = mapPublicOwnerProjection({ email: 'Sam.Reader@example.com' })
+
+    expect(resolveEmailPrefixPublicName('Sam.Reader@example.com')).toBe('sam-reader')
+    expect(owner).toEqual({
+      avatarUrl: null,
+      displayName: 'sam-reader',
+      initial: 'S',
+    })
+    expect(JSON.stringify(owner)).not.toContain('example.com')
+    expect(getPublicOwnerAvatarPresentation(owner)).toEqual({
+      initial: 'S',
+      kind: 'gradient-initial',
+    })
   })
 })
 
