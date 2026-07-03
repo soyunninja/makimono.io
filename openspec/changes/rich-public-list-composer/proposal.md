@@ -9,6 +9,7 @@ Bring public-list composition and viewing to dashboard parity while preserving b
 ### In Scope
 - Use the full dashboard drawer/form fields: title, category, cover, notes, and tags.
 - Keep new editor-created items scoped only to that public list.
+- Remove saved interests/items from public-list membership without mutating private dashboard interests.
 - Support `cards`, `list`, and `covers` on public pages.
 - Add a per-item copy action from public list to authenticated user's dashboard.
 - Keep public reads login-free; auth-gate only copy.
@@ -17,6 +18,7 @@ Bring public-list composition and viewing to dashboard parity while preserving b
 - Social features: collaboration, comments, likes, follows, feeds, discovery, analytics.
 - Automatic sync from public-list-only items into the owner's dashboard.
 - Dashboard lifecycle changes beyond copied items starting as `pending`.
+- Deleting or mutating private dashboard interests when removing public-list snapshots.
 - New collections, broad schema redesign, or unrelated list-management work.
 
 ## Impacted Capabilities
@@ -46,6 +48,7 @@ Treat the dashboard drawer/form as the product baseline with target-specific sub
 
 - [ ] Owners can create public-list-only items with dashboard-equivalent visible fields.
 - [ ] Public-list-only items stay out of private dashboard interests unless copied.
+- [ ] Owners can remove saved public-list item snapshots without deleting or mutating private dashboard interests.
 - [ ] Public list pages support cards, list, and covers displays.
 - [ ] Each public item offers copy-to-dashboard.
 - [ ] Copy creates a personal `pending` interest or prompts login.

@@ -40,6 +40,10 @@ type RichInterestComposerProps = {
   isDesktop?: boolean
   onRequestClose?: () => void
   onSubmit: (values: RichInterestFormValues) => Promise<void> | void
+  composerTitle?: string
+  statusMessage?: string | null
+  statusRole?: 'alert' | 'status'
+  submitLabel?: string
 }
 
 type AdaptiveEditFlowProps = {
@@ -327,8 +331,12 @@ function InterestDetailsFields({ title, tags, notes, categoryFields, coverFields
 export function RichInterestComposer({
   coverResolver = defaultCoverResolver,
   isDesktop,
+  composerTitle,
   onRequestClose,
   onSubmit,
+  statusMessage,
+  statusRole = 'status',
+  submitLabel,
 }: RichInterestComposerProps) {
   const { locale, t } = useLocale()
   const resolvedIsDesktop = useDesktopBreakpoint(isDesktop)
@@ -440,9 +448,11 @@ export function RichInterestComposer({
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
         <DrawerHeader className="p-0 text-left">
           <DrawerTitle asChild className="text-2xl font-semibold tracking-tight text-foreground">
-            <h1>{t('addFlow.title')}</h1>
+            <h1>{composerTitle ?? t('addFlow.title')}</h1>
           </DrawerTitle>
         </DrawerHeader>
+
+        {statusMessage ? <p className="text-sm text-muted-foreground" role={statusRole}>{statusMessage}</p> : null}
 
         <form className={cn('grid w-full gap-6', resolvedIsDesktop ? 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start' : undefined)} id={addInterestFormId} onSubmit={handleSubmit}>
           <div className="space-y-6">
@@ -503,7 +513,7 @@ export function RichInterestComposer({
   const drawerFooter = (
     <DrawerFooter className="shrink-0 border-t border-border/70 px-1 pb-0 pt-4">
       <div className="mx-auto flex w-full max-w-[1200px] justify-end">
-        <Button aria-label={t('addFlow.submit')} className="bg-brand-sun text-night hover:bg-brand-sun/90" disabled={isSubmitDisabled} form={addInterestFormId} size="icon" type="submit">
+        <Button aria-label={submitLabel ?? t('addFlow.submit')} className="bg-brand-sun text-night hover:bg-brand-sun/90" disabled={isSubmitDisabled} form={addInterestFormId} size="icon" type="submit">
           <Plus aria-hidden="true" />
         </Button>
       </div>

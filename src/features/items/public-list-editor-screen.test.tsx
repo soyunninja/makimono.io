@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { describe, expect, it, vi } from 'vitest'
 
 import { PublicListEditorScreen } from '@/features/items/public-list-editor-screen'
+import type { InterestCoverResolver } from '@/features/items/cover-metadata'
 import { createInMemoryPublicListRepository, type PublicListRepository } from '@/features/items/public-list-repository'
 import type { PublicList } from '@/features/items/public-list-types'
 import { createMockInterestRepository } from '@/features/items/mock-repository'
@@ -16,6 +17,7 @@ const ownerUser = {
 } satisfies PocketBaseAuthRecord
 
 function renderEditorScreen(options: {
+  coverResolver?: InterestCoverResolver
   interestRepository?: InterestRepository
   list?: PublicList
   listId?: string
@@ -32,6 +34,7 @@ function renderEditorScreen(options: {
     <LocaleProvider initialLocale={'en'}>
       <PublicListEditorScreen
         authenticatedUser={options.user ?? ownerUser}
+        coverResolver={options.coverResolver}
         interestRepository={interestRepository}
         listId={options.listId ?? list.id}
         publicListRepository={publicListRepository}
@@ -95,27 +98,50 @@ describe('PublicListEditorScreen', () => {
     expect(screen.queryByRole('button', { name: 'Add to list: Arrival' })).not.toBeInTheDocument()
   })
 
-  it('creates a list-only item through the public list repository without creating a private interest', async () => {
+  it('creates a rich list-only snapshot through the public list repository without creating a private interest', async () => {
     const repository = createInMemoryPublicListRepository([createManagedList()], { ownerId: ownerUser.id })
     const updateManagedList = vi.spyOn(repository, 'updateManagedList')
     const interestRepository = createMockInterestRepository(createCurrentUserItems())
     const createItem = vi.spyOn(interestRepository, 'createItem')
+    const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue({
+      coverImageUrl: 'https://images.example.com/kind-of-blue.jpg',
+      coverMatchedTitle: 'Kind of Blue',
+      coverProvider: 'musicbrainz',
+    })
 
-    renderEditorScreen({ interestRepository, publicListRepository: repository })
+    renderEditorScreen({ coverResolver, interestRepository, publicListRepository: repository })
 
     await screen.findByRole('heading', { level: 1, name: 'Summer Books' })
-    fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'music' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Open rich composer' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Music' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Kind of Blue' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add list-only item' }))
+    fireEvent.change(screen.getByLabelText('Notes'), { target: { value: '  Listen on vinyl.  ' } })
 
-    expect(await screen.findByText('Saved. The public list now shows the list-only item.')).toBeInTheDocument()
+    const tagsInput = screen.getByLabelText('Tags')
+
+    fireEvent.change(tagsInput, { target: { value: 'jazz' } })
+    fireEvent.keyDown(tagsInput, { code: 'Enter', key: 'Enter' })
+    fireEvent.click(screen.getByRole('button', { name: 'Find cover' }))
+    await screen.findByRole('img', { name: 'Cover preview' })
+    fireEvent.click(screen.getByRole('button', { name: 'Add rich list-only item' }))
+
+    expect(await screen.findByText('Saved. The public list now shows the rich list-only item.')).toBeInTheDocument()
 
     await waitFor(() => {
       expect(updateManagedList).toHaveBeenCalledWith(expect.objectContaining({
         authenticatedOwnerId: ownerUser.id,
         id: 'list-summer-books',
         items: expect.arrayContaining([
-          expect.objectContaining({ category: 'music', id: 'public-list-only-music-kind-of-blue', tags: [], title: 'Kind of Blue' }),
+          expect.objectContaining({
+            category: 'music',
+            coverImageUrl: 'https://images.example.com/kind-of-blue.jpg',
+            coverMatchedTitle: 'Kind of Blue',
+            coverProvider: 'musicbrainz',
+            id: 'public-list-only-music-kind-of-blue',
+            notes: 'Listen on vinyl.',
+            tags: ['jazz'],
+            title: 'Kind of Blue',
+          }),
         ]),
       }))
     })
@@ -152,7 +178,69 @@ describe('PublicListEditorScreen', () => {
     expect(within(eligibleItems).getByText('Arrival')).toBeInTheDocument()
   })
 
-  it('preserves the prior committed membership when list-only item persistence fails', async () => {
+  it('removes a saved public-list snapshot without deleting or mutating the private interest', async () => {
+    const repository = createInMemoryPublicListRepository([createManagedList()], { ownerId: ownerUser.id })
+    const updateManagedList = vi.spyOn(repository, 'updateManagedList')
+    const interestRepository = createMockInterestRepository(createCurrentUserItems())
+    const createItem = vi.spyOn(interestRepository, 'createItem')
+    const updateItem = vi.spyOn(interestRepository, 'updateItem')
+    const deleteItem = vi.spyOn(interestRepository, 'deleteItem')
+
+    renderEditorScreen({ interestRepository, publicListRepository: repository })
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove from list: Refactoring' }))
+
+    expect(await screen.findByText('Removed. The public list no longer shows that item.')).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(updateManagedList).toHaveBeenCalledWith(expect.objectContaining({
+        authenticatedOwnerId: ownerUser.id,
+        id: 'list-summer-books',
+        items: [],
+      }))
+    })
+
+    expect(screen.getByText('No interests saved yet')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add to list: Refactoring' })).toBeInTheDocument()
+    expect(createItem).not.toHaveBeenCalled()
+    expect(updateItem).not.toHaveBeenCalled()
+    expect(deleteItem).not.toHaveBeenCalled()
+    await expect(interestRepository.listItems()).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'book-refactoring', title: 'Refactoring' }),
+    ]))
+  })
+
+  it('preserves the prior committed membership when saved public-list snapshot removal fails', async () => {
+    const currentList = createManagedList()
+    const repository: PublicListRepository = {
+      createManagedList: vi.fn(),
+      getByOwnerAndSlug: vi.fn(async () => null),
+      getManagedList: vi.fn(async () => currentList),
+      listMine: vi.fn(async () => []),
+      publishList: vi.fn(),
+      updateManagedList: vi.fn<PublicListRepository['updateManagedList']>(async () => ({ error: { type: 'operation_failed' }, ok: false })),
+    }
+    const interestRepository = createMockInterestRepository(createCurrentUserItems())
+    const updateItem = vi.spyOn(interestRepository, 'updateItem')
+    const deleteItem = vi.spyOn(interestRepository, 'deleteItem')
+
+    renderEditorScreen({ interestRepository, publicListRepository: repository })
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove from list: Refactoring' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('We could not remove that item. The public list was left unchanged.')
+
+    const savedItems = screen.getByRole('list', { name: 'Saved public list interests' })
+
+    expect(within(savedItems).getByText('Refactoring')).toBeInTheDocument()
+    expect(repository.updateManagedList).toHaveBeenCalledWith(expect.objectContaining({
+      items: [],
+    }))
+    expect(updateItem).not.toHaveBeenCalled()
+    expect(deleteItem).not.toHaveBeenCalled()
+  })
+
+  it('preserves the prior committed membership when rich list-only item persistence fails', async () => {
     const currentList = createManagedList()
     const repository: PublicListRepository = {
       createManagedList: vi.fn(),
@@ -166,15 +254,20 @@ describe('PublicListEditorScreen', () => {
     renderEditorScreen({ publicListRepository: repository })
 
     await screen.findByRole('heading', { level: 1, name: 'Summer Books' })
+    fireEvent.click(screen.getByRole('button', { name: 'Open rich composer' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Books' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Dune' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Add list-only item' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add rich list-only item' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('We could not save that list-only item. The public list was left unchanged.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('We could not save that rich list-only item. The public list was left unchanged.')
 
-    const savedItems = screen.getByRole('list', { name: 'Saved public list interests' })
-
-    expect(within(savedItems).getByText('Refactoring')).toBeInTheDocument()
-    expect(within(savedItems).queryByText('Dune')).not.toBeInTheDocument()
+    expect(screen.getByText('Refactoring')).toBeInTheDocument()
+    expect(repository.updateManagedList).toHaveBeenCalledWith(expect.objectContaining({
+      items: expect.arrayContaining([expect.objectContaining({ title: 'Dune' })]),
+    }))
+    await expect(repository.getManagedList(ownerUser.id, currentList.id)).resolves.toMatchObject({
+      items: [expect.objectContaining({ title: 'Refactoring' })],
+    })
   })
 })
 

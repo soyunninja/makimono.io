@@ -76,7 +76,7 @@ Copy and save failures MUST preserve committed public-list membership and MUST N
 
 ### Requirement: Interest Membership Composition
 
-Owners MUST be able to add existing current-user interests and rich list-only item snapshots to a managed public list through the editor/detail surface. The system MUST NOT require or perform wholesale dashboard sharing as the primary way to compose the list.
+Owners MUST be able to add existing current-user interests and rich list-only item snapshots to a managed public list through the editor/detail surface. Owners MUST be able to remove saved public-list item snapshots from the managed public list. Removal MUST persist only the next public-list membership through `updateManagedList({ items: nextItems })` and MUST NOT delete or mutate any private dashboard interest. The system MUST NOT require or perform wholesale dashboard sharing as the primary way to compose the list.
 (Previously: Owners could add eligible interests/items, but rich list-only snapshots and existing-current-user parity were not specified.)
 
 #### Scenario: Add owned or available interest through editor
@@ -93,9 +93,25 @@ Owners MUST be able to add existing current-user interests and rich list-only it
 - THEN the system MUST show an error state
 - AND MUST preserve the prior committed list membership.
 
+#### Scenario: Remove saved public-list item
+
+- GIVEN an authenticated owner is editing a public list with a saved public-list item snapshot
+- WHEN they remove that saved item from the list
+- THEN the next public-list membership is persisted through `updateManagedList({ items: nextItems })`
+- AND the removed snapshot no longer appears in the public list
+- AND no private dashboard interest is deleted or mutated.
+
+#### Scenario: Remove saved public-list item failure preserves state
+
+- GIVEN an authenticated owner is editing a public list with a saved public-list item snapshot
+- WHEN removal persistence fails
+- THEN the system MUST show an error state
+- AND MUST preserve the prior committed list membership
+- AND no private dashboard interest is deleted or mutated.
+
 ### Requirement: Explicit Slice Exclusions
 
-This slice MUST NOT add social features, collaboration, comments, likes, follows, reactions, feeds, discovery mechanics, analytics, delete/unpublish, or permissions beyond current owner management and auth-gated copy-to-dashboard.
+This slice MUST NOT add social features, collaboration, comments, likes, follows, reactions, feeds, discovery mechanics, analytics, public-list deletion/unpublishing, private dashboard interest deletion, or permissions beyond current owner management and auth-gated copy-to-dashboard.
 (Previously: Import/copy from other users was excluded; this change permits only per-item copy from public lists into the viewer's dashboard.)
 
 #### Scenario: Other-user list remains read-only except copy

@@ -19,10 +19,11 @@ Extract the dashboard add drawer into a target-agnostic rich composer. Dashboard
 
 ```text
 Owner editor -> Rich composer values -> PublicListItem snapshot -> updateManagedList(items)
+Owner editor -> remove saved PublicListItem snapshot -> updateManagedList(items)
 Visitor public page -> display mode -> public renderer -> copy action -> InterestRepository.createItem(pending)
 ```
 
-Copy failures never mutate the public list. Editor save failures restore the prior committed list state and show an alert/status message.
+Copy failures never mutate the public list. Editor save/remove failures restore the prior committed list state and show an alert/status message. Removing a saved public-list item mutates only the public-list `items` membership snapshot; it never calls private dashboard interest delete or update operations.
 
 ## Privacy Boundaries
 
@@ -63,14 +64,14 @@ type RichInterestFormValues = {
 
 ## UX / Failure Handling
 
-The public-list editor shows “add rich item” as the same drawer experience as dashboard add. During save, disable submit and keep the committed list visible. On failure, close nothing, show an alert, and leave membership unchanged. Public copy shows login guidance when unauthenticated, pending/success state when authenticated, and a non-destructive error if dashboard persistence fails or a duplicate exists.
+The public-list editor shows “add rich item” as the same drawer experience as dashboard add. During save/remove, disable competing item actions and keep the committed list visible. On failure, close nothing, show an alert, and leave membership unchanged. Public copy shows login guidance when unauthenticated, pending/success state when authenticated, and a non-destructive error if dashboard persistence fails or a duplicate exists.
 
 ## Testing Strategy
 
 | Layer | What to Test | Approach |
 |-------|--------------|----------|
 | Unit | Mapping, cover preservation, duplicate matching, PocketBase empty `items`. | Vitest mapper/repository tests. |
-| Component | Rich public editor drawer, failure rollback, public display modes, copy auth gate. | Testing Library with injected repositories/auth context. |
+| Component | Rich public editor drawer, saved-item removal, failure rollback, public display modes, copy auth gate. | Testing Library with injected repositories/auth context. |
 | Route | Public route remains readable unauthenticated and supports copy UI when auth exists. | Existing route harness plus public page tests. |
 | Verification | Full project health. | `npx pnpm typecheck`, `npx pnpm test`, `npx pnpm build`. |
 
@@ -84,7 +85,7 @@ Use stacked-to-main if the forecast exceeds 400 changed lines: (1) composer extr
 
 ## Non-Goals
 
-No social features, collaboration, delete/unpublish, analytics, new collections, real-time sync, or automatic owner-dashboard creation from list-only items.
+No social features, collaboration, public-list deletion/unpublishing, private dashboard interest deletion from public-list membership edits, analytics, new collections, real-time sync, or automatic owner-dashboard creation from list-only items.
 
 ## Open Questions
 

@@ -34,10 +34,11 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Public Editor Rich Snapshots
 
-- [ ] 2.1 Replace the existing quick minimal list-only form in `src/features/items/public-list-editor-screen.tsx` with the rich composer; do not layer both forms.
-- [ ] 2.2 Persist new rich list-only items through `updateManagedList(items)` only; assert no private dashboard repository write occurs.
-- [ ] 2.3 Add `src/i18n/dictionaries.ts` messages for rich public editor labels, saving, success, and failure states.
-- [ ] 2.4 Extend `src/features/items/public-list-editor-screen.test.tsx` for rich fields, rollback on update failure, and existing-interest add preservation.
+- [x] 2.1 Replace the existing quick minimal list-only form in `src/features/items/public-list-editor-screen.tsx` with the rich composer; do not layer both forms.
+- [x] 2.2 Persist new rich list-only items through `updateManagedList(items)` only; assert no private dashboard repository write occurs.
+- [x] 2.3 Add `src/i18n/dictionaries.ts` messages for rich public editor labels, saving, success, and failure states.
+- [x] 2.4 Extend `src/features/items/public-list-editor-screen.test.tsx` for rich fields, rollback on update failure, and existing-interest add preservation.
+- [x] 2.5 Add saved public-list item removal through `updateManagedList({ items: nextItems })`, including success/failure feedback and tests proving private dashboard interests are not deleted or mutated.
 
 ## Phase 3: Public Page Display Modes
 
