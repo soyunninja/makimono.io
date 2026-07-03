@@ -280,6 +280,7 @@ describe('DashboardScreen', () => {
     }))
     const publicListRepository = {
       getByOwnerAndSlug: vi.fn(),
+      listMine: vi.fn(async () => []),
       publishList,
     } satisfies PublicListRepository
 

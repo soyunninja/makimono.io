@@ -19,6 +19,17 @@ export type PublishPublicListInput = {
   publishedAt?: string
 }
 
+export type PublicListManagementSummary = {
+  id: string
+  ownerNamespace: string
+  slug: string
+  title: string
+  listDate: string
+  description?: string
+  publishedAt: string
+  updatedAt?: string
+}
+
 export type PublicListPublishError =
   | { ownerNamespace: string, slug: string, type: 'slug_collision' }
   | { field: 'ownerNamespace' | 'slug', type: 'invalid_route_part' }
@@ -31,6 +42,22 @@ export type PublicListPublishResult =
 export type PublicListRepository = {
   publishList: (input: PublishPublicListInput) => Promise<PublicListPublishResult>
   getByOwnerAndSlug: (ownerNamespace: string, slug: string) => Promise<PublicList | null>
+  listMine: () => Promise<PublicListManagementSummary[]>
+}
+
+type InMemoryPublicListSeed = PublicList & {
+  ownerId?: string
+  published?: boolean
+}
+
+type InMemoryPublicListRecord = {
+  list: PublicList
+  ownerId: string
+  published: boolean
+}
+
+type CreateInMemoryPublicListRepositoryOptions = {
+  ownerId?: string
 }
 
 export function createPublicListSlugCollisionError(ownerNamespace: string, slug: string): PublicListPublishError {
@@ -41,8 +68,16 @@ export function isPublicListSlugCollisionError(error: PublicListPublishError): e
   return error.type === 'slug_collision'
 }
 
-export function createInMemoryPublicListRepository(initialLists: PublicList[] = []): PublicListRepository {
-  const lists = initialLists.map(clonePublicList)
+export function createInMemoryPublicListRepository(
+  initialLists: InMemoryPublicListSeed[] = [],
+  options: CreateInMemoryPublicListRepositoryOptions = {},
+): PublicListRepository {
+  const currentOwnerId = options.ownerId?.trim() ?? ''
+  const records: InMemoryPublicListRecord[] = initialLists.map((list) => ({
+    list: clonePublicList(list),
+    ownerId: list.ownerId?.trim() ?? '',
+    published: list.published !== false,
+  }))
 
   return {
     async publishList(input) {
@@ -62,7 +97,7 @@ export function createInMemoryPublicListRepository(initialLists: PublicList[] = 
         return { error: { field: 'slug', type: 'invalid_route_part' }, ok: false }
       }
 
-      if (lists.some((list) => list.ownerNamespace === ownerNamespace.value && list.slug === slug.value)) {
+      if (records.some(({ list }) => list.ownerNamespace === ownerNamespace.value && list.slug === slug.value)) {
         return { error: createPublicListSlugCollisionError(ownerNamespace.value, slug.value), ok: false }
       }
 
@@ -78,7 +113,11 @@ export function createInMemoryPublicListRepository(initialLists: PublicList[] = 
         publishedAt: input.publishedAt ?? new Date().toISOString(),
       }
 
-      lists.push(clonePublicList(list))
+      records.push({
+        list: clonePublicList(list),
+        ownerId: input.authenticatedOwnerId.trim(),
+        published: true,
+      })
 
       return { list: clonePublicList(list), ok: true }
     },
@@ -90,9 +129,32 @@ export function createInMemoryPublicListRepository(initialLists: PublicList[] = 
         return null
       }
 
-      const list = lists.find((entry) => entry.ownerNamespace === ownerNamespace.value && entry.slug === slug.value)
+      const record = records.find(({ list }) => list.ownerNamespace === ownerNamespace.value && list.slug === slug.value)
 
-      return list ? clonePublicList(list) : null
+      return record ? clonePublicList(record.list) : null
     },
+    async listMine() {
+      if (!currentOwnerId) {
+        return []
+      }
+
+      return records
+        .filter((record) => record.published && record.ownerId === currentOwnerId)
+        .sort((left, right) => right.list.publishedAt.localeCompare(left.list.publishedAt))
+        .map(({ list }) => mapPublicListManagementSummary(list))
+    },
+  }
+}
+
+function mapPublicListManagementSummary(list: PublicList): PublicListManagementSummary {
+  return {
+    id: list.id,
+    ownerNamespace: list.ownerNamespace,
+    slug: list.slug,
+    title: list.title,
+    listDate: list.listDate,
+    ...(list.description !== undefined ? { description: list.description } : {}),
+    publishedAt: list.publishedAt,
+    ...(list.updatedAt !== undefined ? { updatedAt: list.updatedAt } : {}),
   }
 }

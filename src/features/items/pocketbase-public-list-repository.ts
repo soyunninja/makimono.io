@@ -9,6 +9,7 @@ import {
 } from '@/features/items/public-list-types'
 import {
   createPublicListSlugCollisionError,
+  type PublicListManagementSummary,
   type PublicListRepository,
   type PublishPublicListInput,
 } from '@/features/items/public-list-repository'
@@ -96,6 +97,30 @@ export function mapPocketBasePublicListRecord(
   return clonePublicList(mappedList)
 }
 
+export function mapPocketBasePublicListManagementSummary(record: unknown): PublicListManagementSummary {
+  if (!isRecord(record)) {
+    throw new Error('Invalid PocketBase public list record.')
+  }
+
+  if (record.published !== true) {
+    throw new Error('PocketBase public list record is not published.')
+  }
+
+  const description = readOptionalString(record, 'description')
+  const updatedAt = readOptionalString(record, 'updated')
+
+  return {
+    id: readRequiredString(record, 'id'),
+    ownerNamespace: readRequiredString(record, 'ownerNamespace'),
+    slug: readRequiredString(record, 'slug'),
+    title: readRequiredString(record, 'title'),
+    listDate: readRequiredString(record, 'listDate'),
+    ...(description ? { description } : {}),
+    publishedAt: readRequiredString(record, 'publishedAt'),
+    ...(updatedAt ? { updatedAt } : {}),
+  }
+}
+
 export function createPocketBasePublicListRepository({
   collection,
   ownerId,
@@ -148,6 +173,20 @@ export function createPocketBasePublicListRepository({
       const record = records[0]
 
       return record ? mapPocketBasePublicListRecord(record, { resolveOwnerAvatarUrl }) : null
+    },
+    async listMine() {
+      const normalizedOwnerId = ownerId.trim()
+
+      if (!normalizedOwnerId) {
+        return []
+      }
+
+      const records = await collection.getFullList({
+        filter: `published = true && owner = ${quotePocketBaseFilterValue(normalizedOwnerId)}`,
+        sort: '-publishedAt',
+      })
+
+      return records.map(mapPocketBasePublicListManagementSummary)
     },
   }
 }

@@ -29,6 +29,7 @@ function TestPublicListRoute() {
 async function renderPublicListRoute(pathname: string, lists: PublicList[] = [createPublicList()]) {
   testRepository = {
     getByOwnerAndSlug: vi.fn(async (username, slug) => lists.find((list) => list.ownerNamespace === username && list.slug === slug) ?? null),
+    listMine: vi.fn(async () => []),
     publishList: vi.fn(),
   }
   const router = createRouter({ routeTree, history: createMemoryHistory({ initialEntries: [pathname] }) })
