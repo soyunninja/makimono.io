@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { AdaptiveAddFlow, AdaptiveEditFlow } from '@/features/items/add-flow'
+import { AdaptiveAddFlow, AdaptiveEditFlow, RichInterestComposer } from '@/features/items/add-flow'
 import type { InterestCoverResolver } from '@/features/items/cover-metadata'
 import { createMockInterestRepository, getAppInterestRepository, resetAppInterestRepository } from '@/features/items/mock-repository'
 import type { InterestItemCoverMetadata } from '@/features/items/types'
@@ -25,6 +25,45 @@ afterEach(() => {
 })
 
 describe('AdaptiveAddFlow', () => {
+  it('submits reusable rich composer values without writing to a repository directly', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    const coverResolver: InterestCoverResolver = vi.fn().mockResolvedValue({
+      coverImageUrl: 'https://images.example.com/dune.jpg',
+      coverMatchedTitle: 'Dune',
+      coverProvider: 'open-library',
+    })
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <RichInterestComposer coverResolver={coverResolver} isDesktop={false} onSubmit={onSubmit} />
+      </LocaleProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Books' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: '  Dune  ' } })
+    fireEvent.change(screen.getByLabelText('Notes'), { target: { value: '  Keep the new translation.  ' } })
+
+    const tagsInput = screen.getByLabelText('Tags')
+
+    fireEvent.change(tagsInput, { target: { value: 'classic' } })
+    fireEvent.keyDown(tagsInput, { code: 'Enter', key: 'Enter' })
+    fireEvent.click(screen.getByRole('button', { name: 'Find cover' }))
+    await screen.findByRole('img', { name: 'Cover preview' })
+    fireEvent.click(screen.getByRole('button', { name: 'Add interest' }))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith({
+        category: 'books',
+        title: 'Dune',
+        notes: 'Keep the new translation.',
+        tags: ['classic'],
+        coverImageUrl: 'https://images.example.com/dune.jpg',
+        coverMatchedTitle: 'Dune',
+        coverProvider: 'open-library',
+      })
+    })
+  })
+
   it('keeps only the common fields visible when the selected category changes on desktop', async () => {
     render(
       <LocaleProvider initialLocale="en">

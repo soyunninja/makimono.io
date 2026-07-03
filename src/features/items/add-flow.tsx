@@ -25,6 +25,23 @@ type AdaptiveAddFlowProps = {
   onRequestClose?: () => void
 }
 
+export type RichInterestFormValues = {
+  category: Category
+  title: string
+  notes?: string
+  tags: string[]
+  coverImageUrl?: string
+  coverProvider?: CoverProvider
+  coverMatchedTitle?: string
+}
+
+type RichInterestComposerProps = {
+  coverResolver?: InterestCoverResolver
+  isDesktop?: boolean
+  onRequestClose?: () => void
+  onSubmit: (values: RichInterestFormValues) => Promise<void> | void
+}
+
 type AdaptiveEditFlowProps = {
   itemId: string
   coverResolver?: InterestCoverResolver
@@ -307,13 +324,12 @@ function InterestDetailsFields({ title, tags, notes, categoryFields, coverFields
   )
 }
 
-export function AdaptiveAddFlow({
+export function RichInterestComposer({
   coverResolver = defaultCoverResolver,
-  repository = getAppInterestRepository(),
   isDesktop,
-  onCreated,
   onRequestClose,
-}: AdaptiveAddFlowProps) {
+  onSubmit,
+}: RichInterestComposerProps) {
   const { locale, t } = useLocale()
   const resolvedIsDesktop = useDesktopBreakpoint(isDesktop)
   const categories = useMemo(() => listCategoryMetadata(locale), [locale])
@@ -403,7 +419,7 @@ export function AdaptiveAddFlow({
 
     try {
       const trimmedTitle = title.trim()
-      const createdItem = await repository.createItem({
+      await onSubmit({
         category: selectedCategory,
         title: trimmedTitle,
         notes: notes.trim() ? notes.trim() : undefined,
@@ -412,7 +428,6 @@ export function AdaptiveAddFlow({
       })
 
       setIsSubmitting(false)
-      await onCreated?.(createdItem)
     }
     catch (error) {
       setIsSubmitting(false)
@@ -509,6 +524,27 @@ export function AdaptiveAddFlow({
         {drawerFooter}
       </DrawerContent>
     </Drawer>
+  )
+}
+
+export function AdaptiveAddFlow({
+  coverResolver = defaultCoverResolver,
+  repository = getAppInterestRepository(),
+  isDesktop,
+  onCreated,
+  onRequestClose,
+}: AdaptiveAddFlowProps) {
+  return (
+    <RichInterestComposer
+      coverResolver={coverResolver}
+      isDesktop={isDesktop}
+      onRequestClose={onRequestClose}
+      onSubmit={async (values) => {
+        const createdItem = await repository.createItem(values)
+
+        await onCreated?.(createdItem)
+      }}
+    />
   )
 }
 

@@ -28,9 +28,9 @@ Chain strategy: stacked-to-main
 
 ## Phase 1: Composer And Mapper Foundation
 
-- [ ] 1.1 Extract `RichInterestFormValues` and reusable rich composer from `src/features/items/add-flow.tsx` or create `src/features/items/rich-interest-composer.tsx`; keep `AdaptiveAddFlow` dashboard behavior unchanged.
-- [ ] 1.2 Update `src/features/items/public-list-item-mapper.ts` with `RichInterestFormValues -> PublicListItem`, `PublicListItem -> CreateInterestItemInput`, and duplicate-match helpers.
-- [ ] 1.3 Add/extend mapper tests for trim behavior, tags, cover metadata preservation, pending copy input, and duplicate matching.
+- [x] 1.1 Extract `RichInterestFormValues` and reusable rich composer from `src/features/items/add-flow.tsx` or create `src/features/items/rich-interest-composer.tsx`; keep `AdaptiveAddFlow` dashboard behavior unchanged.
+- [x] 1.2 Update `src/features/items/public-list-item-mapper.ts` with `RichInterestFormValues -> PublicListItem`, `PublicListItem -> CreateInterestItemInput`, and duplicate-match helpers.
+- [x] 1.3 Add/extend mapper tests for trim behavior, tags, cover metadata preservation, pending copy input, and duplicate matching.
 
 ## Phase 2: Public Editor Rich Snapshots
 
