@@ -29,6 +29,12 @@
 
 ## Verification
 
+- Final verification on 2026-07-03:
+  - `node -e "JSON.parse(require('fs').readFileSync('docs/pocketbase-collections.json','utf8')); console.log('pocketbase collections json ok')"` — passed.
+  - `npx pnpm typecheck` — passed.
+  - `npx pnpm test` — passed, 32 files / 257 tests.
+  - `npx pnpm build` — passed.
+  - Live PocketBase `public_lists` schema/rule verification — passed: collection exists with 14 fields; `owner` relation is hidden; `ownerNamespace` and `slug` use `^[a-z0-9]+(?:-[a-z0-9]+)*$`; unique index `idx_public_lists_owner_namespace_slug` exists; lookup index `idx_public_lists_published_lookup` exists; public read rule is `published = true`.
 - `node -e "JSON.parse(require('fs').readFileSync('docs/pocketbase-collections.json','utf8')); console.log('pocketbase collections json ok')"` — passed.
 - `npx pnpm test src/features/items/public-list-types.test.ts src/features/items/public-list-repository.test.ts src/features/items/pocketbase-public-list-repository.test.ts src/features/auth/public-profile.test.ts` — passed, 17 tests.
 - `npx pnpm test src/test/routes/public-list-route.test.tsx src/lib/pocketbase.test.ts` — passed, 15 tests.
@@ -48,7 +54,7 @@
 ## Notes and Risks
 
 - The minimal PocketBase client now forwards `filter` options and can serve unauthenticated public list reads outside browser-only auth flows.
-- `docs/pocketbase-collections.json` stores schema/rule evidence only; applying those rules to a live PocketBase instance remains an operational step.
+- `docs/pocketbase-collections.json` stores schema/rule evidence, and the live PocketBase `public_lists` collection/rules were applied and verified without printing secrets.
 - The dashboard publish entry point publishes the currently visible filtered dashboard items; it does not add per-item selection, import, copy, or public editing behavior.
 
 ## Next Slice
