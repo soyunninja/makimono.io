@@ -16,9 +16,12 @@ function createDeferred<T>() {
 
 function createRepository(listMine: PublicListRepository['listMine']): PublicListRepository {
   return {
+    createManagedList: vi.fn<PublicListRepository['createManagedList']>(),
     getByOwnerAndSlug: vi.fn(async () => null),
+    getManagedList: vi.fn<PublicListRepository['getManagedList']>(),
     listMine,
     publishList: vi.fn<PublicListRepository['publishList']>(async () => ({ error: { type: 'unauthenticated' }, ok: false })),
+    updateManagedList: vi.fn<PublicListRepository['updateManagedList']>(),
   }
 }
 
@@ -52,14 +55,15 @@ describe('MyPublicListsScreen', () => {
 
     deferred.resolve([])
 
-    expect(await screen.findByText('No public lists published yet')).toBeInTheDocument()
+    expect(await screen.findByText('No public lists created yet')).toBeInTheDocument()
   })
 
   it('shows an empty state when no published lists are returned', async () => {
     renderScreen(createRepository(vi.fn(async () => [])))
 
-    expect(await screen.findByText('No public lists published yet')).toBeInTheDocument()
-    expect(screen.getByText('Publish a list when you are ready to make it visible from your public profile.')).toBeInTheDocument()
+    expect(await screen.findByText('No public lists created yet')).toBeInTheDocument()
+    expect(screen.getByText('Create a public list and add interests to it when you are ready.')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Create public list' })[0]).toHaveAttribute('href', '/dashboard/public-lists/new')
   })
 
   it('shows a generic error state without private diagnostics', async () => {
@@ -80,6 +84,7 @@ describe('MyPublicListsScreen', () => {
     expect(screen.getByText('Summer Books')).toBeInTheDocument()
     expect(screen.getByText('No description')).toBeInTheDocument()
     expect(screen.getByText('/u/mariano/lista/summer-books')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Manage list' })).toHaveAttribute('href', '/dashboard/public-lists/list-summer-books')
     expect(screen.getByRole('link', { name: 'Open public URL' })).toHaveAttribute('href', '/u/mariano/lista/summer-books')
   })
 
@@ -87,7 +92,7 @@ describe('MyPublicListsScreen', () => {
     renderScreen(createRepository(vi.fn(async () => publicLists)))
 
     expect(await screen.findByText('Summer Books')).toBeInTheDocument()
-    for (const name of [/compose|composer|create list/i, /import|copy/i, /edit/i, /comment|like|follow|share/i, /draft|unpublish|delete/i]) {
+    for (const name of [/compose|composer/i, /import|copy/i, /edit/i, /comment|like|follow|share/i, /draft|unpublish|delete/i]) {
       expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
     }
     expect(screen.queryByRole('link', { name: /import|copy|edit|draft|unpublish|delete/i })).not.toBeInTheDocument()

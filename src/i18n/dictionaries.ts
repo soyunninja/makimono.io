@@ -125,6 +125,8 @@ export type Dictionary = {
   myPublicLists: {
     title: string
     loading: string
+    createAction: string
+    manageAction: string
     emptyTitle: string
     emptyDescription: string
     errorTitle: string
@@ -132,6 +134,42 @@ export type Dictionary = {
     descriptionFallback: string
     urlLabel: string
     urlAction: string
+    createTitle: string
+    createDescription: string
+    createTitleLabel: string
+    createSlugLabel: string
+    createSlugPlaceholder: string
+    createDateLabel: string
+    createDescriptionLabel: string
+    createSubmitAction: string
+    createSubmittingAction: string
+    createPending: string
+    createSuccess: string
+    createValidationError: string
+    createErrorUnauthenticated: string
+    createErrorSlugCollision: string
+    createErrorInvalid: string
+    createErrorGeneric: string
+    editorTitle: string
+    editorLoading: string
+    editorErrorTitle: string
+    editorErrorDescription: string
+    editorDeniedTitle: string
+    editorDeniedDescription: string
+    editorItemsTitle: string
+    editorItemsDescription: string
+    editorSavedItemsLabel: string
+    editorEmptyTitle: string
+    editorEmptyDescription: string
+    editorEligibleTitle: string
+    editorEligibleDescription: string
+    editorEligibleItemsLabel: string
+    editorNoEligibleItems: string
+    editorAddAction: string
+    editorAddingAction: string
+    editorAddPending: string
+    editorAddSuccess: string
+    editorAddError: string
   }
   archive: {
     eyebrow: string
@@ -379,13 +417,51 @@ export const dictionaries: Record<Locale, Dictionary> = {
     myPublicLists: {
       title: 'My public lists',
       loading: 'Loading your public lists…',
-      emptyTitle: 'No public lists published yet',
-      emptyDescription: 'Publish a list when you are ready to make it visible from your public profile.',
+      createAction: 'Create public list',
+      manageAction: 'Manage list',
+      emptyTitle: 'No public lists created yet',
+      emptyDescription: 'Create a public list and add interests to it when you are ready.',
       errorTitle: 'Could not load your public lists',
       errorDescription: 'Check your session and try again. Private diagnostic details are not shown here.',
       descriptionFallback: 'No description',
       urlLabel: 'Public route',
       urlAction: 'Open public URL',
+      createTitle: 'Create public list',
+      createDescription: 'Start an owner-managed public list. You can add interests from the list editor after creation.',
+      createTitleLabel: 'Public list title',
+      createSlugLabel: 'Public URL slug',
+      createSlugPlaceholder: 'summer-books',
+      createDateLabel: 'List date',
+      createDescriptionLabel: 'Description',
+      createSubmitAction: 'Create list',
+      createSubmittingAction: 'Creating list…',
+      createPending: 'Creating your public list…',
+      createSuccess: 'Public list created. Opening the list manager…',
+      createValidationError: 'Add a title, URL slug, and list date before creating the list.',
+      createErrorUnauthenticated: 'Sign in before creating a public list.',
+      createErrorSlugCollision: 'That public URL slug is already used for your profile.',
+      createErrorInvalid: 'Use a valid public profile namespace and slug.',
+      createErrorGeneric: 'We could not create the public list. Try again in a moment.',
+      editorTitle: 'Public list manager',
+      editorLoading: 'Loading your public list…',
+      editorErrorTitle: 'Could not load the public list manager',
+      editorErrorDescription: 'Check your session and try again. Private diagnostic details are not shown here.',
+      editorDeniedTitle: 'Public list editor unavailable',
+      editorDeniedDescription: 'This list does not exist for your account, or you do not have owner access to edit it.',
+      editorItemsTitle: 'Saved interests',
+      editorItemsDescription: 'These interests are already committed to the read-only public list.',
+      editorSavedItemsLabel: 'Saved public list interests',
+      editorEmptyTitle: 'No interests saved yet',
+      editorEmptyDescription: 'Add an eligible interest from your account to start composing this public list.',
+      editorEligibleTitle: 'Add from your interests',
+      editorEligibleDescription: 'Only interests available through your current account can be added here.',
+      editorEligibleItemsLabel: 'Eligible interests from your account',
+      editorNoEligibleItems: 'No eligible interests are available to add.',
+      editorAddAction: 'Add to list',
+      editorAddingAction: 'Adding…',
+      editorAddPending: 'Saving the selected interest to this public list…',
+      editorAddSuccess: 'Saved. The public list now shows the added interest.',
+      editorAddError: 'We could not save that interest. The public list was left unchanged.',
     },
     archive: {
       eyebrow: 'Archive',
@@ -693,13 +769,51 @@ export const dictionaries: Record<Locale, Dictionary> = {
     myPublicLists: {
       title: 'Mis listas públicas',
       loading: 'Cargando tus listas públicas…',
-      emptyTitle: 'Todavía no hay listas públicas publicadas',
-      emptyDescription: 'Publica una lista cuando quieras hacerla visible desde tu perfil público.',
+      createAction: 'Crear lista pública',
+      manageAction: 'Gestionar lista',
+      emptyTitle: 'Todavía no has creado listas públicas',
+      emptyDescription: 'Crea una lista pública y añade intereses cuando quieras.',
       errorTitle: 'No se han podido cargar tus listas públicas',
       errorDescription: 'Revisa tu sesión e inténtalo de nuevo. Aquí no se muestran detalles privados de diagnóstico.',
       descriptionFallback: 'Sin descripción',
       urlLabel: 'Ruta pública',
       urlAction: 'Abrir URL pública',
+      createTitle: 'Crear lista pública',
+      createDescription: 'Empieza una lista pública gestionada por ti. Podrás añadir intereses desde el editor después de crearla.',
+      createTitleLabel: 'Título de la lista pública',
+      createSlugLabel: 'Slug de la URL pública',
+      createSlugPlaceholder: 'libros-verano',
+      createDateLabel: 'Fecha de la lista',
+      createDescriptionLabel: 'Descripción',
+      createSubmitAction: 'Crear lista',
+      createSubmittingAction: 'Creando lista…',
+      createPending: 'Creando tu lista pública…',
+      createSuccess: 'Lista pública creada. Abriendo el gestor de la lista…',
+      createValidationError: 'Añade título, slug de URL y fecha antes de crear la lista.',
+      createErrorUnauthenticated: 'Inicia sesión antes de crear una lista pública.',
+      createErrorSlugCollision: 'Ese slug de URL pública ya se usa en tu perfil.',
+      createErrorInvalid: 'Usa un espacio de perfil público y un slug válidos.',
+      createErrorGeneric: 'No hemos podido crear la lista pública. Inténtalo de nuevo en un momento.',
+      editorTitle: 'Gestor de lista pública',
+      editorLoading: 'Cargando tu lista pública…',
+      editorErrorTitle: 'No se ha podido cargar el gestor de la lista pública',
+      editorErrorDescription: 'Revisa tu sesión e inténtalo de nuevo. Aquí no se muestran detalles privados de diagnóstico.',
+      editorDeniedTitle: 'Editor de lista pública no disponible',
+      editorDeniedDescription: 'Esta lista no existe para tu cuenta, o no tienes acceso de propietario para editarla.',
+      editorItemsTitle: 'Intereses guardados',
+      editorItemsDescription: 'Estos intereses ya están guardados en la lista pública de solo lectura.',
+      editorSavedItemsLabel: 'Intereses guardados en la lista pública',
+      editorEmptyTitle: 'Todavía no hay intereses guardados',
+      editorEmptyDescription: 'Añade un interés elegible de tu cuenta para empezar a componer esta lista pública.',
+      editorEligibleTitle: 'Añadir desde tus intereses',
+      editorEligibleDescription: 'Aquí solo puedes añadir intereses disponibles desde tu cuenta actual.',
+      editorEligibleItemsLabel: 'Intereses elegibles de tu cuenta',
+      editorNoEligibleItems: 'No hay intereses elegibles para añadir.',
+      editorAddAction: 'Añadir a la lista',
+      editorAddingAction: 'Añadiendo…',
+      editorAddPending: 'Guardando el interés seleccionado en esta lista pública…',
+      editorAddSuccess: 'Guardado. La lista pública ya muestra el interés añadido.',
+      editorAddError: 'No hemos podido guardar ese interés. La lista pública no ha cambiado.',
     },
     archive: {
       eyebrow: 'Archivo',

@@ -279,9 +279,12 @@ describe('DashboardScreen', () => {
       ok: true,
     }))
     const publicListRepository = {
+      createManagedList: vi.fn<PublicListRepository['createManagedList']>(),
       getByOwnerAndSlug: vi.fn(),
+      getManagedList: vi.fn<PublicListRepository['getManagedList']>(),
       listMine: vi.fn(async () => []),
       publishList,
+      updateManagedList: vi.fn<PublicListRepository['updateManagedList']>(),
     } satisfies PublicListRepository
 
     render(

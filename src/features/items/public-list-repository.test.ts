@@ -3,15 +3,25 @@ import { describe, expect, it } from 'vitest'
 import {
   createInMemoryPublicListRepository,
   isPublicListSlugCollisionError,
+  type ManagedPublicListCreateInput,
   type PublishPublicListInput,
 } from '@/features/items/public-list-repository'
+import { appendPublicListItemSnapshot, mapInterestItemToPublicListItem } from '@/features/items/public-list-item-mapper'
 import type { PublicList } from '@/features/items/public-list-types'
+import type { InterestItem } from '@/features/items/types'
 
 describe('PublicListRepository boundary', () => {
   it('exposes only publish and owner-plus-slug read contracts', () => {
     const repository = createInMemoryPublicListRepository()
 
-    expect(Object.keys(repository).sort()).toEqual(['getByOwnerAndSlug', 'listMine', 'publishList'])
+    expect(Object.keys(repository).sort()).toEqual([
+      'createManagedList',
+      'getByOwnerAndSlug',
+      'getManagedList',
+      'listMine',
+      'publishList',
+      'updateManagedList',
+    ])
     expect(repository).not.toHaveProperty('copyList')
     expect(repository).not.toHaveProperty('importList')
     expect(repository).not.toHaveProperty('updateItem')
@@ -160,7 +170,109 @@ describe('PublicListRepository boundary', () => {
       ok: false,
     })
   })
+
+  it('creates and loads managed lists only for the authenticated owner', async () => {
+    const repository = createInMemoryPublicListRepository([], { ownerId: 'user-private' })
+
+    const created = await repository.createManagedList(createManagedInput({ slug: 'My Draft List' }))
+
+    expect(created).toMatchObject({
+      list: {
+        items: [],
+        ownerNamespace: 'ana',
+        slug: 'my-draft-list',
+      },
+      ok: true,
+    })
+    await expect(repository.getManagedList('user-private', 'ana-my-draft-list')).resolves.toMatchObject({ slug: 'my-draft-list' })
+    await expect(repository.getManagedList('other-user', 'ana-my-draft-list')).resolves.toBeNull()
+  })
+
+  it('updates managed lists without mutating on owner mismatch or slug collision', async () => {
+    const repository = createInMemoryPublicListRepository([
+      createPublicListSeed({ id: 'current-list', ownerId: 'user-private', slug: 'current-list' }),
+      createPublicListSeed({ id: 'existing-list', ownerId: 'user-private', slug: 'existing-list' }),
+      createPublicListSeed({ id: 'other-list', ownerId: 'other-user', slug: 'other-list' }),
+    ], { ownerId: 'user-private' })
+
+    await expect(repository.updateManagedList({
+      authenticatedOwnerId: 'other-user',
+      id: 'current-list',
+      title: 'Blocked',
+    })).resolves.toEqual({ error: { type: 'unauthenticated' }, ok: false })
+    await expect(repository.updateManagedList({
+      authenticatedOwnerId: 'user-private',
+      id: 'other-list',
+      title: 'Blocked',
+    })).resolves.toEqual({ error: { type: 'owner_mismatch' }, ok: false })
+    await expect(repository.updateManagedList({
+      authenticatedOwnerId: 'user-private',
+      id: 'current-list',
+      slug: 'existing-list',
+    })).resolves.toEqual({
+      error: { ownerNamespace: 'ana', slug: 'existing-list', type: 'slug_collision' },
+      ok: false,
+    })
+    await expect(repository.getManagedList('user-private', 'current-list')).resolves.toMatchObject({
+      slug: 'current-list',
+      title: 'Summer Books',
+    })
+  })
+
+  it('preserves committed items when a managed update fails validation', async () => {
+    const repository = createInMemoryPublicListRepository([
+      createPublicListSeed({ id: 'current-list', ownerId: 'user-private' }),
+    ], { ownerId: 'user-private' })
+
+    await expect(repository.updateManagedList({
+      authenticatedOwnerId: 'user-private',
+      id: 'current-list',
+      items: [],
+      slug: '!!!',
+    })).resolves.toEqual({ error: { field: 'slug', type: 'invalid_route_part' }, ok: false })
+    await expect(repository.getManagedList('user-private', 'current-list')).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: 'item-1' })],
+    })
+  })
+
+  it('maps eligible interest items to append-only public snapshots without duplicates', () => {
+    const item = createInterestItem()
+    const snapshot = mapInterestItemToPublicListItem(item)
+    const existingItems = [snapshot]
+
+    item.title = 'Private mutation after snapshot'
+    item.tags.push('private-mutation')
+
+    expect(snapshot).toEqual({
+      id: 'item-2',
+      category: 'books',
+      title: 'Domain-Driven Design',
+      notes: 'Public note candidate.',
+      tags: ['architecture'],
+      coverImageUrl: 'https://images.example.com/ddd.jpg',
+      coverProvider: 'open-library',
+      coverMatchedTitle: 'Domain-Driven Design',
+    })
+    expect(appendPublicListItemSnapshot(existingItems, item)).toEqual(existingItems)
+    expect(appendPublicListItemSnapshot([], item)).toEqual([{ ...snapshot, title: 'Private mutation after snapshot', tags: ['architecture', 'private-mutation'] }])
+  })
 })
+
+function createManagedInput(overrides: Partial<ManagedPublicListCreateInput> = {}): ManagedPublicListCreateInput {
+  const input = createPublishInput()
+
+  return {
+    authenticatedOwnerId: input.authenticatedOwnerId,
+    owner: input.owner,
+    ownerNamespace: input.ownerNamespace,
+    slug: input.slug,
+    title: input.title,
+    listDate: input.listDate,
+    description: input.description,
+    publishedAt: input.publishedAt,
+    ...overrides,
+  }
+}
 
 function createPublishInput(overrides: Partial<Pick<PublishPublicListInput, 'authenticatedOwnerId' | 'ownerNamespace' | 'slug'>> = {}): PublishPublicListInput {
   return {
@@ -213,5 +325,20 @@ function createPublicListSeed(overrides: Partial<PublicList & { ownerId: string,
     updatedAt: '2026-07-03T10:05:00.000Z',
     published: true,
     ...overrides,
+  }
+}
+
+function createInterestItem(): InterestItem {
+  return {
+    id: 'item-2',
+    category: 'books',
+    title: 'Domain-Driven Design',
+    status: 'pending',
+    notes: 'Public note candidate.',
+    tags: ['architecture'],
+    coverImageUrl: 'https://images.example.com/ddd.jpg',
+    coverProvider: 'open-library',
+    coverMatchedTitle: 'Domain-Driven Design',
+    createdAt: '2026-07-03T09:00:00.000Z',
   }
 }

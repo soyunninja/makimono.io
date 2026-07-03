@@ -16,6 +16,8 @@ import { DashboardAddRoutePage } from '@/routes/dashboard.add'
 import { DashboardAuditRoutePage } from '@/routes/dashboard.audit'
 import { DashboardArchiveRoutePage } from '@/routes/dashboard.archive'
 import { DashboardEditRoutePage } from '@/routes/dashboard.edit.$itemId'
+import { DashboardPublicListEditorRoutePage } from '@/routes/dashboard.public-lists.$listId'
+import { DashboardPublicListCreateRoutePage } from '@/routes/dashboard.public-lists.new'
 import { DashboardPublicListsRoutePage } from '@/routes/dashboard.public-lists'
 import { DashboardSettingsRoutePage } from '@/routes/dashboard.settings'
 import { DashboardSuggestRoutePage } from '@/routes/dashboard.suggest'
@@ -40,11 +42,13 @@ const pocketBaseMock = vi.hoisted(() => ({
   },
   enabled: false,
   publicListRecords: [] as unknown[],
+  interestRecords: [] as unknown[],
 }))
 
 vi.mock('@/lib/pocketbase', () => ({
   getPocketBaseClient: () => pocketBaseMock.client,
   getPocketBaseErrorMessage: (_error: unknown, fallbackMessage: string) => fallbackMessage,
+  getPocketBaseFileUrl: () => null,
   isPocketBaseEnabled: () => pocketBaseMock.enabled,
 }))
 
@@ -110,6 +114,18 @@ const dashboardPublicListsRoute = createRoute({
   component: DashboardPublicListsRoutePage,
 })
 
+const dashboardPublicListCreateRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: '/public-lists/new',
+  component: DashboardPublicListCreateRoutePage,
+})
+
+const dashboardPublicListEditorRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: '/public-lists/$listId',
+  component: DashboardPublicListEditorRoutePage,
+})
+
 const dashboardEditRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: '/edit/$itemId',
@@ -122,6 +138,8 @@ const routeTree = rootRoute.addChildren([
     dashboardSuggestRoute,
     dashboardArchiveRoute,
     dashboardAuditRoute,
+    dashboardPublicListCreateRoute,
+    dashboardPublicListEditorRoute,
     dashboardPublicListsRoute,
     dashboardSettingsRoute,
     dashboardEditRoute,
@@ -129,7 +147,7 @@ const routeTree = rootRoute.addChildren([
 ])
 
 async function renderRoute(
-  pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive' | '/dashboard/audit' | '/dashboard/public-lists' | '/dashboard/settings' | '/dashboard/edit/movie-arrival',
+  pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive' | '/dashboard/audit' | '/dashboard/public-lists' | '/dashboard/public-lists/new' | '/dashboard/public-lists/list-public-stack' | '/dashboard/settings' | '/dashboard/edit/movie-arrival',
   options: { withPocketBaseAuthProvider?: boolean } = {},
 ) {
   shouldUsePocketBaseAuthProvider = options.withPocketBaseAuthProvider ?? false
@@ -186,11 +204,23 @@ beforeEach(() => {
     collection: vi.fn((collectionName: string) => ({
       authWithPassword: vi.fn(),
       create: vi.fn(),
-      getFullList: vi.fn(async () => (collectionName === 'public_lists' ? pocketBaseMock.publicListRecords : [])),
+      getFullList: vi.fn(async (options?: { filter?: string }) => {
+        if (collectionName === 'public_lists') {
+          return pocketBaseMock.publicListRecords.filter((record) => matchesPublicListFilter(record, options?.filter))
+        }
+
+        if (collectionName === 'interests') {
+          return pocketBaseMock.interestRecords
+        }
+
+        return []
+      }),
+      update: vi.fn(),
     })),
   }
   shouldUsePocketBaseAuthProvider = false
   pocketBaseMock.publicListRecords = []
+  pocketBaseMock.interestRecords = []
 })
 
 afterEach(() => {
@@ -198,6 +228,7 @@ afterEach(() => {
   resetAppInterestRepository()
   shouldUsePocketBaseAuthProvider = false
   pocketBaseMock.publicListRecords = []
+  pocketBaseMock.interestRecords = []
 })
 
 describe('dashboard nested routes', () => {
@@ -305,6 +336,7 @@ describe('dashboard nested routes', () => {
     authenticatePocketBaseMock()
     pocketBaseMock.publicListRecords = [{
       id: 'list-public-stack',
+      owner: 'user-reader',
       ownerNamespace: 'reader',
       slug: 'public-stack',
       title: 'Public Stack',
@@ -319,6 +351,7 @@ describe('dashboard nested routes', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'My public lists' })).toBeInTheDocument()
     expect(screen.getByText('Public Stack')).toBeInTheDocument()
     expect(screen.getByText('/u/reader/lista/public-stack')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Manage list' })).toHaveAttribute('href', '/dashboard/public-lists/list-public-stack')
     expect(screen.getByRole('link', { name: 'Open public URL' })).toHaveAttribute('href', '/u/reader/lista/public-stack')
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.queryByText('reader@example.com')).not.toBeInTheDocument()
@@ -329,13 +362,68 @@ describe('dashboard nested routes', () => {
 
     await renderRoute('/dashboard/public-lists', { withPocketBaseAuthProvider: true })
 
-    expect(await screen.findByText('No public lists published yet')).toBeInTheDocument()
+    expect(await screen.findByText('No public lists created yet')).toBeInTheDocument()
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
     expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'My public lists' })).not.toBeInTheDocument()
+  })
+
+  it('requires PocketBase auth before rendering the public list create route content', async () => {
+    pocketBaseMock.enabled = true
+
+    await renderRoute('/dashboard/public-lists/new', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Create public list' })).not.toBeInTheDocument()
+  })
+
+  it('renders the public list create route as a dedicated full replacement', async () => {
+    authenticatePocketBaseMock()
+
+    await renderRoute('/dashboard/public-lists/new', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Create public list' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Public list title')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
+    expect(screen.queryByText('reader@example.com')).not.toBeInTheDocument()
+  })
+
+  it('requires PocketBase auth before rendering the public list editor route content', async () => {
+    pocketBaseMock.enabled = true
+
+    await renderRoute('/dashboard/public-lists/list-public-stack', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: 'Public Stack' })).not.toBeInTheDocument()
+  })
+
+  it('loads only the authenticated owner public list in the editor route', async () => {
+    authenticatePocketBaseMock()
+    pocketBaseMock.publicListRecords = [
+      createPocketBasePublicListRecord({ id: 'list-public-stack', owner: 'other-user', title: 'Other User List' }),
+      createPocketBasePublicListRecord(),
+    ]
+    pocketBaseMock.interestRecords = [createPocketBaseInterestRecord()]
+
+    await renderRoute('/dashboard/public-lists/list-public-stack', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Public Stack' })).toBeInTheDocument()
+    expect(screen.queryByText('Other User List')).not.toBeInTheDocument()
+    expect(screen.getByRole('list', { name: 'Eligible interests from your account' })).toBeInTheDocument()
+    expect(screen.queryByText('reader@example.com')).not.toBeInTheDocument()
+  })
+
+  it('denies the public list editor route when the list belongs to another user', async () => {
+    authenticatePocketBaseMock()
+    pocketBaseMock.publicListRecords = [createPocketBasePublicListRecord({ owner: 'other-user' })]
+
+    await renderRoute('/dashboard/public-lists/list-public-stack', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Public list editor unavailable')
+    expect(screen.queryByRole('heading', { level: 1, name: 'Public Stack' })).not.toBeInTheDocument()
   })
 
   it('does not expose a logout action on the authenticated dashboard route', async () => {
@@ -573,3 +661,51 @@ describe('dashboard nested routes', () => {
     })
   })
 })
+
+function matchesPublicListFilter(record: unknown, filter?: string) {
+  if (!filter || typeof record !== 'object' || record === null) {
+    return true
+  }
+
+  const fields = record as Record<string, unknown>
+
+  for (const key of ['owner', 'id'] as const) {
+    const match = filter.match(new RegExp(`${key} = "([^"]+)"`))
+
+    if (match && fields[key] !== match[1]) {
+      return false
+    }
+  }
+
+  return filter.includes('published = true') ? fields.published === true : true
+}
+
+function createPocketBasePublicListRecord(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'list-public-stack',
+    owner: 'user-reader',
+    ownerNamespace: 'reader',
+    slug: 'public-stack',
+    title: 'Public Stack',
+    listDate: '2026-07-03',
+    description: 'Visible public list.',
+    items: [],
+    published: true,
+    publishedAt: '2026-07-03T12:00:00.000Z',
+    ownerDisplayName: 'Reader',
+    ownerAvatar: null,
+    ...overrides,
+  }
+}
+
+function createPocketBaseInterestRecord() {
+  return {
+    id: 'movie-arrival',
+    category: 'movies',
+    title: 'Arrival',
+    status: 'pending',
+    notes: 'Watch later.',
+    tags: ['sci-fi'],
+    created: '2026-06-02T08:00:00.000Z',
+  }
+}

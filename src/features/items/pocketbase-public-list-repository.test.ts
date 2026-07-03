@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  buildManagedPublicListUpdatePayload,
   buildPublicListPublishPayload,
   createPocketBasePublicListRepository,
   mapPocketBasePublicListManagementSummary,
   mapPocketBasePublicListRecord,
 } from '@/features/items/pocketbase-public-list-repository'
-import type { PublishPublicListInput } from '@/features/items/public-list-repository'
+import type { ManagedPublicListCreateInput, PublishPublicListInput } from '@/features/items/public-list-repository'
+import { PocketBaseClientResponseError } from '@/lib/pocketbase'
 
 describe('PocketBase public list mapper', () => {
   it('builds publish payloads from display-only fields while keeping the private owner id out of PublicList', () => {
@@ -77,6 +79,7 @@ describe('PocketBase public list mapper', () => {
       collection: {
         create: vi.fn(),
         getFullList,
+        update: vi.fn(),
       },
       ownerId: 'user-private',
     })
@@ -101,6 +104,7 @@ describe('PocketBase public list mapper', () => {
       collection: {
         create: vi.fn(),
         getFullList,
+        update: vi.fn(),
       },
       ownerId: 'user-private',
     })
@@ -156,6 +160,7 @@ describe('PocketBase public list mapper', () => {
       collection: {
         create,
         getFullList: vi.fn(),
+        update: vi.fn(),
       },
       ownerId: 'user-private',
     })
@@ -173,7 +178,168 @@ describe('PocketBase public list mapper', () => {
       slug: 'summer-books',
     }))
   })
+
+  it('creates managed lists through owner-scoped PocketBase payloads with empty initial items', async () => {
+    const create = vi.fn().mockResolvedValue(createPocketBasePublicListRecord({ items: [] }))
+    const repository = createPocketBasePublicListRepository({
+      collection: {
+        create,
+        getFullList: vi.fn(),
+        update: vi.fn(),
+      },
+      ownerId: 'user-private',
+    })
+
+    await expect(repository.createManagedList(createManagedInput())).resolves.toMatchObject({
+      list: { id: 'public-list-1', items: [] },
+      ok: true,
+    })
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      items: [],
+      owner: 'user-private',
+      ownerNamespace: 'ana',
+      published: true,
+      slug: 'summer-books',
+    }))
+  })
+
+  it('loads managed lists by owner relation and id only', async () => {
+    const getFullList = vi.fn().mockResolvedValue([createPocketBasePublicListRecord()])
+    const repository = createPocketBasePublicListRepository({
+      collection: {
+        create: vi.fn(),
+        getFullList,
+        update: vi.fn(),
+      },
+      ownerId: 'user-private',
+    })
+
+    await expect(repository.getManagedList('user-private', 'public-list-1')).resolves.toMatchObject({ id: 'public-list-1' })
+    expect(getFullList).toHaveBeenCalledWith({
+      filter: 'published = true && owner = "user-private" && id = "public-list-1"',
+      perPage: 1,
+    })
+  })
+
+  it('updates managed lists only after an owner-scoped load', async () => {
+    const getFullList = vi.fn().mockResolvedValue([createPocketBasePublicListRecord()])
+    const update = vi.fn().mockResolvedValue(createPocketBasePublicListRecord({ title: 'Updated Summer Books' }))
+    const repository = createPocketBasePublicListRepository({
+      collection: {
+        create: vi.fn(),
+        getFullList,
+        update,
+      },
+      ownerId: 'user-private',
+    })
+
+    await expect(repository.updateManagedList({
+      authenticatedOwnerId: 'user-private',
+      id: 'public-list-1',
+      title: 'Updated Summer Books',
+    })).resolves.toMatchObject({ list: { title: 'Updated Summer Books' }, ok: true })
+    expect(update).toHaveBeenCalledWith('public-list-1', { title: 'Updated Summer Books' })
+  })
+
+  it('denies managed updates when the owner-scoped record is missing', async () => {
+    const update = vi.fn()
+    const repository = createPocketBasePublicListRepository({
+      collection: {
+        create: vi.fn(),
+        getFullList: vi.fn().mockResolvedValue([]),
+        update,
+      },
+      ownerId: 'user-private',
+    })
+
+    await expect(repository.updateManagedList({
+      authenticatedOwnerId: 'user-private',
+      id: 'other-list',
+      title: 'Blocked update',
+    })).resolves.toEqual({ error: { type: 'owner_mismatch' }, ok: false })
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('returns recoverable slug collision errors for managed creates and updates', async () => {
+    const collision = new PocketBaseClientResponseError(400, { data: { ownerNamespace: {}, slug: {} } })
+    const repository = createPocketBasePublicListRepository({
+      collection: {
+        create: vi.fn().mockRejectedValueOnce(collision),
+        getFullList: vi.fn().mockResolvedValue([createPocketBasePublicListRecord()]),
+        update: vi.fn().mockRejectedValueOnce(collision),
+      },
+      ownerId: 'user-private',
+    })
+
+    await expect(repository.createManagedList(createManagedInput())).resolves.toEqual({
+      error: { ownerNamespace: 'ana', slug: 'summer-books', type: 'slug_collision' },
+      ok: false,
+    })
+    await expect(repository.updateManagedList({
+      authenticatedOwnerId: 'user-private',
+      id: 'public-list-1',
+      slug: 'Summer Books',
+    })).resolves.toEqual({
+      error: { ownerNamespace: 'ana', slug: 'summer-books', type: 'slug_collision' },
+      ok: false,
+    })
+  })
+
+  it('returns recoverable update failures without changing committed loaded items', async () => {
+    const getFullList = vi.fn().mockResolvedValue([createPocketBasePublicListRecord()])
+    const repository = createPocketBasePublicListRepository({
+      collection: {
+        create: vi.fn(),
+        getFullList,
+        update: vi.fn().mockRejectedValue(new PocketBaseClientResponseError(500, { message: 'nope' })),
+      },
+      ownerId: 'user-private',
+    })
+
+    await expect(repository.updateManagedList({
+      authenticatedOwnerId: 'user-private',
+      id: 'public-list-1',
+      items: [],
+    })).resolves.toEqual({ error: { type: 'operation_failed' }, ok: false })
+    await expect(repository.getManagedList('user-private', 'public-list-1')).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: 'item-1' })],
+    })
+  })
+
+  it('builds update payloads from safe mutable fields only', () => {
+    const payload = buildManagedPublicListUpdatePayload({
+      authenticatedOwnerId: 'user-private',
+      description: null,
+      id: 'public-list-1',
+      items: [createPublishInput().items[0]],
+      slug: 'Updated Books!',
+      title: 'Updated Books',
+    })
+
+    expect(payload).toEqual({
+      description: null,
+      items: [expect.objectContaining({ id: 'item-1', title: 'Refactoring' })],
+      slug: 'updated-books',
+      title: 'Updated Books',
+    })
+    expect(JSON.stringify(payload)).not.toContain('user-private')
+  })
 })
+
+function createManagedInput(): ManagedPublicListCreateInput {
+  const input = createPublishInput()
+
+  return {
+    authenticatedOwnerId: input.authenticatedOwnerId,
+    owner: input.owner,
+    ownerNamespace: input.ownerNamespace,
+    slug: input.slug,
+    title: input.title,
+    listDate: input.listDate,
+    description: input.description,
+    publishedAt: input.publishedAt,
+  }
+}
 
 function createPublishInput(): PublishPublicListInput {
   return {

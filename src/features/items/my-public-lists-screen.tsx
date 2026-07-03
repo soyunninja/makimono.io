@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Pencil, Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
@@ -15,6 +15,10 @@ type MyPublicListsState = { status: 'error' } | { lists: PublicListManagementSum
 
 function getPublicListHref(list: PublicListManagementSummary) {
   return `/u/${list.ownerNamespace}/lista/${list.slug}`
+}
+
+function getManagedPublicListHref(list: PublicListManagementSummary) {
+  return `/dashboard/public-lists/${list.id}`
 }
 
 export function MyPublicListsScreen({ repository }: MyPublicListsScreenProps = {}) {
@@ -64,6 +68,12 @@ export function MyPublicListsScreen({ repository }: MyPublicListsScreenProps = {
     <AppShell
       actions={(
         <div className={'flex flex-nowrap items-center justify-end gap-3'}>
+          <Button asChild className={'bg-brand-sun text-night hover:bg-brand-sun/90'}>
+            <a href={'/dashboard/public-lists/new'}>
+              <Plus aria-hidden={'true'} />
+              {t('myPublicLists.createAction')}
+            </a>
+          </Button>
           <DashboardOverflowMenu currentView={'publicLists'} />
         </div>
       )}
@@ -92,12 +102,18 @@ export function MyPublicListsScreen({ repository }: MyPublicListsScreenProps = {
             <CardTitle>{t('myPublicLists.emptyTitle')}</CardTitle>
             <CardDescription>{t('myPublicLists.emptyDescription')}</CardDescription>
           </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <a href={'/dashboard/public-lists/new'}>{t('myPublicLists.createAction')}</a>
+            </Button>
+          </CardContent>
         </Card>
       ) : null}
       {state.status === 'ready' && state.lists.length > 0 ? (
         <div className={'grid gap-4 md:grid-cols-2'}>
           {state.lists.map((list) => {
-            const href = getPublicListHref(list)
+            const publicHref = getPublicListHref(list)
+            const managedHref = getManagedPublicListHref(list)
             const description = list.description?.trim() || t('myPublicLists.descriptionFallback')
             return (
               <Card key={list.id} role={'article'}>
@@ -109,19 +125,27 @@ export function MyPublicListsScreen({ repository }: MyPublicListsScreenProps = {
                   <dl className={'space-y-2 text-sm'}>
                     <div>
                       <dt className={'font-medium text-foreground'}>{t('myPublicLists.urlLabel')}</dt>
-                      <dd className={'break-all text-muted-foreground'}>{href}</dd>
+                      <dd className={'break-all text-muted-foreground'}>{publicHref}</dd>
                     </div>
                     <div>
                       <dt className={'font-medium text-foreground'}>{t('publicList.listDateLabel')}</dt>
                       <dd className={'text-muted-foreground'}>{list.listDate}</dd>
                     </div>
                   </dl>
-                  <Button asChild variant={'outline'}>
-                    <a href={href}>
-                      <ExternalLink aria-hidden={'true'} />
-                      {t('myPublicLists.urlAction')}
-                    </a>
-                  </Button>
+                  <div className={'flex flex-wrap gap-2'}>
+                    <Button asChild>
+                      <a href={managedHref}>
+                        <Pencil aria-hidden={'true'} />
+                        {t('myPublicLists.manageAction')}
+                      </a>
+                    </Button>
+                    <Button asChild variant={'outline'}>
+                      <a href={publicHref}>
+                        <ExternalLink aria-hidden={'true'} />
+                        {t('myPublicLists.urlAction')}
+                      </a>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )
