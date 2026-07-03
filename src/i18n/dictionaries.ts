@@ -75,6 +75,20 @@ export type Dictionary = {
     starterError: string
     startAction: string
     addAction: string
+    publishAction: string
+    publishTitle: string
+    publishDescription: string
+    publishTitleLabel: string
+    publishSlugLabel: string
+    publishSlugPlaceholder: string
+    publishDateLabel: string
+    publishDescriptionLabel: string
+    publishSubmitAction: string
+    publishSubmittingAction: string
+    publishSuccess: string
+    publishErrorUnauthenticated: string
+    publishErrorSlugCollision: string
+    publishErrorInvalid: string
     suggestAction: string
     archiveAction: string
     auditAction: string
@@ -303,6 +317,20 @@ export const dictionaries: Record<Locale, Dictionary> = {
       starterError: 'We could not add the starter list. Try again in a moment.',
       startAction: 'Start now',
       addAction: 'Add interest',
+      publishAction: 'Publish list',
+      publishTitle: 'Publish public list',
+      publishDescription: 'Publish the currently visible dashboard items as a read-only public list.',
+      publishTitleLabel: 'Public list title',
+      publishSlugLabel: 'Public URL slug',
+      publishSlugPlaceholder: 'summer-books',
+      publishDateLabel: 'List date',
+      publishDescriptionLabel: 'Description',
+      publishSubmitAction: 'Publish read-only list',
+      publishSubmittingAction: 'Publishing…',
+      publishSuccess: 'Public list published.',
+      publishErrorUnauthenticated: 'Sign in before publishing a public list.',
+      publishErrorSlugCollision: 'That public URL slug is already used for your profile.',
+      publishErrorInvalid: 'Use a valid public profile namespace and slug.',
       suggestAction: 'Get suggestions',
       archiveAction: 'Archive',
       auditAction: 'Audit',
@@ -591,6 +619,20 @@ export const dictionaries: Record<Locale, Dictionary> = {
       starterError: 'No se ha podido añadir la lista inicial. Inténtalo de nuevo en un momento.',
       startAction: 'Empezar ahora',
       addAction: 'Añadir interés',
+      publishAction: 'Publicar lista',
+      publishTitle: 'Publicar lista pública',
+      publishDescription: 'Publica los elementos visibles del dashboard como una lista pública de solo lectura.',
+      publishTitleLabel: 'Título de la lista pública',
+      publishSlugLabel: 'Slug de la URL pública',
+      publishSlugPlaceholder: 'libros-verano',
+      publishDateLabel: 'Fecha de la lista',
+      publishDescriptionLabel: 'Descripción',
+      publishSubmitAction: 'Publicar lista de solo lectura',
+      publishSubmittingAction: 'Publicando…',
+      publishSuccess: 'Lista pública publicada.',
+      publishErrorUnauthenticated: 'Inicia sesión antes de publicar una lista pública.',
+      publishErrorSlugCollision: 'Ese slug de URL pública ya está usado en tu perfil.',
+      publishErrorInvalid: 'Usa un namespace de perfil público y un slug válidos.',
       suggestAction: 'Pedir sugerencias',
       archiveAction: 'Archivo',
       auditAction: 'Auditoría',

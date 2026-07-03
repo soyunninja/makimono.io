@@ -35,6 +35,35 @@ describe('PublicListRepository boundary', () => {
     }
   })
 
+  it('rejects unauthenticated publishing without creating a public list', async () => {
+    const repository = createInMemoryPublicListRepository()
+
+    await expect(repository.publishList(createPublishInput({ authenticatedOwnerId: '   ' }))).resolves.toEqual({
+      error: { type: 'unauthenticated' },
+      ok: false,
+    })
+    await expect(repository.getByOwnerAndSlug('ana', 'summer-books')).resolves.toBeNull()
+  })
+
+  it('creates a public projection clone without retaining private source mutations', async () => {
+    const repository = createInMemoryPublicListRepository()
+    const input = createPublishInput()
+    const result = await repository.publishList(input)
+
+    input.items[0].title = 'Mutated private title'
+    input.items[0].tags.push('private-mutation')
+
+    expect(result).toMatchObject({ ok: true })
+    await expect(repository.getByOwnerAndSlug('ana', 'summer-books')).resolves.toMatchObject({
+      items: [
+        {
+          tags: ['craft'],
+          title: 'Refactoring',
+        },
+      ],
+    })
+  })
+
   it('allows the same slug across different owner namespaces', async () => {
     const repository = createInMemoryPublicListRepository()
 
@@ -61,7 +90,7 @@ describe('PublicListRepository boundary', () => {
   })
 })
 
-function createPublishInput(overrides: Partial<Pick<PublishPublicListInput, 'ownerNamespace' | 'slug'>> = {}): PublishPublicListInput {
+function createPublishInput(overrides: Partial<Pick<PublishPublicListInput, 'authenticatedOwnerId' | 'ownerNamespace' | 'slug'>> = {}): PublishPublicListInput {
   return {
     authenticatedOwnerId: 'user-private',
     owner: {

@@ -10,12 +10,16 @@ import {
   resetAppInterestRepository,
 } from '@/features/items/mock-repository'
 import { starterPackItems } from '@/features/items/starter-pack'
+import type { PublicListRepository, PublishPublicListInput } from '@/features/items/public-list-repository'
 import type { CreateInterestItemInput, InterestItem, InterestRepository } from '@/features/items/types'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
 const authMock = vi.hoisted(() => ({
+  client: null,
+  isAuthenticated: false,
   publicProfile: null as null | { avatarUrl: string | null, username: string },
+  user: null as null | { email?: string, id: string, username?: string },
 }))
 
 vi.mock('@/features/auth/pocketbase-auth-provider', () => ({
@@ -46,7 +50,10 @@ function createDeferred<T>() {
 }
 
 beforeEach(() => {
+  authMock.client = null
+  authMock.isAuthenticated = false
   authMock.publicProfile = null
+  authMock.user = null
   installMockLocalStorage()
   window.localStorage.clear()
   resetAppInterestRepository()
@@ -240,6 +247,87 @@ describe('DashboardScreen', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Public profile avatar' })).toHaveAttribute('src', '/api/files/users/user-1/avatar.webp')
     expect(screen.queryByText('mariano@example.com')).not.toBeInTheDocument()
+  })
+
+  it('shows the publish entry point only after authentication', async () => {
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen repository={createMockInterestRepository()} />
+      </LocaleProvider>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Your interests' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Publish list' })).not.toBeInTheDocument()
+  })
+
+  it('publishes visible display-only dashboard items without mutating private records or exposing copy/import controls', async () => {
+    authMock.isAuthenticated = true
+    authMock.user = { email: 'sam@example.com', id: 'user-private' }
+    const repository = createMockInterestRepository()
+    const publishList = vi.fn<PublicListRepository['publishList']>(async (input: PublishPublicListInput) => ({
+      list: {
+        id: 'sam-summer-books',
+        owner: input.owner,
+        ownerNamespace: 'sam',
+        slug: 'summer-books',
+        title: input.title,
+        listDate: input.listDate,
+        description: input.description,
+        items: input.items,
+        publishedAt: '2026-07-03T12:00:00.000Z',
+      },
+      ok: true,
+    }))
+    const publicListRepository = {
+      getByOwnerAndSlug: vi.fn(),
+      publishList,
+    } satisfies PublicListRepository
+
+    render(
+      <LocaleProvider initialLocale="en">
+        <DashboardScreen publicListRepository={publicListRepository} repository={repository} />
+      </LocaleProvider>,
+    )
+
+    await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })
+    fireEvent.click(screen.getByRole('radio', { name: 'Books (1)' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Publish list' }))
+
+    expect(screen.queryByRole('button', { name: /import/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /copy/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /comment/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /like/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /follow/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /collabor/i })).not.toBeInTheDocument()
+
+    expect(screen.getByLabelText('Public list title')).toBeRequired()
+    expect(screen.getByLabelText('List date')).toBeRequired()
+    expect(screen.getByLabelText('Description')).not.toBeRequired()
+
+    fireEvent.change(screen.getByLabelText('Public list title'), { target: { value: 'Summer Books' } })
+    fireEvent.change(screen.getByLabelText('Public URL slug'), { target: { value: 'Summer Books' } })
+    fireEvent.change(screen.getByLabelText('List date'), { target: { value: '2026-07-03' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Publish read-only list' }))
+
+    await waitFor(() => expect(publishList).toHaveBeenCalledTimes(1))
+    const publishInput = publishList.mock.calls[0][0]
+
+    expect(publishInput.authenticatedOwnerId).toBe('user-private')
+    expect(publishInput.ownerNamespace).toBe('sam')
+    expect(publishInput.owner.displayName).toBe('sam')
+    expect(publishInput.description).toBeUndefined()
+    expect(JSON.stringify(publishInput)).not.toContain('sam@example.com')
+    expect(publishInput.items).toEqual([
+      expect.objectContaining({ id: 'book-atomic-habits', title: 'Atomic Habits' }),
+    ])
+    expect(publishInput.items[0]).not.toHaveProperty('status')
+    expect(publishInput.items[0]).not.toHaveProperty('createdAt')
+    expect((await repository.listItems()).find((item) => item.id === 'book-atomic-habits')).toMatchObject({
+      createdAt: defaultMockItems[3].createdAt,
+      status: defaultMockItems[3].status,
+    })
+    expect(await screen.findByRole('status')).toHaveTextContent('Public list published.')
+    expect(screen.getByRole('link', { name: '/u/sam/lista/summer-books' })).toHaveAttribute('href', '/u/sam/lista/summer-books')
   })
 
   it('shows a deterministic dashboard header fallback initial when the public profile has no avatar URL', async () => {

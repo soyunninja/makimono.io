@@ -90,6 +90,30 @@ describe('PocketBase public list mapper', () => {
       sort: '-publishedAt',
     })
   })
+
+  it('publishes authenticated lists through PocketBase create with normalized route data', async () => {
+    const create = vi.fn().mockResolvedValue(createPocketBasePublicListRecord())
+    const repository = createPocketBasePublicListRepository({
+      collection: {
+        create,
+        getFullList: vi.fn(),
+      },
+      ownerId: 'user-private',
+    })
+
+    await expect(repository.publishList(createPublishInput())).resolves.toMatchObject({
+      list: {
+        ownerNamespace: 'ana',
+        slug: 'summer-books',
+      },
+      ok: true,
+    })
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      owner: 'user-private',
+      ownerNamespace: 'ana',
+      slug: 'summer-books',
+    }))
+  })
 })
 
 function createPublishInput(): PublishPublicListInput {

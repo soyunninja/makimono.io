@@ -40,9 +40,9 @@ Chain strategy: stacked-to-main
 
 ## Phase 3: Authenticated Publish Entry Point
 
-- [ ] 3.1 Modify `src/features/items/dashboard-screen.tsx` or its shell to expose authenticated publish only from private dashboard context.
-- [ ] 3.2 Wire publish action to `PublicListRepository.publishList()` using selected display-only item data; preserve private editable source records.
-- [ ] 3.3 Ensure public UI and dashboard publish flow expose no import, copy, public editing, comments, likes, follows, social graph, or collaboration controls.
+- [x] 3.1 Modify `src/features/items/dashboard-screen.tsx` or its shell to expose authenticated publish only from private dashboard context.
+- [x] 3.2 Wire publish action to `PublicListRepository.publishList()` using selected display-only item data; preserve private editable source records.
+- [x] 3.3 Ensure public UI and dashboard publish flow expose no import, copy, public editing, comments, likes, follows, social graph, or collaboration controls.
 
 ## Phase 4: Tests and Verification
 
@@ -50,6 +50,6 @@ Chain strategy: stacked-to-main
 - [x] 4.2 Add privacy/projection tests proving no full email, owner relation, raw auth IDs, sessions, tokens, provider metadata, or private fields reach `PublicList`.
 - [x] 4.3 Add owner projection tests for username preference, email-prefix-only fallback, avatar image, and gradient initial fallback.
 - [x] 4.4 Add page/route tests for `/u/ana/lista/summer-books`, missing list not-found, read-only item rendering, and absent out-of-scope actions.
-- [ ] 4.5 Add publish tests for authenticated creation, unauthenticated rejection, deterministic collision handling, and private source remaining private.
+- [x] 4.5 Add publish tests for authenticated creation, unauthenticated rejection, deterministic collision handling, and private source remaining private.
 - [x] 4.6 Verify PocketBase schema/rules evidence covers public-read-only published records plus owner-only create/update/delete/unpublish.
 - [x] 4.7 Run `npx pnpm test`, `npx pnpm typecheck`, and `npx pnpm build`; document any manual inspection limitations.
