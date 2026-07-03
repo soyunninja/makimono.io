@@ -92,6 +92,7 @@ export type Dictionary = {
     suggestAction: string
     archiveAction: string
     auditAction: string
+    publicListsAction: string
     settingsAction: string
     moreActions: string
     profileAvatarLabel: string
@@ -120,6 +121,17 @@ export type Dictionary = {
     notesLabel: string
     tagsLabel: string
     coverAlt: string
+  }
+  myPublicLists: {
+    title: string
+    loading: string
+    emptyTitle: string
+    emptyDescription: string
+    errorTitle: string
+    errorDescription: string
+    descriptionFallback: string
+    urlLabel: string
+    urlAction: string
   }
   archive: {
     eyebrow: string
@@ -319,7 +331,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addAction: 'Add interest',
       publishAction: 'Publish list',
       publishTitle: 'Publish public list',
-      publishDescription: 'Publish the currently visible dashboard items as a read-only public list.',
+      publishDescription: 'Temporary bridge: publish the currently visible dashboard items as a read-only public list. Dedicated public-list management lives in My public lists.',
       publishTitleLabel: 'Public list title',
       publishSlugLabel: 'Public URL slug',
       publishSlugPlaceholder: 'summer-books',
@@ -334,6 +346,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       suggestAction: 'Get suggestions',
       archiveAction: 'Archive',
       auditAction: 'Audit',
+      publicListsAction: 'My public lists',
       settingsAction: 'Settings',
       moreActions: 'More actions',
       profileAvatarLabel: 'Public profile avatar',
@@ -362,6 +375,17 @@ export const dictionaries: Record<Locale, Dictionary> = {
       notesLabel: 'Notes',
       tagsLabel: 'Tags',
       coverAlt: '{title} cover',
+    },
+    myPublicLists: {
+      title: 'My public lists',
+      loading: 'Loading your public lists…',
+      emptyTitle: 'No public lists published yet',
+      emptyDescription: 'Publish a list when you are ready to make it visible from your public profile.',
+      errorTitle: 'Could not load your public lists',
+      errorDescription: 'Check your session and try again. Private diagnostic details are not shown here.',
+      descriptionFallback: 'No description',
+      urlLabel: 'Public route',
+      urlAction: 'Open public URL',
     },
     archive: {
       eyebrow: 'Archive',
@@ -621,7 +645,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addAction: 'Añadir interés',
       publishAction: 'Publicar lista',
       publishTitle: 'Publicar lista pública',
-      publishDescription: 'Publica los elementos visibles del dashboard como una lista pública de solo lectura.',
+      publishDescription: 'Puente temporal: publica los elementos visibles del dashboard como una lista pública de solo lectura. La gestión dedicada está en Mis listas públicas.',
       publishTitleLabel: 'Título de la lista pública',
       publishSlugLabel: 'Slug de la URL pública',
       publishSlugPlaceholder: 'libros-verano',
@@ -636,6 +660,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       suggestAction: 'Pedir sugerencias',
       archiveAction: 'Archivo',
       auditAction: 'Auditoría',
+      publicListsAction: 'Mis listas públicas',
       settingsAction: 'Ajustes',
       moreActions: 'Más acciones',
       profileAvatarLabel: 'Avatar del perfil público',
@@ -664,6 +689,17 @@ export const dictionaries: Record<Locale, Dictionary> = {
       notesLabel: 'Notas',
       tagsLabel: 'Etiquetas',
       coverAlt: 'Portada de {title}',
+    },
+    myPublicLists: {
+      title: 'Mis listas públicas',
+      loading: 'Cargando tus listas públicas…',
+      emptyTitle: 'Todavía no hay listas públicas publicadas',
+      emptyDescription: 'Publica una lista cuando quieras hacerla visible desde tu perfil público.',
+      errorTitle: 'No se han podido cargar tus listas públicas',
+      errorDescription: 'Revisa tu sesión e inténtalo de nuevo. Aquí no se muestran detalles privados de diagnóstico.',
+      descriptionFallback: 'Sin descripción',
+      urlLabel: 'Ruta pública',
+      urlAction: 'Abrir URL pública',
     },
     archive: {
       eyebrow: 'Archivo',

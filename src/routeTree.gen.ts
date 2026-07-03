@@ -15,6 +15,7 @@ import { Route as OauthTokenRouteImport } from './routes/oauth.token'
 import { Route as OauthAuthorizeRouteImport } from './routes/oauth.authorize'
 import { Route as DashboardSuggestRouteImport } from './routes/dashboard.suggest'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
+import { Route as DashboardPublicListsRouteImport } from './routes/dashboard.public-lists'
 import { Route as DashboardAuditRouteImport } from './routes/dashboard.audit'
 import { Route as DashboardArchiveRouteImport } from './routes/dashboard.archive'
 import { Route as DashboardAddRouteImport } from './routes/dashboard.add'
@@ -52,6 +53,11 @@ const DashboardSuggestRoute = DashboardSuggestRouteImport.update({
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPublicListsRoute = DashboardPublicListsRouteImport.update({
+  id: '/public-lists',
+  path: '/public-lists',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAuditRoute = DashboardAuditRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/audit': typeof DashboardAuditRoute
+  '/dashboard/public-lists': typeof DashboardPublicListsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/audit': typeof DashboardAuditRoute
+  '/dashboard/public-lists': typeof DashboardPublicListsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/dashboard/add': typeof DashboardAddRoute
   '/dashboard/archive': typeof DashboardArchiveRoute
   '/dashboard/audit': typeof DashboardAuditRoute
+  '/dashboard/public-lists': typeof DashboardPublicListsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/suggest': typeof DashboardSuggestRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/dashboard/add'
     | '/dashboard/archive'
     | '/dashboard/audit'
+    | '/dashboard/public-lists'
     | '/dashboard/settings'
     | '/dashboard/suggest'
     | '/oauth/authorize'
@@ -173,6 +183,7 @@ export interface FileRouteTypes {
     | '/dashboard/add'
     | '/dashboard/archive'
     | '/dashboard/audit'
+    | '/dashboard/public-lists'
     | '/dashboard/settings'
     | '/dashboard/suggest'
     | '/oauth/authorize'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/dashboard/add'
     | '/dashboard/archive'
     | '/dashboard/audit'
+    | '/dashboard/public-lists'
     | '/dashboard/settings'
     | '/dashboard/suggest'
     | '/oauth/authorize'
@@ -250,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/dashboard/settings'
       preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/public-lists': {
+      id: '/dashboard/public-lists'
+      path: '/public-lists'
+      fullPath: '/dashboard/public-lists'
+      preLoaderRoute: typeof DashboardPublicListsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/audit': {
@@ -315,6 +334,7 @@ interface DashboardRouteChildren {
   DashboardAddRoute: typeof DashboardAddRoute
   DashboardArchiveRoute: typeof DashboardArchiveRoute
   DashboardAuditRoute: typeof DashboardAuditRoute
+  DashboardPublicListsRoute: typeof DashboardPublicListsRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSuggestRoute: typeof DashboardSuggestRoute
   DashboardEditItemIdRoute: typeof DashboardEditItemIdRoute
@@ -324,6 +344,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAddRoute: DashboardAddRoute,
   DashboardArchiveRoute: DashboardArchiveRoute,
   DashboardAuditRoute: DashboardAuditRoute,
+  DashboardPublicListsRoute: DashboardPublicListsRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSuggestRoute: DashboardSuggestRoute,
   DashboardEditItemIdRoute: DashboardEditItemIdRoute,

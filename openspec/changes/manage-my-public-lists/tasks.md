@@ -31,21 +31,21 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Management Route and UI
 
-- [ ] 2.1 Create `src/features/items/my-public-lists-screen.tsx` with loading, empty, error, and content states plus `/u/{ownerNamespace}/lista/{slug}` route target display.
-- [ ] 2.2 Create guarded route `src/routes/dashboard.public-lists.tsx` using `PocketBaseAuthGate` and `MyPublicListsScreen`.
-- [ ] 2.3 Update `src/routes/dashboard.tsx` so `/dashboard/public-lists` renders as a full-page dashboard-adjacent replacement.
-- [ ] 2.4 Update `src/components/app/dashboard-overflow-menu.tsx` with a `My public lists` item hidden when active.
-- [ ] 2.5 Update `src/i18n/dictionaries.ts` with EN/ES labels for menu, title, loading, empty, error, fallback description, and URL action.
-- [ ] 2.6 Adjust `src/features/items/dashboard-screen.tsx` copy to keep dashboard publish de-emphasized as a temporary bridge.
+- [x] 2.1 Create `src/features/items/my-public-lists-screen.tsx` with loading, empty, error, and content states plus `/u/{ownerNamespace}/lista/{slug}` route target display.
+- [x] 2.2 Create guarded route `src/routes/dashboard.public-lists.tsx` using `PocketBaseAuthGate` and `MyPublicListsScreen`.
+- [x] 2.3 Update `src/routes/dashboard.tsx` so `/dashboard/public-lists` renders as a full-page dashboard-adjacent replacement.
+- [x] 2.4 Update `src/components/app/dashboard-overflow-menu.tsx` with a `My public lists` item hidden when active.
+- [x] 2.5 Update `src/i18n/dictionaries.ts` with EN/ES labels for menu, title, loading, empty, error, fallback description, and URL action.
+- [x] 2.6 Adjust `src/features/items/dashboard-screen.tsx` copy to keep dashboard publish de-emphasized as a temporary bridge.
 
 ## Phase 3: Tests
 
 - [x] 3.1 Extend `src/features/items/public-list-repository.test.ts` for summary shape, unpublished exclusion, namespace mismatch exclusion, and privacy-safe data.
 - [x] 3.2 Extend `src/features/items/pocketbase-public-list-repository.test.ts` to assert owner-relation filtering, no `ownerNamespace` management filter, sorting, and private-field stripping.
-- [ ] 3.3 Add `src/features/items/my-public-lists-screen.test.tsx` for loading, empty, error, content URL, and absence of composer/import/edit/social/draft/unpublish/delete actions.
-- [ ] 3.4 Extend `src/test/routes/dashboard-nested-routes.test.tsx` for auth blocking, dedicated `/dashboard/public-lists` rendering, overflow navigation, and active-view hiding.
+- [x] 3.3 Add `src/features/items/my-public-lists-screen.test.tsx` for loading, empty, error, content URL, and absence of composer/import/edit/social/draft/unpublish/delete actions.
+- [x] 3.4 Extend `src/test/routes/dashboard-nested-routes.test.tsx` for auth blocking, dedicated `/dashboard/public-lists` rendering, overflow navigation, and active-view hiding.
 
 ## Phase 4: Verification
 
-- [ ] 4.1 Run `npx pnpm test`, `npx pnpm typecheck`, and `npx pnpm build`.
-- [ ] 4.2 Update this file during apply with completed tasks and any chain decision used.
+- [x] 4.1 Run `npx pnpm test`, `npx pnpm typecheck`, and `npx pnpm build`.
+- [x] 4.2 Update this file during apply with completed tasks and any chain decision used.

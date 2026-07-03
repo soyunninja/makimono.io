@@ -16,6 +16,7 @@ import { DashboardAddRoutePage } from '@/routes/dashboard.add'
 import { DashboardAuditRoutePage } from '@/routes/dashboard.audit'
 import { DashboardArchiveRoutePage } from '@/routes/dashboard.archive'
 import { DashboardEditRoutePage } from '@/routes/dashboard.edit.$itemId'
+import { DashboardPublicListsRoutePage } from '@/routes/dashboard.public-lists'
 import { DashboardSettingsRoutePage } from '@/routes/dashboard.settings'
 import { DashboardSuggestRoutePage } from '@/routes/dashboard.suggest'
 import { DashboardRoutePage } from '@/routes/dashboard'
@@ -38,6 +39,7 @@ const pocketBaseMock = vi.hoisted(() => ({
     collection: ReturnType<typeof vi.fn>
   },
   enabled: false,
+  publicListRecords: [] as unknown[],
 }))
 
 vi.mock('@/lib/pocketbase', () => ({
@@ -102,6 +104,12 @@ const dashboardSettingsRoute = createRoute({
   component: DashboardSettingsRoutePage,
 })
 
+const dashboardPublicListsRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: '/public-lists',
+  component: DashboardPublicListsRoutePage,
+})
+
 const dashboardEditRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: '/edit/$itemId',
@@ -114,13 +122,14 @@ const routeTree = rootRoute.addChildren([
     dashboardSuggestRoute,
     dashboardArchiveRoute,
     dashboardAuditRoute,
+    dashboardPublicListsRoute,
     dashboardSettingsRoute,
     dashboardEditRoute,
   ]),
 ])
 
 async function renderRoute(
-  pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive' | '/dashboard/audit' | '/dashboard/settings' | '/dashboard/edit/movie-arrival',
+  pathname: '/dashboard' | '/dashboard/add' | '/dashboard/suggest' | '/dashboard/archive' | '/dashboard/audit' | '/dashboard/public-lists' | '/dashboard/settings' | '/dashboard/edit/movie-arrival',
   options: { withPocketBaseAuthProvider?: boolean } = {},
 ) {
   shouldUsePocketBaseAuthProvider = options.withPocketBaseAuthProvider ?? false
@@ -174,19 +183,21 @@ beforeEach(() => {
       record: null,
       token: '',
     },
-    collection: vi.fn(() => ({
+    collection: vi.fn((collectionName: string) => ({
       authWithPassword: vi.fn(),
       create: vi.fn(),
-      getFullList: vi.fn(async () => []),
+      getFullList: vi.fn(async () => (collectionName === 'public_lists' ? pocketBaseMock.publicListRecords : [])),
     })),
   }
   shouldUsePocketBaseAuthProvider = false
+  pocketBaseMock.publicListRecords = []
 })
 
 afterEach(() => {
   window.localStorage.clear()
   resetAppInterestRepository()
   shouldUsePocketBaseAuthProvider = false
+  pocketBaseMock.publicListRecords = []
 })
 
 describe('dashboard nested routes', () => {
@@ -251,6 +262,7 @@ describe('dashboard nested routes', () => {
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
     expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'My public lists' })).toHaveAttribute('href', '/dashboard/public-lists')
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
@@ -278,6 +290,52 @@ describe('dashboard nested routes', () => {
     expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Settings' })).not.toBeInTheDocument()
     expect(screen.queryByText('v0.6')).not.toBeInTheDocument()
+  })
+
+  it('requires PocketBase auth before rendering the public lists route content', async () => {
+    pocketBaseMock.enabled = true
+
+    await renderRoute('/dashboard/public-lists', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1, name: 'My public lists' })).not.toBeInTheDocument()
+  })
+
+  it('renders public lists as a dedicated dashboard-adjacent full replacement', async () => {
+    authenticatePocketBaseMock()
+    pocketBaseMock.publicListRecords = [{
+      id: 'list-public-stack',
+      ownerNamespace: 'reader',
+      slug: 'public-stack',
+      title: 'Public Stack',
+      listDate: '2026-07-03',
+      description: 'Visible public list.',
+      published: true,
+      publishedAt: '2026-07-03T12:00:00.000Z',
+    }]
+
+    await renderRoute('/dashboard/public-lists', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'My public lists' })).toBeInTheDocument()
+    expect(screen.getByText('Public Stack')).toBeInTheDocument()
+    expect(screen.getByText('/u/reader/lista/public-stack')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Open public URL' })).toHaveAttribute('href', '/u/reader/lista/public-stack')
+    expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
+    expect(screen.queryByText('reader@example.com')).not.toBeInTheDocument()
+  })
+
+  it('hides the public lists item when the public lists view is active', async () => {
+    authenticatePocketBaseMock()
+
+    await renderRoute('/dashboard/public-lists', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByText('No public lists published yet')).toBeInTheDocument()
+
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
+
+    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
+    expect(screen.queryByRole('menuitem', { name: 'My public lists' })).not.toBeInTheDocument()
   })
 
   it('does not expose a logout action on the authenticated dashboard route', async () => {
@@ -341,6 +399,7 @@ describe('dashboard nested routes', () => {
 
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'My public lists' })).toHaveAttribute('href', '/dashboard/public-lists')
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
