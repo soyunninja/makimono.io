@@ -43,6 +43,7 @@ Standard mode. Strict TDD is disabled by `openspec/config.yaml` and `sdd-init/ma
 | `npx pnpm test src/features/items/public-list-editor-screen.test.tsx` | Passed: 1 file, 8 tests |
 | `npx pnpm typecheck` | Passed |
 | `npx pnpm test public-list` | Passed: 8 files, 57 tests |
+| `npx pnpm test` | Passed: 36 files, 305 tests |
 
 ## Changed Files
 

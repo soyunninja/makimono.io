@@ -60,6 +60,13 @@ Command: npx pnpm build
 Result: Passed; vite client, SSR, and Nitro production build completed successfully.
 ```
 
+**Full test suite**: ✅ Passed
+
+```text
+Command: npx pnpm test
+Result: 36 test files passed, 305 tests passed.
+```
+
 **Coverage**: ➖ Not available; no coverage command was requested or configured for this verification run.
 
 ### Spec Compliance Matrix
@@ -111,4 +118,4 @@ Result: Passed; vite client, SSR, and Nitro production build completed successfu
 
 PASS
 
-PR 2 / Slice 2 satisfies the requested public-list editor rich snapshot and saved-item removal requirements with passing focused tests, public-list suite, typecheck, and production build evidence.
+PR 2 / Slice 2 satisfies the requested public-list editor rich snapshot and saved-item removal requirements with passing focused tests, public-list suite, full test suite, typecheck, and production build evidence.
