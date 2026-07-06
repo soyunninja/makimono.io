@@ -1,5 +1,6 @@
 import { CircleCheck, Image, Play } from 'lucide-react'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DashboardItemCompletionDialog,
@@ -59,6 +60,10 @@ export function DashboardCoverItem({
           )}
         </a>
 
+        <Badge className={cn('absolute right-3 top-3 z-10 bg-background/85 shadow-sm backdrop-blur', metadata.accentClassName)} variant={'outline'}>
+          {metadata.label}
+        </Badge>
+
         {showsCompletionControl || showsStartAction ? (
           <Button
             aria-haspopup={showsCompletionControl ? 'dialog' : undefined}
@@ -86,7 +91,7 @@ export function DashboardCoverItem({
         closeLabel={closeLabel}
         completeWarningLabel={completeWarningLabel}
         completionActionLabel={completionActionLabel}
-        confirmButtonClassName="bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90"
+        confirmButtonClassName="bg-brand-sun text-night hover:bg-brand-sun/90"
         isOpen={isCompletionDialogOpen}
         onConfirm={handleConfirmCompletion}
         onOpenChange={setIsCompletionDialogOpen}

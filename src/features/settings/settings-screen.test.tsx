@@ -42,12 +42,13 @@ describe('SettingsScreen', () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.getByRole('heading', { level: 1, name: 'Settings' })).toHaveClass('sr-only')
+    expect(screen.queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument()
     expect(screen.queryByText('Manage language, session, and app details.')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Language' })).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Public profile avatar' })).toHaveAttribute('src', '/api/files/users/user-1/avatar.webp')
+    expect(screen.getAllByRole('img', { name: 'Public profile avatar' })[0]).toHaveAttribute('src', '/api/files/users/user-1/avatar.webp')
     expect(screen.getByText('mariano')).toBeInTheDocument()
     expect(screen.getByLabelText('Username')).toHaveValue('mariano')
     expect(screen.getByLabelText('Upload avatar')).toHaveAttribute('accept', 'image/jpeg,image/png,image/gif,image/webp')
@@ -58,7 +59,7 @@ describe('SettingsScreen', () => {
     expect(screen.queryByRole('radiogroup', { name: 'Dashboard display' })).not.toBeInTheDocument()
     expect(screen.getByText('Version')).toBeInTheDocument()
     expect(screen.queryByText('Current app version.')).not.toBeInTheDocument()
-    expect(screen.getByText('v0.66')).toBeInTheDocument()
+    expect(screen.getByText('v0.7.1')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Logout' }))
 
@@ -68,10 +69,10 @@ describe('SettingsScreen', () => {
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
-    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
   })
 
   it('uses localized settings copy and language switching', () => {
@@ -81,7 +82,8 @@ describe('SettingsScreen', () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByRole('link', { name: 'Ajustes' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.getByRole('heading', { level: 1, name: 'Ajustes' })).toHaveClass('sr-only')
+    expect(screen.queryByRole('link', { name: 'Ajustes' })).not.toBeInTheDocument()
     expect(screen.queryByText('Gestiona el idioma, la sesión y los detalles de la app.')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Volver al dashboard' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Volver al dashboard' })).not.toBeInTheDocument()
@@ -95,10 +97,10 @@ describe('SettingsScreen', () => {
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Más acciones' }))
 
-    expect(screen.getByRole('menuitem', { name: 'Archivo' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.queryByRole('menuitem', { name: 'Volver al dashboard' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archivo' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.queryByRole('menuitem', { name: 'Auditoría' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Ajustes' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Ajustes' })).toHaveAttribute('href', '/dashboard/settings')
     fireEvent.keyDown(document, { key: 'Escape' })
 
     fireEvent.click(screen.getByRole('button', { name: 'EN' }))

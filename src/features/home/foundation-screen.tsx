@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 
 import { AppFooter } from '@/components/app/app-footer'
 import { AppVersion } from '@/components/app/app-version'
@@ -15,10 +15,14 @@ const upcomingImprovements = [
   'prioritiesAndReminders',
 ] as const
 
+const completedImprovements = new Set<(typeof upcomingImprovements)[number]>(['sharedLists'])
+
 export function FoundationLandingScreen() {
+  const location = useLocation()
   const navigate = useNavigate()
   const { t } = useLocale()
   const { enabled, isAuthenticated, isLoading } = useOptionalPocketBaseAuth()
+  const initialAuthMode = location.href.includes('auth=register') ? 'register' : 'login'
 
   useEffect(() => {
     if (!enabled || isLoading || !isAuthenticated) {
@@ -46,7 +50,7 @@ export function FoundationLandingScreen() {
             </div>
 
             <div className="flex h-full p-4 md:p-6 bg-card">
-              <PocketBaseAuthCard className="h-full w-full rounded-none border-0 bg-transparent shadow-none backdrop-blur-none" onAuthenticated={handleAuthenticated} />
+              <PocketBaseAuthCard className="h-full w-full rounded-none border-0 bg-transparent shadow-none backdrop-blur-none" initialMode={initialAuthMode} onAuthenticated={handleAuthenticated} />
             </div>
           </div>
         </div>
@@ -56,7 +60,7 @@ export function FoundationLandingScreen() {
             <ul className="mt-4 space-y-2 text-sm leading-6 text-foreground/60">
               {upcomingImprovements.map((improvement) => (
                 <li key={improvement}>
-                  <span className="text-foreground/40">[ ]</span>
+                  <span className={completedImprovements.has(improvement) ? 'text-green-400' : 'text-foreground/40'}>{completedImprovements.has(improvement) ? '[✓]' : '[ ]'}</span>
                   {' '}
                   {t(`landing.upcomingImprovements.${improvement}`)}
                 </li>

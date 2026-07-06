@@ -42,9 +42,11 @@ export function writeDashboardDisplayPreference(preference: DashboardDisplayPref
 }
 
 export function useDashboardDisplayPreference() {
-  const [preference, setPreferenceState] = useState<DashboardDisplayPreference>(() => readDashboardDisplayPreference())
+  const [preference, setPreferenceState] = useState<DashboardDisplayPreference>(defaultDashboardDisplayPreference)
 
   useEffect(() => {
+    setPreferenceState(readDashboardDisplayPreference())
+
     function handleStorageChange(event: StorageEvent) {
       if (event.key !== dashboardDisplayPreferenceStorageKey) {
         return

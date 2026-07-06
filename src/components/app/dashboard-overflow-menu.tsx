@@ -4,15 +4,11 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useLocale } from '@/i18n/locale-provider'
 
-type DashboardOverflowMenuView = 'archive' | 'audit' | 'dashboard' | 'publicLists' | 'settings'
-
-type DashboardOverflowMenuProps = {
-  currentView: DashboardOverflowMenuView
-}
+export type DashboardOverflowMenuView = 'archive' | 'audit' | 'dashboard' | 'publicLists' | 'settings'
 
 type DashboardOverflowMenuItem = {
   href: string
-  key: Exclude<DashboardOverflowMenuView, 'dashboard'>
+  key: DashboardOverflowMenuView
   label: string
 }
 
@@ -28,7 +24,7 @@ function DashboardOverflowMenuIcon({ itemKey }: { itemKey: DashboardOverflowMenu
   return <Settings aria-hidden={'true'} />
 }
 
-export function DashboardOverflowMenu({ currentView }: DashboardOverflowMenuProps) {
+export function DashboardOverflowMenu() {
   const { t } = useLocale()
   const menuItems: DashboardOverflowMenuItem[] = [
     {
@@ -56,16 +52,14 @@ export function DashboardOverflowMenu({ currentView }: DashboardOverflowMenuProp
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={'end'}>
-        {menuItems
-          .filter((item) => item.key !== currentView)
-          .map((item) => (
-            <DropdownMenuItem asChild key={item.key}>
-              <a href={item.href}>
-                <DashboardOverflowMenuIcon itemKey={item.key} />
-                {item.label}
-              </a>
-            </DropdownMenuItem>
-          ))}
+        {menuItems.map((item) => (
+          <DropdownMenuItem asChild key={item.key}>
+            <a href={item.href}>
+              <DashboardOverflowMenuIcon itemKey={item.key} />
+              {item.label}
+            </a>
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   )

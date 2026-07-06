@@ -1,20 +1,12 @@
-import { Plus, Share2 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
-import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { mapPublicOwnerProjection } from '@/features/auth/public-profile'
-import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provider'
 import { CategoryFilters } from '@/features/items/category-filters'
 import type { InterestCoverResolver } from '@/features/items/cover-metadata'
 import { DashboardCoverItem } from '@/features/items/dashboard-cover-item'
-import { DashboardDisplayPreferenceControl } from '@/features/items/dashboard-display-preference-control'
 import { type DashboardDisplayPreference, useDashboardDisplayPreference } from '@/features/items/dashboard-display-preference'
 import {
   groupActiveDashboardItemsByStatus,
@@ -27,14 +19,10 @@ import { InterestCard } from '@/features/items/interest-card'
 import { filterItemsBySearchQuery } from '@/features/items/item-search'
 import { listCategoryMetadata } from '@/features/items/metadata'
 import { getAppInterestRepository } from '@/features/items/mock-repository'
-import { createPocketBasePublicListRepository } from '@/features/items/pocketbase-public-list-repository'
-import { isPublicListSlugCollisionError, type PublicListPublishError, type PublicListRepository } from '@/features/items/public-list-repository'
-import { derivePublicOwnerNamespace, type PublicListItem } from '@/features/items/public-list-types'
 import { getNextStatus } from '@/features/items/status-flow'
 import { createStarterPackItems, defaultStarterPackCoverResolver } from '@/features/items/starter-pack'
 import type { Category, InterestItem, InterestRepository } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
-import { getPocketBaseFileUrl } from '@/lib/pocketbase'
 import { cn } from '@/lib/utils'
 
 type CategoryFilterValue = Category | 'all'
@@ -42,18 +30,11 @@ type CategoryFilterValue = Category | 'all'
 type DashboardScreenProps = {
   reloadKey?: string | number
   repository?: InterestRepository
-  publicListRepository?: PublicListRepository
   coverResolver?: InterestCoverResolver
   onAddItem?: () => void
   onEditItem?: (itemId: string) => void
   onSuggestItem?: () => void
 }
-
-const dashboardLogoSources = {
-  cards: '/tarjetas.png',
-  list: '/listado.png',
-  covers: '/caratula.png',
-} satisfies Record<DashboardDisplayPreference, string>
 
 const dashboardFaviconSources = {
   cards: '/favicon-tarjetas.png',
@@ -61,81 +42,15 @@ const dashboardFaviconSources = {
   covers: '/favicon-caratulas.png',
 } satisfies Record<DashboardDisplayPreference, string>
 
-type DashboardLogoTitleProps = {
-  preference: DashboardDisplayPreference
-  title: string
-}
-
-function DashboardLogoTitle({ preference, title }: DashboardLogoTitleProps) {
-  return (
-    <span className={'relative block h-11 w-11 sm:h-14 sm:w-14'}>
-      <span className={'sr-only'}>{title}</span>
-      {Object.entries(dashboardLogoSources).map(([logoPreference, src]) => (
-        <img
-          alt={''}
-          aria-hidden={'true'}
-          className={cn(
-            'absolute inset-0 h-full w-full object-contain object-left transition-opacity duration-300 ease-in-out',
-            preference === logoPreference ? 'opacity-100' : 'opacity-0',
-          )}
-          key={logoPreference}
-          src={src}
-        />
-      ))}
-    </span>
-  )
-}
-
-type DashboardHeaderAvatarProps = {
-  avatarUrl: string | null
-  label: string
-  username: string
-}
-
-function DashboardHeaderAvatar({ avatarUrl, label, username }: DashboardHeaderAvatarProps) {
-  if (avatarUrl) {
-    return (
-      <img
-        alt={label}
-        className={'size-9 rounded-full border border-white/20 bg-white/10 object-cover sm:size-11'}
-        src={avatarUrl}
-        title={label}
-      />
-    )
-  }
-
-  const fallbackInitial = username.trim().charAt(0).toUpperCase()
-
-  if (!fallbackInitial) {
-    return null
-  }
-
-  return (
-    <span
-      aria-label={label}
-      className={'flex size-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-semibold text-white sm:size-11 sm:text-base'}
-      role={'img'}
-      title={label}
-    >
-      {fallbackInitial}
-    </span>
-  )
-}
-
 export function DashboardScreen({
   reloadKey,
   repository = getAppInterestRepository(),
-  publicListRepository,
   coverResolver = defaultStarterPackCoverResolver,
   onAddItem,
   onEditItem,
 }: DashboardScreenProps) {
   const { locale, t } = useLocale()
-  const auth = useOptionalPocketBaseAuth()
-  const { client, isAuthenticated, publicProfile, user } = auth
   const addActionLabel = t('dashboard.addAction')
-  const profileAvatarLabel = t('dashboard.profileAvatarLabel')
-  const publishActionLabel = t('dashboard.publishAction')
   const repositoryRef = useRef<InterestRepository>(repository)
   const starterPackCreationRef = useRef(false)
   const [items, setItems] = useState<InterestItem[]>([])
@@ -144,14 +59,6 @@ export function DashboardScreen({
   const [isLoading, setIsLoading] = useState(true)
   const [isCreatingStarterPack, setIsCreatingStarterPack] = useState(false)
   const [starterPackCreationFailed, setStarterPackCreationFailed] = useState(false)
-  const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false)
-  const [isPublishing, setIsPublishing] = useState(false)
-  const [publishTitle, setPublishTitle] = useState('')
-  const [publishSlug, setPublishSlug] = useState('')
-  const [publishDate, setPublishDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [publishDescription, setPublishDescription] = useState('')
-  const [publishMessage, setPublishMessage] = useState<string | null>(null)
-  const [publishedHref, setPublishedHref] = useState<string | null>(null)
   const [dashboardDisplayPreference, setDashboardDisplayPreference] = useDashboardDisplayPreference()
 
   useEffect(() => {
@@ -233,27 +140,6 @@ export function DashboardScreen({
 
   const hasSearchQuery = searchQuery.trim().length > 0
   const shouldShowStarterPack = !isLoading && activeItems.length === 0 && selectedCategory === 'all' && !hasSearchQuery
-  const runtimePublicListRepository = useMemo(() => {
-    if (publicListRepository) {
-      return publicListRepository
-    }
-
-    if (!client || !user) {
-      return null
-    }
-
-    return createPocketBasePublicListRepository({
-      collection: client.collection('public_lists'),
-      ownerId: user.id,
-      resolveOwnerAvatarUrl: (recordId, fileName) => getPocketBaseFileUrl('public_lists', recordId, fileName),
-    })
-  }, [client, publicListRepository, user])
-  const ownerNamespace = derivePublicOwnerNamespace({
-    email: typeof user?.email === 'string' ? user.email : null,
-    username: publicProfile?.username ?? (typeof user?.username === 'string' ? user.username : null),
-  })
-  const canPublish = isAuthenticated && user !== null && runtimePublicListRepository !== null && ownerNamespace.ok && filteredItems.length > 0
-
   async function handleCreateStarterPack() {
     if (starterPackCreationRef.current) {
       return
@@ -302,43 +188,6 @@ export function DashboardScreen({
     })
   }
 
-  async function handlePublishSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    if (!canPublish || !runtimePublicListRepository || !user || !ownerNamespace.ok) {
-      setPublishMessage(t('dashboard.publishErrorUnauthenticated'))
-      return
-    }
-
-    setIsPublishing(true)
-    setPublishMessage(null)
-    setPublishedHref(null)
-
-    const trimmedDescription = publishDescription.trim()
-    const result = await runtimePublicListRepository.publishList({
-      authenticatedOwnerId: user.id,
-      ...(trimmedDescription.length > 0 ? { description: trimmedDescription } : {}),
-      items: filteredItems.map(mapDashboardItemToPublicListItem),
-      listDate: publishDate,
-      owner: mapPublicOwnerProjection(user, {
-        resolveAvatarUrl: (fileName) => getPocketBaseFileUrl('users', user.id, fileName),
-      }),
-      ownerNamespace: ownerNamespace.value,
-      slug: publishSlug,
-      title: publishTitle.trim(),
-    })
-
-    setIsPublishing(false)
-
-    if (!result.ok) {
-      setPublishMessage(resolvePublishErrorMessage(result.error, t))
-      return
-    }
-
-    setPublishedHref(`/u/${result.list.ownerNamespace}/lista/${result.list.slug}`)
-    setPublishMessage(t('dashboard.publishSuccess'))
-  }
-
   function getDashboardItemInteractionProps(
     item: InterestItem,
     metadata: DashboardItemInteractionProps['metadata'],
@@ -359,49 +208,15 @@ export function DashboardScreen({
 
   return (
     <AppShell
-      actions={(
-        <div className={'flex flex-nowrap items-center justify-end gap-2 sm:gap-3'}>
-          {canPublish ? (
-            <Button className={'size-9 border-white/20 bg-white/10 text-white hover:bg-white/20 sm:size-11 [&_svg]:size-5 sm:[&_svg]:size-6'} onClick={() => setIsPublishDialogOpen(true)} size={'icon'} title={publishActionLabel} type={'button'} variant={'outline'}>
-              <Share2 aria-hidden={'true'} className={'size-5 sm:size-6'} />
-              <span className={'sr-only'}>{publishActionLabel}</span>
-            </Button>
-          ) : null}
-          {onAddItem ? (
-            <Button className={'size-9 bg-brand-sun text-night hover:bg-brand-sun/90 sm:size-11 [&_svg]:size-5 sm:[&_svg]:size-6'} onClick={onAddItem} size={'icon'} type={'button'}>
-              <Plus aria-hidden={'true'} className={'size-5 sm:size-6'} />
-              <span className={'sr-only'}>{addActionLabel}</span>
-            </Button>
-          ) : (
-            <Button asChild className={'size-9 bg-brand-sun text-night hover:bg-brand-sun/90 sm:size-11 [&_svg]:size-5 sm:[&_svg]:size-6'} size={'icon'}>
-              <a href={'/dashboard/add'} title={addActionLabel}>
-                <Plus aria-hidden={'true'} className={'size-5 sm:size-6'} />
-                <span className={'sr-only'}>{addActionLabel}</span>
-              </a>
-            </Button>
-          )}
-          {publicProfile ? (
-            <DashboardHeaderAvatar
-              avatarUrl={publicProfile.avatarUrl}
-              label={profileAvatarLabel}
-              username={publicProfile.username}
-            />
-          ) : null}
-          <DashboardOverflowMenu currentView={'dashboard'} />
-        </div>
-      )}
+      appHeaderCreateInterestAction={onAddItem ? { label: addActionLabel, onClick: onAddItem } : { href: '/dashboard/add', label: addActionLabel }}
+      appHeaderCurrentView={'dashboard'}
+      appHeaderDisplayPreference={dashboardDisplayPreference}
+      appHeaderLogoAsHeading
+      appHeaderLogoLabel={t('dashboard.title')}
       contentVariant={'plain'}
-      headerVariant={'plain'}
-      title={<DashboardLogoTitle preference={dashboardDisplayPreference} title={t('dashboard.title')} />}
-      titleActions={(
-        <DashboardDisplayPreferenceControl
-          className={'-ml-1 gap-1 sm:ml-0 sm:gap-2'}
-          name={'dashboard-display-preference-header'}
-          onChange={setDashboardDisplayPreference}
-          value={dashboardDisplayPreference}
-          variant={'icon'}
-        />
-      )}
+      onAppHeaderDisplayPreferenceChange={setDashboardDisplayPreference}
+      showPageHeader={false}
+      title={t('dashboard.title')}
     >
       <div className={'space-y-6'}>
         <div className={'flex flex-col gap-4 xl:flex-row xl:items-end'}>
@@ -528,62 +343,6 @@ export function DashboardScreen({
           </div>
         ) : null}
       </div>
-      <Dialog onOpenChange={setIsPublishDialogOpen} open={isPublishDialogOpen}>
-        <DialogContent closeLabel={t('app.closeLabel')}>
-          <DialogHeader>
-            <DialogTitle>{t('dashboard.publishTitle')}</DialogTitle>
-            <DialogDescription>{t('dashboard.publishDescription')}</DialogDescription>
-          </DialogHeader>
-          <form className={'space-y-4'} onSubmit={handlePublishSubmit}>
-            <div className={'space-y-2'}>
-              <Label htmlFor={'public-list-title'}>{t('dashboard.publishTitleLabel')}</Label>
-              <Input id={'public-list-title'} onChange={(event) => setPublishTitle(event.target.value)} required value={publishTitle} />
-            </div>
-            <div className={'space-y-2'}>
-              <Label htmlFor={'public-list-slug'}>{t('dashboard.publishSlugLabel')}</Label>
-              <Input id={'public-list-slug'} onChange={(event) => setPublishSlug(event.target.value)} placeholder={t('dashboard.publishSlugPlaceholder')} required value={publishSlug} />
-            </div>
-            <div className={'space-y-2'}>
-              <Label htmlFor={'public-list-date'}>{t('dashboard.publishDateLabel')}</Label>
-              <Input id={'public-list-date'} onChange={(event) => setPublishDate(event.target.value)} required type={'date'} value={publishDate} />
-            </div>
-            <div className={'space-y-2'}>
-              <Label htmlFor={'public-list-description'}>{t('dashboard.publishDescriptionLabel')}</Label>
-              <Textarea id={'public-list-description'} onChange={(event) => setPublishDescription(event.target.value)} value={publishDescription} />
-            </div>
-            {publishMessage ? <p className={'text-sm text-muted-foreground'} role={'status'}>{publishMessage}</p> : null}
-            {publishedHref ? <a className={'text-sm font-semibold text-brand-sun underline-offset-4 hover:underline'} href={publishedHref}>{publishedHref}</a> : null}
-            <DialogFooter>
-              <Button type={'submit'} disabled={isPublishing}>{isPublishing ? t('dashboard.publishSubmittingAction') : t('dashboard.publishSubmitAction')}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </AppShell>
   )
-}
-
-function mapDashboardItemToPublicListItem(item: InterestItem): PublicListItem {
-  return {
-    id: item.id,
-    category: item.category,
-    title: item.title,
-    ...(item.notes !== undefined ? { notes: item.notes } : {}),
-    tags: [...item.tags],
-    ...(item.coverImageUrl !== undefined ? { coverImageUrl: item.coverImageUrl } : {}),
-    ...(item.coverProvider !== undefined ? { coverProvider: item.coverProvider } : {}),
-    ...(item.coverMatchedTitle !== undefined ? { coverMatchedTitle: item.coverMatchedTitle } : {}),
-  }
-}
-
-function resolvePublishErrorMessage(error: PublicListPublishError, t: (path: string) => string) {
-  if (error.type === 'unauthenticated') {
-    return t('dashboard.publishErrorUnauthenticated')
-  }
-
-  if (isPublicListSlugCollisionError(error)) {
-    return t('dashboard.publishErrorSlugCollision')
-  }
-
-  return t('dashboard.publishErrorInvalid')
 }

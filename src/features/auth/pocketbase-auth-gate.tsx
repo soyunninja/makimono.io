@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type PropsWithChildren } from 'react'
+import { useEffect, useState, type FormEvent, type PropsWithChildren } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
 import { Button } from '@/components/ui/button'
@@ -11,10 +11,10 @@ import { cn } from '@/lib/utils'
 
 type PocketBaseAuthMode = 'login' | 'register'
 
-export function PocketBaseAuthCard({ className, onAuthenticated }: { className?: string, onAuthenticated?: () => void }) {
+export function PocketBaseAuthCard({ className, initialMode = 'login', onAuthenticated }: { className?: string, initialMode?: PocketBaseAuthMode, onAuthenticated?: () => void }) {
   const { client, isLoading, login, register } = useOptionalPocketBaseAuth()
   const { t } = useLocale()
-  const [mode, setMode] = useState<PocketBaseAuthMode>('login')
+  const [mode, setMode] = useState<PocketBaseAuthMode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -23,8 +23,12 @@ export function PocketBaseAuthCard({ className, onAuthenticated }: { className?:
   const canSubmit = isClientReady && !isLoading && !isSubmitting
   const submitLabel = mode === 'login' ? t('auth.submitLogin') : t('auth.submitRegister')
   const submittingLabel = mode === 'login' ? t('auth.submittingLogin') : t('auth.submittingRegister')
-  const homeButtonClassName = 'bg-[#FBA87A] text-black hover:bg-[#FBA87A]/90'
+  const homeButtonClassName = 'bg-brand-sun text-night hover:bg-brand-sun/90'
   const authModeButtonClassName = 'hover:text-white'
+
+  useEffect(() => {
+    setMode(initialMode)
+  }, [initialMode])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -114,8 +118,8 @@ export function PocketBaseAuthCard({ className, onAuthenticated }: { className?:
           ) : null}
 
           {errorMessage ? (
-            <div aria-live={'assertive'} className={'rounded-2xl border border-[#FBA87A]/40 bg-[#FBA87A]/10 p-4'} role={'alert'}>
-              <p className={'text-sm font-semibold text-[#FBA87A]'}>{t('auth.errorTitle')}</p>
+            <div aria-live={'assertive'} className={'rounded-2xl border border-brand-sun/40 bg-brand-sun/10 p-4'} role={'alert'}>
+              <p className={'text-sm font-semibold text-brand-sun'}>{t('auth.errorTitle')}</p>
               <p className={'mt-1 text-sm leading-6 text-white/80'}>{errorMessage}</p>
             </div>
           ) : null}

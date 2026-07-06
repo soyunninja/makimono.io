@@ -2,7 +2,6 @@ import { RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
-import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,15 +28,6 @@ type ArchiveItemCardProps = {
   deletedBadgeLabel: string
   deletedOnLabel: string
   onRestore: (item: InterestItem) => void
-}
-
-function ArchiveLogoTitle({ title }: { title: string }) {
-  return (
-    <a className={'block h-12 w-48 sm:h-14 sm:w-56'} href={'/dashboard'}>
-      <span className={'sr-only'}>{title}</span>
-      <img alt={''} aria-hidden={'true'} className={'h-full w-full object-contain object-left'} src={'/makimono.png'} />
-    </a>
-  )
 }
 
 function formatArchiveDate(date: string, locale: 'en' | 'es') {
@@ -201,16 +191,14 @@ export function ArchiveScreen({ repository = getAppInterestRepository() }: Archi
 
   return (
     <AppShell
-      actions={(
-        <div className={'flex flex-nowrap items-center justify-end gap-3'}>
-          <DashboardOverflowMenu currentView={'archive'} />
-        </div>
-      )}
+      appHeaderCurrentView={'archive'}
       contentVariant={'plain'}
       headerVariant={'plain'}
-      title={<ArchiveLogoTitle title={t('archive.title')} />}
+      showPageHeader={false}
+      title={t('archive.title')}
     >
       <div className={'space-y-8'}>
+        <h1 className={'sr-only'}>{t('archive.title')}</h1>
         {isLoading ? (
           <Card>
             <CardHeader>

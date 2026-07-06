@@ -12,17 +12,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PocketBaseAuthProvider } from '@/features/auth/pocketbase-auth-provider'
 import { resetAppInterestRepository } from '@/features/items/mock-repository'
 import { LocaleProvider } from '@/i18n/locale-provider'
-import { DashboardAddRoutePage } from '@/routes/dashboard.add'
-import { DashboardAuditRoutePage } from '@/routes/dashboard.audit'
-import { DashboardArchiveRoutePage } from '@/routes/dashboard.archive'
-import { DashboardEditRoutePage } from '@/routes/dashboard.edit.$itemId'
-import { DashboardPublicListEditorRoutePage } from '@/routes/dashboard.public-lists.$listId'
-import { DashboardPublicListsIndexRoutePage } from '@/routes/dashboard.public-lists.index'
-import { DashboardPublicListCreateRoutePage } from '@/routes/dashboard.public-lists.new'
-import { DashboardPublicListsRouteLayout } from '@/routes/dashboard.public-lists'
-import { DashboardSettingsRoutePage } from '@/routes/dashboard.settings'
-import { DashboardSuggestRoutePage } from '@/routes/dashboard.suggest'
-import { DashboardRoutePage } from '@/routes/dashboard'
+import { DashboardAddRoutePage } from '@/routes/-route-components'
+import { DashboardAuditRoutePage } from '@/routes/-route-components'
+import { DashboardArchiveRoutePage } from '@/routes/-route-components'
+import { DashboardEditRoutePage } from '@/routes/-route-components'
+import { DashboardPublicListEditorRoutePage } from '@/routes/-route-components'
+import { DashboardPublicListsIndexRoutePage } from '@/routes/-route-components'
+import { DashboardPublicListCreateRoutePage } from '@/routes/-route-components'
+import { DashboardPublicListsRouteLayout } from '@/routes/-route-components'
+import { DashboardSettingsRoutePage } from '@/routes/-route-components'
+import { DashboardSuggestRoutePage } from '@/routes/-route-components'
+import { DashboardRoutePage } from '@/routes/-route-components'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
 type AuthRecord = { email: string, id: string }
@@ -212,7 +212,21 @@ beforeEach(() => {
     },
     collection: vi.fn((collectionName: string) => ({
       authWithPassword: vi.fn(),
-      create: vi.fn(),
+      create: vi.fn(async (data: Record<string, unknown>) => {
+        if (collectionName === 'interests') {
+          const record = {
+            ...data,
+            created: '2026-07-03T12:00:00.000Z',
+            id: `interest-${String(data.title).toLowerCase().replaceAll(/[^a-z0-9]+/g, '-').replaceAll(/^-|-$/g, '')}`,
+          }
+
+          pocketBaseMock.interestRecords = [record, ...pocketBaseMock.interestRecords]
+
+          return record
+        }
+
+        return { ...data, id: 'created-record' }
+      }),
       getFullList: vi.fn(async (options?: { filter?: string }) => {
         if (collectionName === 'public_lists') {
           return pocketBaseMock.publicListRecords.filter((record) => matchesPublicListFilter(record, options?.filter))
@@ -242,7 +256,9 @@ afterEach(() => {
 
 describe('dashboard nested routes', () => {
   it('renders the adaptive add flow on top of the dashboard without duplicating the dashboard shell', async () => {
-    await renderRoute('/dashboard/add')
+    authenticatePocketBaseMock()
+
+    await renderRoute('/dashboard/add', { withPocketBaseAuthProvider: true })
 
     await screen.findByRole('heading', { level: 1, name: 'Your interests', hidden: true })
 
@@ -265,29 +281,33 @@ describe('dashboard nested routes', () => {
   })
 
   it('renders the archive route as a full replacement instead of overlaying the dashboard shell', async () => {
-    await renderRoute('/dashboard/archive')
+    authenticatePocketBaseMock()
+
+    await renderRoute('/dashboard/archive', { withPocketBaseAuthProvider: true })
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Archive' }),
-    ).toBeInTheDocument()
+    ).toHaveClass('sr-only')
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.queryByText('Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Archive' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.queryByRole('link', { name: 'Archive' })).not.toBeInTheDocument()
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
-    expect(await screen.findByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
-    expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
   })
 
   it('renders the settings route as a full replacement instead of overlaying the dashboard shell', async () => {
-    await renderRoute('/dashboard/settings')
+    authenticatePocketBaseMock()
+
+    await renderRoute('/dashboard/settings', { withPocketBaseAuthProvider: true })
 
     expect(
-      await screen.findByRole('link', { name: 'Settings' }),
-    ).toBeInTheDocument()
+      await screen.findByRole('heading', { level: 1, name: 'Settings' }),
+    ).toHaveClass('sr-only')
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.queryByText('Manage language, session, and app details.')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Back to dashboard' })).not.toBeInTheDocument()
@@ -297,7 +317,7 @@ describe('dashboard nested routes', () => {
     expect(screen.queryByText('Sign out of the current PocketBase session.')).not.toBeInTheDocument()
     expect(screen.queryByRole('radiogroup', { name: 'Dashboard display' })).not.toBeInTheDocument()
     expect(screen.queryByText('Current app version.')).not.toBeInTheDocument()
-    expect(screen.getByText('v0.66')).toBeInTheDocument()
+    expect(screen.getByText('v0.7.1')).toBeInTheDocument()
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
@@ -305,19 +325,24 @@ describe('dashboard nested routes', () => {
     expect(screen.getByRole('menuitem', { name: 'My public lists' })).toHaveAttribute('href', '/dashboard/public-lists')
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Settings' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
   })
 
-  it('renders the audit route as a full replacement and omits Audit from its overflow menu', async () => {
-    await renderRoute('/dashboard/audit')
+  it('renders the audit route as a full replacement and keeps Audit in its overflow menu', async () => {
+    authenticatePocketBaseMock()
 
-    expect(await screen.findByRole('link', { name: 'MCP audit' })).toHaveAttribute('href', '/dashboard')
+    await renderRoute('/dashboard/audit', { withPocketBaseAuthProvider: true })
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'MCP audit' })).toHaveClass('sr-only')
+    expect(screen.queryByRole('link', { name: 'MCP audit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.getByText('No MCP audit events yet')).toBeInTheDocument()
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
-    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.getByRole('menuitem', { name: 'My public lists' })).toHaveAttribute('href', '/dashboard/public-lists')
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
   })
@@ -359,14 +384,14 @@ describe('dashboard nested routes', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'My public lists' })).toBeInTheDocument()
     expect(screen.getByText('Public Stack')).toBeInTheDocument()
-    expect(screen.getByText('/u/reader/lista/public-stack')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Manage list' })).toHaveAttribute('href', '/dashboard/public-lists/list-public-stack')
-    expect(screen.getByRole('link', { name: 'Open public URL' })).toHaveAttribute('href', '/u/reader/lista/public-stack')
+    expect(screen.queryByText('/u/reader/public-stack')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Manage list: Public Stack' })).toHaveAttribute('href', '/dashboard/public-lists/list-public-stack')
+    expect(screen.getByRole('link', { name: 'Open public URL: Public Stack' })).toHaveAttribute('href', '/u/reader/public-stack')
     expect(screen.queryByRole('heading', { level: 1, name: 'Your interests' })).not.toBeInTheDocument()
     expect(screen.queryByText('reader@example.com')).not.toBeInTheDocument()
   })
 
-  it('hides the public lists item when the public lists view is active', async () => {
+  it('keeps the public lists item when the public lists view is active', async () => {
     authenticatePocketBaseMock()
 
     await renderRoute('/dashboard/public-lists', { withPocketBaseAuthProvider: true })
@@ -375,9 +400,11 @@ describe('dashboard nested routes', () => {
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
-    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
-    expect(screen.queryByRole('menuitem', { name: 'My public lists' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'My public lists' })).toHaveAttribute('href', '/dashboard/public-lists')
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
   })
 
   it('requires PocketBase auth before rendering the public list create route content', async () => {
@@ -422,7 +449,8 @@ describe('dashboard nested routes', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Public Stack' })).toBeInTheDocument()
     expect(screen.queryByText('Other User List')).not.toBeInTheDocument()
-    expect(screen.getByRole('list', { name: 'Eligible interests from your account' })).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Eligible interests from your account' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open rich composer' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { level: 1, name: 'My public lists' })).not.toBeInTheDocument()
     expect(screen.queryByText('reader@example.com')).not.toBeInTheDocument()
   })
@@ -468,9 +496,11 @@ describe('dashboard nested routes', () => {
   })
 
   it('opens and closes the local add flow from the dashboard without changing the route', async () => {
-    const router = await renderRoute('/dashboard')
+    authenticatePocketBaseMock()
 
-    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('[data-variant]') as HTMLElement
+    const router = await renderRoute('/dashboard', { withPocketBaseAuthProvider: true })
+
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
 
     fireEvent.click(within(header).getByRole('button', { name: 'Add interest' }))
 
@@ -490,18 +520,20 @@ describe('dashboard nested routes', () => {
   })
 
   it('does not expose the hidden suggester action from the dashboard actions menu', async () => {
-    const router = await renderRoute('/dashboard')
+    authenticatePocketBaseMock()
 
-    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('[data-variant]') as HTMLElement
+    const router = await renderRoute('/dashboard', { withPocketBaseAuthProvider: true })
+
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
 
     fireEvent.pointerDown(within(header).getByRole('button', { name: 'More actions' }))
 
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
     expect(screen.getByRole('menuitem', { name: 'My public lists' })).toHaveAttribute('href', '/dashboard/public-lists')
     expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/dashboard')
   })
 
@@ -589,9 +621,11 @@ describe('dashboard nested routes', () => {
   })
 
   it('shows a created item on the dashboard after the local add flow closes without leaving /dashboard', async () => {
-    const router = await renderRoute('/dashboard')
+    authenticatePocketBaseMock()
 
-    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('[data-variant]') as HTMLElement
+    const router = await renderRoute('/dashboard', { withPocketBaseAuthProvider: true })
+
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
 
     fireEvent.click(within(header).getByRole('button', { name: 'Add interest' }))
 

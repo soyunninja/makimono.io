@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { describe, expect, it } from 'vitest'
 
@@ -23,7 +23,10 @@ describe('AppShell', () => {
     )
 
     expect(screen.getByRole('main')).toBeInTheDocument()
-    expect(screen.getByRole('banner')).toHaveTextContent('makimono.io')
+    expect(screen.getByRole('banner')).toHaveTextContent('Makimono')
+    expect(within(screen.getByRole('banner')).queryByText('makimono.io')).not.toBeInTheDocument()
+    expect(screen.getByRole('banner').querySelector('img.opacity-100')).toHaveAttribute('src', '/caratula.png')
+    expect(screen.getByRole('link', { name: 'Register' })).toHaveAttribute('href', '/?auth=register')
     expect(screen.getByText('Foundation slice')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', {

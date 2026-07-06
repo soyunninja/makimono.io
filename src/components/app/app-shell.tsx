@@ -1,11 +1,24 @@
 import type { PropsWithChildren, ReactNode } from 'react'
 
 import { AppFooter } from '@/components/app/app-footer'
+import { AppHeader } from '@/components/app/app-header'
+import type { DashboardOverflowMenuView } from '@/components/app/dashboard-overflow-menu'
+import type { DashboardDisplayPreference } from '@/features/items/dashboard-display-preference'
 import { cn } from '@/lib/utils'
 
 type AppShellSurfaceVariant = 'card' | 'plain'
 
 type AppShellProps = PropsWithChildren<{
+  appHeaderCreateInterestAction?: {
+    href?: string
+    label: string
+    onClick?: () => void
+  }
+  appHeaderCurrentView?: DashboardOverflowMenuView
+  appHeaderDisplayPreference?: DashboardDisplayPreference
+  appHeaderLogoAsHeading?: boolean
+  appHeaderLogoLabel?: string
+  onAppHeaderDisplayPreferenceChange?: (preference: DashboardDisplayPreference) => void
   eyebrow?: string
   title: ReactNode
   titleActions?: ReactNode
@@ -14,9 +27,16 @@ type AppShellProps = PropsWithChildren<{
   headerVariant?: AppShellSurfaceVariant
   contentVariant?: AppShellSurfaceVariant
   className?: string
+  showPageHeader?: boolean
 }>
 
 export function AppShell({
+  appHeaderCreateInterestAction,
+  appHeaderCurrentView,
+  appHeaderDisplayPreference,
+  appHeaderLogoAsHeading,
+  appHeaderLogoLabel = 'Makimono',
+  onAppHeaderDisplayPreferenceChange,
   eyebrow,
   title,
   titleActions,
@@ -25,51 +45,55 @@ export function AppShell({
   headerVariant = 'card',
   contentVariant = 'card',
   className,
+  showPageHeader = true,
   children,
 }: AppShellProps) {
   return (
     <main className="flex min-h-screen flex-col p-4 sm:px-6 sm:py-8 lg:px-8">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8">
-        <header className="flex items-center justify-between gap-4">
-          <a className="flex min-w-0 items-center gap-3" href="/dashboard">
-            <img alt="" aria-hidden="true" className="h-10 w-auto object-contain" src="/makimono.png" />
-            <span className="truncate text-lg font-semibold tracking-tight text-foreground">makimono.io</span>
-          </a>
-        </header>
+        <AppHeader
+          createInterestAction={appHeaderCreateInterestAction}
+          currentView={appHeaderCurrentView}
+          displayPreference={appHeaderDisplayPreference}
+          logoAsHeading={appHeaderLogoAsHeading}
+          logoLabel={appHeaderLogoLabel}
+          onDisplayPreferenceChange={onAppHeaderDisplayPreferenceChange}
+        />
 
-        <section
-          className={cn(
-            headerVariant === 'card'
-              ? 'rounded-3xl border border-border/70 bg-card/80 p-6 shadow-2xl shadow-night/20 backdrop-blur sm:p-8'
-              : undefined,
-          )}
-          data-variant={headerVariant}
-        >
-          <div className={cn(headerVariant === 'card' ? 'flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between' : 'flex items-center justify-between gap-3')}>
-            <div className={cn(headerVariant === 'card' ? 'space-y-4' : 'space-y-3')}>
-              {eyebrow ? (
-                <span className="inline-flex w-fit items-center rounded-full border border-accent-purple/30 bg-accent-purple/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-purple">
-                  {eyebrow}
-                </span>
-              ) : null}
-              <div className={cn(description ? 'space-y-3' : undefined)}>
-                <div className="flex flex-nowrap items-center gap-3">
-                  <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-                    {title}
-                  </h1>
-                  {titleActions ? <div className="flex shrink-0 items-center">{titleActions}</div> : null}
-                </div>
-                {description ? (
-                  <p className="max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
-                    {description}
-                  </p>
+        {showPageHeader ? (
+          <section
+            className={cn(
+              headerVariant === 'card'
+                ? 'rounded-3xl border border-border/70 bg-card/80 p-6 shadow-2xl shadow-night/20 backdrop-blur sm:p-8'
+                : undefined,
+            )}
+            data-variant={headerVariant}
+          >
+            <div className={cn(headerVariant === 'card' ? 'flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between' : 'flex items-center justify-between gap-3')}>
+              <div className={cn(headerVariant === 'card' ? 'space-y-4' : 'space-y-3')}>
+                {eyebrow ? (
+                  <span className="inline-flex w-fit items-center rounded-full border border-accent-purple/30 bg-accent-purple/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-purple">
+                    {eyebrow}
+                  </span>
                 ) : null}
+                <div className={cn(description ? 'space-y-3' : undefined)}>
+                  <div className="flex flex-nowrap items-center gap-3">
+                    <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+                      {title}
+                    </h1>
+                    {titleActions ? <div className="flex shrink-0 items-center">{titleActions}</div> : null}
+                  </div>
+                  {description ? (
+                    <p className="max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
+                      {description}
+                    </p>
+                  ) : null}
+                </div>
               </div>
+              {actions ? <div className="flex shrink-0 items-center gap-3">{actions}</div> : null}
             </div>
-
-            {actions ? <div className="flex shrink-0 items-center gap-3">{actions}</div> : null}
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         <section
           className={cn(

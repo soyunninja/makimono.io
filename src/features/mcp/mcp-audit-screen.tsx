@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
-import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provider'
@@ -33,15 +32,6 @@ type McpAuditCollection = {
 const auditCollectionName = 'remote_mcp_audit_events'
 const auditEventLimit = 50
 const hasOwn = Object.prototype.hasOwnProperty
-
-function McpAuditLogoTitle({ title }: { title: string }) {
-  return (
-    <a className={'block h-12 w-48 sm:h-14 sm:w-56'} href={'/dashboard'}>
-      <span className={'sr-only'}>{title}</span>
-      <img alt={''} aria-hidden={'true'} className={'h-full w-full object-contain object-left'} src={'/makimono.png'} />
-    </a>
-  )
-}
 
 function isString(value: unknown): value is string {
   return typeof value === 'string'
@@ -181,16 +171,14 @@ export function McpAuditScreen({ repository }: McpAuditScreenProps = {}) {
 
   return (
     <AppShell
-      actions={(
-        <div className={'flex flex-nowrap items-center justify-end gap-3'}>
-          <DashboardOverflowMenu currentView={'audit'} />
-        </div>
-      )}
+      appHeaderCurrentView={'audit'}
       contentVariant={'plain'}
       headerVariant={'plain'}
-      title={<McpAuditLogoTitle title={t('mcpAudit.title')} />}
+      showPageHeader={false}
+      title={t('mcpAudit.title')}
     >
       <div className={'space-y-4'}>
+        <h1 className={'sr-only'}>{t('mcpAudit.title')}</h1>
         {isLoading ? (
           <Card>
             <CardHeader>

@@ -1,12 +1,26 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ArchiveScreen } from '@/features/items/archive-screen'
 import { createMockInterestRepository, getAppInterestRepository, resetAppInterestRepository } from '@/features/items/mock-repository'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
+const authMock = vi.hoisted(() => ({
+  client: null,
+  isAuthenticated: true,
+  publicProfile: { avatarUrl: null, username: 'mariano' } as null | { avatarUrl: string | null, username: string },
+  user: { id: 'user-mariano', username: 'mariano' } as null | { id: string, username?: string },
+}))
+
+vi.mock('@/features/auth/pocketbase-auth-provider', () => ({
+  useOptionalPocketBaseAuth: () => authMock,
+}))
+
 beforeEach(() => {
+  authMock.isAuthenticated = true
+  authMock.publicProfile = { avatarUrl: null, username: 'mariano' }
+  authMock.user = { id: 'user-mariano', username: 'mariano' }
   installMockLocalStorage()
   window.localStorage.clear()
   resetAppInterestRepository()
@@ -25,18 +39,18 @@ describe('ArchiveScreen', () => {
       </LocaleProvider>,
     )
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Archive' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Archive' })).toHaveClass('sr-only')
     expect(screen.getByRole('heading', { level: 2, name: 'Completed items' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Archive' })).toHaveAttribute('href', '/dashboard')
+    expect(screen.queryByRole('link', { name: 'Archive' })).not.toBeInTheDocument()
     expect(screen.queryByText('Review completed items, inspect deleted ones, and restore whatever should return to the dashboard.')).not.toBeInTheDocument()
     expect(screen.queryByText('Restore a completed item to move it back to the pending backlog.')).not.toBeInTheDocument()
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
 
-    expect(await screen.findByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
-    expect(screen.queryByRole('menuitem', { name: 'Archive' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     fireEvent.keyDown(document, { key: 'Escape' })
 
     const completedArticle = await screen.findByRole('article')

@@ -38,6 +38,7 @@ export type RichInterestFormValues = {
 type RichInterestComposerProps = {
   coverResolver?: InterestCoverResolver
   isDesktop?: boolean
+  initialValues?: RichInterestFormValues
   onRequestClose?: () => void
   onSubmit: (values: RichInterestFormValues) => Promise<void> | void
   composerTitle?: string
@@ -331,6 +332,7 @@ function InterestDetailsFields({ title, tags, notes, categoryFields, coverFields
 export function RichInterestComposer({
   coverResolver = defaultCoverResolver,
   isDesktop,
+  initialValues,
   composerTitle,
   onRequestClose,
   onSubmit,
@@ -341,12 +343,12 @@ export function RichInterestComposer({
   const { locale, t } = useLocale()
   const resolvedIsDesktop = useDesktopBreakpoint(isDesktop)
   const categories = useMemo(() => listCategoryMetadata(locale), [locale])
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
-  const [title, setTitle] = useState('')
-  const [tags, setTags] = useState<string[]>([])
-  const [notes, setNotes] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(initialValues?.category ?? null)
+  const [title, setTitle] = useState(initialValues?.title ?? '')
+  const [tags, setTags] = useState<string[]>(initialValues?.tags ?? [])
+  const [notes, setNotes] = useState(initialValues?.notes ?? '')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [coverMetadata, setCoverMetadata] = useState<EditableCoverMetadata>(toEditableCoverMetadata())
+  const [coverMetadata, setCoverMetadata] = useState<EditableCoverMetadata>(toEditableCoverMetadata(initialValues))
   const [coverLookupStatus, setCoverLookupStatus] = useState<CoverLookupStatus>('idle')
   const latestCoverLookupIdRef = useRef(0)
   const lastCoverLookupKeyRef = useRef<string | null>(null)

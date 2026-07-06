@@ -2,7 +2,6 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
 import { AppVersion } from '@/components/app/app-version'
-import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { LanguageToggle } from '@/components/app/language-toggle'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,15 +14,6 @@ import { useLocale } from '@/i18n/locale-provider'
 
 type SettingsScreenProps = {
   onLoggedOut?: () => void
-}
-
-function SettingsLogoTitle({ title }: { title: string }) {
-  return (
-    <a className={'block h-12 w-48 sm:h-14 sm:w-56'} href={'/dashboard'}>
-      <span className={'sr-only'}>{title}</span>
-      <img alt={''} aria-hidden={'true'} className={'h-full w-full object-contain object-left'} src={'/makimono.png'} />
-    </a>
-  )
 }
 
 type PublicProfileCardProps = {
@@ -137,16 +127,14 @@ export function SettingsScreen({ onLoggedOut }: SettingsScreenProps = {}) {
 
   return (
     <AppShell
-      actions={(
-        <div className={'flex flex-nowrap items-center justify-end gap-3'}>
-          <DashboardOverflowMenu currentView={'settings'} />
-        </div>
-      )}
+      appHeaderCurrentView={'settings'}
       contentVariant={'plain'}
       headerVariant={'plain'}
-      title={<SettingsLogoTitle title={t('settings.title')} />}
+      showPageHeader={false}
+      title={t('settings.title')}
     >
       <div className={'grid gap-4 md:grid-cols-2'}>
+        <h1 className={'sr-only'}>{t('settings.title')}</h1>
         {isAuthenticated ? <PublicProfileCard onUpdate={updatePublicProfile} profile={publicProfile} t={t} /> : null}
 
         <Card>

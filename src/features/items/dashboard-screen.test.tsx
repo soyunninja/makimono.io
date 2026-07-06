@@ -10,7 +10,6 @@ import {
   resetAppInterestRepository,
 } from '@/features/items/mock-repository'
 import { starterPackItems } from '@/features/items/starter-pack'
-import type { PublicListRepository, PublishPublicListInput } from '@/features/items/public-list-repository'
 import type { CreateInterestItemInput, InterestItem, InterestRepository } from '@/features/items/types'
 import { LocaleProvider } from '@/i18n/locale-provider'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
@@ -64,6 +63,12 @@ afterEach(() => {
   window.localStorage.clear()
   resetAppInterestRepository()
 })
+
+function authenticateDashboardHeader(username = 'mariano') {
+  authMock.isAuthenticated = true
+  authMock.publicProfile = { avatarUrl: null, username }
+  authMock.user = { id: `user-${username}`, username }
+}
 
 describe('DashboardScreen', () => {
   it('shows the starter CTA on an empty unfiltered dashboard', async () => {
@@ -217,8 +222,8 @@ describe('DashboardScreen', () => {
     expect(await screen.findByTestId('dashboard-cards-grid')).toBeInTheDocument()
     expect(screen.queryByTestId('dashboard-list')).not.toBeInTheDocument()
     expect(screen.queryByTestId('dashboard-covers-grid')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'More actions' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Add interest' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'More actions' })).not.toBeInTheDocument()
     expect(await screen.findAllByRole('article')).toHaveLength(4)
     expect(screen.queryByRole('heading', { level: 2, name: 'Celeste' })).not.toBeInTheDocument()
 
@@ -236,7 +241,9 @@ describe('DashboardScreen', () => {
   })
 
   it('shows the dashboard header avatar image when the public profile has an avatar URL', async () => {
+    authMock.isAuthenticated = true
     authMock.publicProfile = { avatarUrl: '/api/files/users/user-1/avatar.webp', username: 'mariano' }
+    authMock.user = { id: 'user-1', username: 'mariano' }
 
     render(
       <LocaleProvider initialLocale="en">
@@ -249,7 +256,7 @@ describe('DashboardScreen', () => {
     expect(screen.queryByText('mariano@example.com')).not.toBeInTheDocument()
   })
 
-  it('shows the publish entry point only after authentication', async () => {
+  it('does not show the removed publish entry point', async () => {
     render(
       <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
@@ -260,82 +267,10 @@ describe('DashboardScreen', () => {
     expect(screen.queryByRole('button', { name: 'Publish list' })).not.toBeInTheDocument()
   })
 
-  it('publishes visible display-only dashboard items without mutating private records or exposing copy/import controls', async () => {
-    authMock.isAuthenticated = true
-    authMock.user = { email: 'sam@example.com', id: 'user-private' }
-    const repository = createMockInterestRepository()
-    const publishList = vi.fn<PublicListRepository['publishList']>(async (input: PublishPublicListInput) => ({
-      list: {
-        id: 'sam-summer-books',
-        owner: input.owner,
-        ownerNamespace: 'sam',
-        slug: 'summer-books',
-        title: input.title,
-        listDate: input.listDate,
-        description: input.description,
-        items: input.items,
-        publishedAt: '2026-07-03T12:00:00.000Z',
-      },
-      ok: true,
-    }))
-    const publicListRepository = {
-      createManagedList: vi.fn<PublicListRepository['createManagedList']>(),
-      getByOwnerAndSlug: vi.fn(),
-      getManagedList: vi.fn<PublicListRepository['getManagedList']>(),
-      listMine: vi.fn(async () => []),
-      publishList,
-      updateManagedList: vi.fn<PublicListRepository['updateManagedList']>(),
-    } satisfies PublicListRepository
-
-    render(
-      <LocaleProvider initialLocale="en">
-        <DashboardScreen publicListRepository={publicListRepository} repository={repository} />
-      </LocaleProvider>,
-    )
-
-    await screen.findByRole('heading', { level: 2, name: 'Atomic Habits' })
-    fireEvent.click(screen.getByRole('radio', { name: 'Books (1)' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Publish list' }))
-
-    expect(screen.queryByRole('button', { name: /import/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /copy/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /comment/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /like/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /follow/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /collabor/i })).not.toBeInTheDocument()
-
-    expect(screen.getByLabelText('Public list title')).toBeRequired()
-    expect(screen.getByLabelText('List date')).toBeRequired()
-    expect(screen.getByLabelText('Description')).not.toBeRequired()
-
-    fireEvent.change(screen.getByLabelText('Public list title'), { target: { value: 'Summer Books' } })
-    fireEvent.change(screen.getByLabelText('Public URL slug'), { target: { value: 'Summer Books' } })
-    fireEvent.change(screen.getByLabelText('List date'), { target: { value: '2026-07-03' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Publish read-only list' }))
-
-    await waitFor(() => expect(publishList).toHaveBeenCalledTimes(1))
-    const publishInput = publishList.mock.calls[0][0]
-
-    expect(publishInput.authenticatedOwnerId).toBe('user-private')
-    expect(publishInput.ownerNamespace).toBe('sam')
-    expect(publishInput.owner.displayName).toBe('sam')
-    expect(publishInput.description).toBeUndefined()
-    expect(JSON.stringify(publishInput)).not.toContain('sam@example.com')
-    expect(publishInput.items).toEqual([
-      expect.objectContaining({ id: 'book-atomic-habits', title: 'Atomic Habits' }),
-    ])
-    expect(publishInput.items[0]).not.toHaveProperty('status')
-    expect(publishInput.items[0]).not.toHaveProperty('createdAt')
-    expect((await repository.listItems()).find((item) => item.id === 'book-atomic-habits')).toMatchObject({
-      createdAt: defaultMockItems[3].createdAt,
-      status: defaultMockItems[3].status,
-    })
-    expect(await screen.findByRole('status')).toHaveTextContent('Public list published.')
-    expect(screen.getByRole('link', { name: '/u/sam/lista/summer-books' })).toHaveAttribute('href', '/u/sam/lista/summer-books')
-  })
-
   it('shows a deterministic dashboard header fallback initial when the public profile has no avatar URL', async () => {
+    authMock.isAuthenticated = true
     authMock.publicProfile = { avatarUrl: null, username: 'mariano' }
+    authMock.user = { id: 'user-1', username: 'mariano' }
 
     render(
       <LocaleProvider initialLocale="en">
@@ -819,6 +754,8 @@ describe('DashboardScreen', () => {
   })
 
   it('hides the language selector from the visible dashboard actions', async () => {
+    authenticateDashboardHeader()
+
     render(
       <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
@@ -831,14 +768,17 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('link', { name: 'Add interest' })).toBeInTheDocument()
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
-    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('group', { name: 'Language' })).not.toBeInTheDocument()
   })
 
   it('keeps the dashboard copy localized when the app starts in Spanish without showing the selector', async () => {
+    authenticateDashboardHeader()
+
     render(
       <LocaleProvider initialLocale="es">
         <DashboardScreen repository={createMockInterestRepository()} />
@@ -851,15 +791,18 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('link', { name: 'Añadir interés' })).toBeInTheDocument()
     fireEvent.pointerDown(screen.getByRole('button', { name: 'Más acciones' }))
     expect(screen.queryByRole('menuitem', { name: 'Pedir sugerencias' })).not.toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Archivo' })).toHaveAttribute('href', '/dashboard/archive')
-    expect(screen.getByRole('menuitem', { name: 'Ajustes' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'Volver al dashboard' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archivo' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Auditoría' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Ajustes' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('group', { name: 'Idioma' })).not.toBeInTheDocument()
     expect(screen.queryByText('Sigue los elementos mock por categoría y muévelos por el backlog.')).not.toBeInTheDocument()
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
   })
 
   it('renders icon-only display controls next to the dashboard title and updates the display mode', async () => {
+    authenticateDashboardHeader()
+
     render(
       <LocaleProvider initialLocale="es">
         <DashboardScreen repository={createMockInterestRepository()} />
@@ -889,12 +832,17 @@ describe('DashboardScreen', () => {
 
     fireEvent.click(coversRadio)
 
-    expect(await screen.findByTestId('dashboard-covers-grid')).toBeInTheDocument()
+    const coversGrid = await screen.findByTestId('dashboard-covers-grid')
+
+    expect(coversGrid).toBeInTheDocument()
     expect(coversRadio).toBeChecked()
     expect(screen.queryByTestId('dashboard-list')).not.toBeInTheDocument()
+    expect(within(coversGrid).getByText('Libros')).toHaveClass('border')
   })
 
   it('clears the clicked display control highlight after one second', async () => {
+    authenticateDashboardHeader()
+
     render(
       <LocaleProvider initialLocale="es">
         <DashboardScreen repository={createMockInterestRepository()} />
@@ -923,6 +871,7 @@ describe('DashboardScreen', () => {
   })
 
   it('groups secondary header actions behind a menu while keeping add visible first', async () => {
+    authenticateDashboardHeader()
     const handleAddItem = vi.fn()
     const handleSuggestItem = vi.fn()
 
@@ -936,7 +885,7 @@ describe('DashboardScreen', () => {
       </LocaleProvider>,
     )
 
-    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('[data-variant]') as HTMLElement
+    const header = (await screen.findByRole('heading', { level: 1, name: 'Your interests' })).closest('header') as HTMLElement
     const addAction = within(header).getByRole('button', { name: 'Add interest' })
     const moreActions = within(header).getByRole('button', { name: 'More actions' })
 
@@ -944,9 +893,10 @@ describe('DashboardScreen', () => {
 
     fireEvent.pointerDown(moreActions)
 
-    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
-    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     fireEvent.click(addAction)
 
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
@@ -1038,6 +988,8 @@ describe('DashboardScreen', () => {
   })
 
   it('exposes accessible filters, navigation actions, and usable status controls', async () => {
+    authenticateDashboardHeader()
+
     render(
       <LocaleProvider initialLocale="en">
         <DashboardScreen repository={createMockInterestRepository()} />
@@ -1068,9 +1020,10 @@ describe('DashboardScreen', () => {
 
     fireEvent.pointerDown(screen.getByRole('button', { name: 'More actions' }))
     expect(screen.queryByRole('menuitem', { name: 'Get suggestions' })).not.toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
-    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
     expect(screen.queryByRole('menuitem', { name: 'Back to dashboard' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Archive' })).toHaveAttribute('href', '/dashboard/archive')
+    expect(screen.queryByRole('menuitem', { name: 'Audit' })).not.toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Settings' })).toHaveAttribute('href', '/dashboard/settings')
   })
 
   it('renders long card content in a readable article and preserves the visible action', async () => {
