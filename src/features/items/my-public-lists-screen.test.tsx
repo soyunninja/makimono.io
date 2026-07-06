@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { MyPublicListsScreen } from '@/features/items/my-public-lists-screen'
@@ -14,11 +14,13 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
-function createRepository(listMine: PublicListRepository['listMine']): PublicListRepository {
+function createRepository(listMine: PublicListRepository['listMine'], deleteManagedList: PublicListRepository['deleteManagedList'] = vi.fn<PublicListRepository['deleteManagedList']>(async () => ({ ok: true }))): PublicListRepository {
   return {
     createManagedList: vi.fn<PublicListRepository['createManagedList']>(),
+    deleteManagedList,
     getByOwnerAndSlug: vi.fn(async () => null),
     getManagedList: vi.fn<PublicListRepository['getManagedList']>(),
+    listByOwner: vi.fn<PublicListRepository['listByOwner']>(async () => null),
     listMine,
     publishList: vi.fn<PublicListRepository['publishList']>(async () => ({ error: { type: 'unauthenticated' }, ok: false })),
     updateManagedList: vi.fn<PublicListRepository['updateManagedList']>(),
@@ -28,7 +30,7 @@ function createRepository(listMine: PublicListRepository['listMine']): PublicLis
 function renderScreen(repository: PublicListRepository) {
   render(
     <LocaleProvider initialLocale={'en'}>
-      <MyPublicListsScreen repository={repository} />
+      <MyPublicListsScreen authenticatedOwnerId={'user-private'} repository={repository} />
     </LocaleProvider>,
   )
 }
@@ -50,8 +52,11 @@ describe('MyPublicListsScreen', () => {
 
     renderScreen(createRepository(vi.fn(() => deferred.promise)))
 
-    expect(screen.getByRole('heading', { level: 1, name: 'My public lists' })).toBeInTheDocument()
-    expect(screen.getByText('Makimono')).toBeInTheDocument()
+    const heading = screen.getByRole('heading', { level: 1, name: 'My public lists' })
+    const header = heading.closest('section') as HTMLElement
+
+    expect(heading).toBeInTheDocument()
+    expect(within(header).getByRole('link', { name: 'Create public list' })).toHaveAttribute('href', '/dashboard/public-lists/new')
     expect(screen.getByText('Loading your public lists…')).toBeInTheDocument()
 
     deferred.resolve([])
@@ -64,7 +69,7 @@ describe('MyPublicListsScreen', () => {
 
     expect(await screen.findByText('No public lists created yet')).toBeInTheDocument()
     expect(screen.getByText('Create a public list and add interests to it when you are ready.')).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: 'Create public list' })[0]).toHaveAttribute('href', '/dashboard/public-lists/new')
+    expect(screen.getByRole('link', { name: 'Create public list' })).toHaveAttribute('href', '/dashboard/public-lists/new')
   })
 
   it('shows a generic error state without private diagnostics', async () => {
@@ -84,18 +89,52 @@ describe('MyPublicListsScreen', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'My public lists' })).toBeInTheDocument()
     expect(screen.getByText('Summer Books')).toBeInTheDocument()
     expect(screen.getByText('No description')).toBeInTheDocument()
-    expect(screen.getByText('/u/mariano/lista/summer-books')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Manage list' })).toHaveAttribute('href', '/dashboard/public-lists/list-summer-books')
-    expect(screen.getByRole('link', { name: 'Open public URL' })).toHaveAttribute('href', '/u/mariano/lista/summer-books')
+    expect(screen.queryByText('/u/mariano/summer-books')).not.toBeInTheDocument()
+    expect(screen.getByText('July 03, 2026')).toBeInTheDocument()
+    expect(screen.queryByText('2026-07-03')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Manage list: Summer Books' })).toHaveAttribute('href', '/dashboard/public-lists/list-summer-books')
+    expect(screen.getByRole('link', { name: 'Open public URL: Summer Books' })).toHaveAttribute('href', '/u/mariano/summer-books')
+    expect(screen.getByRole('link', { name: 'Open public URL: Summer Books' }).closest('a')).toHaveAttribute('title', 'Open Summer Books')
+    expect(screen.getByRole('button', { name: 'Delete list: Summer Books' })).toHaveClass('bg-destructive')
+  })
+
+
+
+  it('deletes a public list after confirmation', async () => {
+    const deleteManagedList = vi.fn<PublicListRepository['deleteManagedList']>(async () => ({ ok: true }))
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderScreen(createRepository(vi.fn(async () => publicLists), deleteManagedList))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete list: Summer Books' }))
+
+    expect(confirm).toHaveBeenCalledWith('Delete this public list? This also removes every item saved inside it.')
+    await waitFor(() => {
+      expect(deleteManagedList).toHaveBeenCalledWith('user-private', 'list-summer-books')
+    })
+    expect(await screen.findByText('Public list deleted.')).toBeInTheDocument()
+    expect(screen.queryByText('Summer Books')).not.toBeInTheDocument()
+  })
+
+  it('keeps the public list when delete confirmation is cancelled', async () => {
+    const deleteManagedList = vi.fn<PublicListRepository['deleteManagedList']>(async () => ({ ok: true }))
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+    renderScreen(createRepository(vi.fn(async () => publicLists), deleteManagedList))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete list: Summer Books' }))
+
+    expect(deleteManagedList).not.toHaveBeenCalled()
+    expect(screen.getByText('Summer Books')).toBeInTheDocument()
   })
 
   it('does not expose out-of-scope management actions', async () => {
     renderScreen(createRepository(vi.fn(async () => publicLists)))
 
     expect(await screen.findByText('Summer Books')).toBeInTheDocument()
-    for (const name of [/compose|composer/i, /import|copy/i, /edit/i, /comment|like|follow|share/i, /draft|unpublish|delete/i]) {
+    for (const name of [/compose|composer/i, /import|copy/i, /comment|like|follow|share/i, /draft|unpublish/i]) {
       expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
     }
-    expect(screen.queryByRole('link', { name: /import|copy|edit|draft|unpublish|delete/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /import|copy|draft|unpublish|delete/i })).not.toBeInTheDocument()
   })
 })

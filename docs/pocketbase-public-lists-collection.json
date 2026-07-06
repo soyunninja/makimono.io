@@ -69,7 +69,7 @@
       },
       {
         "exceptDomains": null,
-        "help": "Public avatar URL or file URL representation only; do not expose auth metadata.",
+        "help": "Deprecated snapshot field. Do not write or read it; public pages must fetch the current users.avatar file instead.",
         "hidden": false,
         "id": "url_public_lists_owner_avatar",
         "name": "ownerAvatar",

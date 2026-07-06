@@ -13,6 +13,7 @@ import {
   type ManagedPublicListUpdateInput,
   type PublicListManagementSummary,
   type PublicListRepository,
+  type PublicOwnerListSummary,
   type PublishPublicListInput,
 } from '@/features/items/public-list-repository'
 import { itemCategories, coverProviders, type Category, type CoverProvider } from '@/features/items/types'
@@ -20,6 +21,7 @@ import { PocketBaseClientResponseError } from '@/lib/pocketbase'
 
 type PocketBasePublicListCollection = {
   create: (data: PocketBasePublicListRecordInput) => Promise<unknown>
+  delete: (id: string) => Promise<unknown>
   getFullList: (options?: { filter?: string, perPage?: number, sort?: string }) => Promise<unknown[]>
   update: (id: string, data: PocketBasePublicListRecordInput) => Promise<unknown>
 }
@@ -27,7 +29,6 @@ type PocketBasePublicListCollection = {
 type CreatePocketBasePublicListRepositoryOptions = {
   collection: PocketBasePublicListCollection
   ownerId: string
-  resolveOwnerAvatarUrl?: (recordId: string, fileName: string) => string | null
 }
 
 export type PocketBasePublicListRecordInput = Record<string, unknown>
@@ -48,7 +49,6 @@ export function buildPublicListPublishPayload(input: PublishPublicListInput, own
     owner: ownerId,
     ownerNamespace: ownerNamespace.value,
     ownerDisplayName: input.owner.displayName,
-    ownerAvatar: input.owner.avatarUrl,
     slug: slug.value,
     title: input.title,
     listDate: input.listDate,
@@ -100,16 +100,16 @@ export function buildManagedPublicListUpdatePayload(input: ManagedPublicListUpda
 
 export function mapPocketBasePublicListRecord(
   record: unknown,
-  options: { resolveOwnerAvatarUrl?: (recordId: string, fileName: string) => string | null } = {},
 ): PublicList {
   if (!isRecord(record)) {
     throw new Error('Invalid PocketBase public list record.')
   }
 
   const id = readRequiredString(record, 'id')
+  readRequiredString(record, 'owner')
   const ownerDisplayName = readRequiredString(record, 'ownerDisplayName')
   const owner: PublicOwnerProjection = {
-    avatarUrl: readOwnerAvatarUrl(record, id, options),
+    avatarUrl: null,
     displayName: ownerDisplayName,
     initial: resolvePublicOwnerInitial(ownerDisplayName),
   }
@@ -139,6 +139,17 @@ export function mapPocketBasePublicListRecord(
   return clonePublicList(mappedList)
 }
 
+export function mapPocketBasePublicOwnerListSummary(
+  record: unknown,
+): PublicOwnerListSummary {
+  const list = mapPocketBasePublicListRecord(record)
+
+  return {
+    ...mapPublicListManagementSummaryFromList(list),
+    owner: { ...list.owner },
+  }
+}
+
 export function mapPocketBasePublicListManagementSummary(record: unknown): PublicListManagementSummary {
   if (!isRecord(record)) {
     throw new Error('Invalid PocketBase public list record.')
@@ -166,7 +177,6 @@ export function mapPocketBasePublicListManagementSummary(record: unknown): Publi
 export function createPocketBasePublicListRepository({
   collection,
   ownerId,
-  resolveOwnerAvatarUrl,
 }: CreatePocketBasePublicListRepositoryOptions): PublicListRepository {
   const normalizedOwnerId = ownerId.trim()
 
@@ -191,13 +201,37 @@ export function createPocketBasePublicListRepository({
       try {
         const record = await collection.create(buildManagedPublicListCreatePayload(input, normalizedOwnerId))
 
-        return { list: mapPocketBasePublicListRecord(record, { resolveOwnerAvatarUrl }), ok: true }
+        return { list: mapPocketBasePublicListRecord(record), ok: true }
       }
       catch (error) {
         if (isPocketBasePublicListCollisionError(error)) {
           return { error: createPublicListSlugCollisionError(ownerNamespace.value, slug.value), ok: false }
         }
 
+        if (isPocketBaseRecoverableMutationError(error)) {
+          return { error: { type: 'operation_failed' }, ok: false }
+        }
+
+        throw error
+      }
+    },
+    async deleteManagedList(authenticatedOwnerId, id) {
+      if (!normalizedOwnerId || authenticatedOwnerId.trim() !== normalizedOwnerId) {
+        return { error: { type: 'unauthenticated' }, ok: false }
+      }
+
+      const currentRecord = await getManagedPublicListRecord(collection, normalizedOwnerId, id)
+
+      if (!currentRecord) {
+        return { error: { type: 'owner_mismatch' }, ok: false }
+      }
+
+      try {
+        await collection.delete(id)
+
+        return { ok: true }
+      }
+      catch (error) {
         if (isPocketBaseRecoverableMutationError(error)) {
           return { error: { type: 'operation_failed' }, ok: false }
         }
@@ -212,7 +246,7 @@ export function createPocketBasePublicListRepository({
 
       const record = await getManagedPublicListRecord(collection, normalizedOwnerId, id)
 
-      return record ? mapPocketBasePublicListRecord(record, { resolveOwnerAvatarUrl }) : null
+      return record ? mapPocketBasePublicListRecord(record) : null
     },
     async publishList(input) {
       if (normalizedOwnerId.length === 0 || input.authenticatedOwnerId.trim() !== normalizedOwnerId) {
@@ -234,7 +268,7 @@ export function createPocketBasePublicListRepository({
       try {
         const record = await collection.create(buildPublicListPublishPayload(input, normalizedOwnerId))
 
-        return { list: mapPocketBasePublicListRecord(record, { resolveOwnerAvatarUrl }), ok: true }
+        return { list: mapPocketBasePublicListRecord(record), ok: true }
       }
       catch (error) {
         if (isPocketBasePublicListCollisionError(error)) {
@@ -259,7 +293,30 @@ export function createPocketBasePublicListRepository({
       })
       const record = records[0]
 
-      return record ? mapPocketBasePublicListRecord(record, { resolveOwnerAvatarUrl }) : null
+      return record ? mapPocketBasePublicListRecord(record) : null
+    },
+    async listByOwner(ownerNamespaceInput) {
+      const ownerNamespace = normalizePublicOwnerNamespace(ownerNamespaceInput)
+
+      if (!ownerNamespace.ok) {
+        return null
+      }
+
+      const records = await collection.getFullList({
+        filter: `published = true && ownerNamespace = ${quotePocketBaseFilterValue(ownerNamespace.value)}`,
+        sort: '-publishedAt',
+      })
+      const lists = records.map((record) => mapPocketBasePublicOwnerListSummary(record))
+
+      if (lists.length === 0) {
+        return null
+      }
+
+      return {
+        lists,
+        owner: { ...lists[0].owner },
+        ownerNamespace: ownerNamespace.value,
+      }
     },
     async updateManagedList(input) {
       if (!normalizedOwnerId || input.authenticatedOwnerId.trim() !== normalizedOwnerId) {
@@ -272,7 +329,7 @@ export function createPocketBasePublicListRepository({
         return { error: { type: 'owner_mismatch' }, ok: false }
       }
 
-      const currentList = mapPocketBasePublicListRecord(currentRecord, { resolveOwnerAvatarUrl })
+      const currentList = mapPocketBasePublicListRecord(currentRecord)
       const slug = input.slug === undefined ? null : normalizePublicListSlug(input.slug)
 
       if (slug?.ok === false) {
@@ -282,7 +339,7 @@ export function createPocketBasePublicListRepository({
       try {
         const record = await collection.update(input.id, buildManagedPublicListUpdatePayload(input))
 
-        return { list: mapPocketBasePublicListRecord(record, { resolveOwnerAvatarUrl }), ok: true }
+        return { list: mapPocketBasePublicListRecord(record), ok: true }
       }
       catch (error) {
         if (isPocketBasePublicListCollisionError(error)) {
@@ -308,6 +365,19 @@ export function createPocketBasePublicListRepository({
 
       return records.map(mapPocketBasePublicListManagementSummary)
     },
+  }
+}
+
+function mapPublicListManagementSummaryFromList(list: PublicList): PublicListManagementSummary {
+  return {
+    id: list.id,
+    ownerNamespace: list.ownerNamespace,
+    slug: list.slug,
+    title: list.title,
+    listDate: list.listDate,
+    ...(list.description !== undefined ? { description: list.description } : {}),
+    publishedAt: list.publishedAt,
+    ...(list.updatedAt !== undefined ? { updatedAt: list.updatedAt } : {}),
   }
 }
 
@@ -375,24 +445,6 @@ function mapPublicListItem(value: unknown): PublicListItem {
     ...(coverProvider ? { coverProvider: coverProvider as CoverProvider } : {}),
     ...(coverMatchedTitle ? { coverMatchedTitle } : {}),
   }
-}
-
-function readOwnerAvatarUrl(
-  record: Record<string, unknown>,
-  id: string,
-  options: { resolveOwnerAvatarUrl?: (recordId: string, fileName: string) => string | null },
-) {
-  const ownerAvatar = readOptionalString(record, 'ownerAvatar')
-
-  if (!ownerAvatar) {
-    return null
-  }
-
-  if (ownerAvatar.startsWith('/') || ownerAvatar.startsWith('http://') || ownerAvatar.startsWith('https://')) {
-    return ownerAvatar
-  }
-
-  return options.resolveOwnerAvatarUrl ? options.resolveOwnerAvatarUrl(id, ownerAvatar) : null
 }
 
 function isPocketBasePublicListCollisionError(error: unknown) {

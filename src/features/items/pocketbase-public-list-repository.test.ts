@@ -6,6 +6,7 @@ import {
   createPocketBasePublicListRepository,
   mapPocketBasePublicListManagementSummary,
   mapPocketBasePublicListRecord,
+  mapPocketBasePublicOwnerListSummary,
 } from '@/features/items/pocketbase-public-list-repository'
 import type { ManagedPublicListCreateInput, PublishPublicListInput } from '@/features/items/public-list-repository'
 import { PocketBaseClientResponseError } from '@/lib/pocketbase'
@@ -21,6 +22,7 @@ describe('PocketBase public list mapper', () => {
       slug: 'summer-books',
       published: true,
     })
+    expect(payload).not.toHaveProperty('ownerAvatar')
     expect(publicList).not.toHaveProperty('ownerId')
     expect(JSON.stringify(publicList)).not.toContain('user-private')
   })
@@ -41,7 +43,7 @@ describe('PocketBase public list mapper', () => {
     expect(publicList).toEqual({
       id: 'public-list-1',
       owner: {
-        avatarUrl: 'https://cdn.example.com/avatar.webp',
+        avatarUrl: null,
         displayName: 'ana',
         initial: 'A',
       },
@@ -73,11 +75,21 @@ describe('PocketBase public list mapper', () => {
     expect(serializedPublicList).not.toContain('Only the owner should see this.')
   })
 
+  it('ignores list-level owner avatar snapshots', () => {
+    const publicList = mapPocketBasePublicListRecord(createPocketBasePublicListRecord({
+      owner: 'user-owner',
+      ownerAvatar: 'https://cdn.example.com/stale-avatar.webp',
+    }))
+
+    expect(publicList.owner.avatarUrl).toBeNull()
+  })
+
   it('reads by normalized owner namespace and slug through a public published-record filter', async () => {
     const getFullList = vi.fn().mockResolvedValue([createPocketBasePublicListRecord()])
     const repository = createPocketBasePublicListRepository({
       collection: {
         create: vi.fn(),
+        delete: vi.fn(),
         getFullList,
         update: vi.fn(),
       },
@@ -103,6 +115,7 @@ describe('PocketBase public list mapper', () => {
     const repository = createPocketBasePublicListRepository({
       collection: {
         create: vi.fn(),
+        delete: vi.fn(),
         getFullList,
         update: vi.fn(),
       },
@@ -119,6 +132,56 @@ describe('PocketBase public list mapper', () => {
     })
     const [options] = getFullList.mock.calls[0]
     expect(options?.filter).not.toContain('ownerNamespace')
+  })
+
+  it('lists public owner profile summaries by owner namespace', async () => {
+    const getFullList = vi.fn().mockResolvedValue([
+      createPocketBasePublicListRecord({ id: 'new-list', publishedAt: '2026-07-04T10:00:00.000Z' }),
+      createPocketBasePublicListRecord({ id: 'old-list', publishedAt: '2026-07-03T10:00:00.000Z' }),
+    ])
+    const repository = createPocketBasePublicListRepository({
+      collection: {
+        create: vi.fn(),
+        delete: vi.fn(),
+        getFullList,
+        update: vi.fn(),
+      },
+      ownerId: '',
+    })
+
+    await expect(repository.listByOwner(' Ana ')).resolves.toEqual({
+      lists: [
+        expect.objectContaining({ id: 'new-list', owner: expect.objectContaining({ avatarUrl: null }) }),
+        expect.objectContaining({ id: 'old-list' }),
+      ],
+      owner: expect.objectContaining({ displayName: 'ana' }),
+      ownerNamespace: 'ana',
+    })
+    expect(getFullList).toHaveBeenCalledWith({
+      filter: 'published = true && ownerNamespace = "ana"',
+      sort: '-publishedAt',
+    })
+  })
+
+  it('maps public owner summaries without exposing items or private fields', () => {
+    const summary = mapPocketBasePublicOwnerListSummary(createPocketBasePublicListRecord({
+      authId: 'auth-secret-id',
+      email: 'ana.private@example.com',
+      owner: 'user-private',
+      token: 'token-secret',
+    }))
+    const serializedSummary = JSON.stringify(summary)
+
+    expect(summary).toEqual(expect.objectContaining({
+      id: 'public-list-1',
+      owner: expect.objectContaining({ displayName: 'ana' }),
+      slug: 'summer-books',
+      title: 'Summer Books',
+    }))
+    expect(summary).not.toHaveProperty('items')
+    expect(serializedSummary).not.toContain('ana.private@example.com')
+    expect(serializedSummary).not.toContain('auth-secret-id')
+    expect(serializedSummary).not.toContain('token-secret')
   })
 
   it('strips private fields and item payloads from management summaries', () => {
@@ -159,6 +222,7 @@ describe('PocketBase public list mapper', () => {
     const repository = createPocketBasePublicListRepository({
       collection: {
         create,
+        delete: vi.fn(),
         getFullList: vi.fn(),
         update: vi.fn(),
       },
@@ -184,6 +248,7 @@ describe('PocketBase public list mapper', () => {
     const repository = createPocketBasePublicListRepository({
       collection: {
         create,
+        delete: vi.fn(),
         getFullList: vi.fn(),
         update: vi.fn(),
       },
@@ -208,6 +273,7 @@ describe('PocketBase public list mapper', () => {
     const repository = createPocketBasePublicListRepository({
       collection: {
         create: vi.fn(),
+        delete: vi.fn(),
         getFullList,
         update: vi.fn(),
       },
@@ -227,6 +293,7 @@ describe('PocketBase public list mapper', () => {
     const repository = createPocketBasePublicListRepository({
       collection: {
         create: vi.fn(),
+        delete: vi.fn(),
         getFullList,
         update,
       },
@@ -246,6 +313,7 @@ describe('PocketBase public list mapper', () => {
     const repository = createPocketBasePublicListRepository({
       collection: {
         create: vi.fn(),
+        delete: vi.fn(),
         getFullList: vi.fn().mockResolvedValue([]),
         update,
       },
@@ -265,6 +333,7 @@ describe('PocketBase public list mapper', () => {
     const repository = createPocketBasePublicListRepository({
       collection: {
         create: vi.fn().mockRejectedValueOnce(collision),
+        delete: vi.fn(),
         getFullList: vi.fn().mockResolvedValue([createPocketBasePublicListRecord()]),
         update: vi.fn().mockRejectedValueOnce(collision),
       },
@@ -290,6 +359,7 @@ describe('PocketBase public list mapper', () => {
     const repository = createPocketBasePublicListRepository({
       collection: {
         create: vi.fn(),
+        delete: vi.fn(),
         getFullList,
         update: vi.fn().mockRejectedValue(new PocketBaseClientResponseError(500, { message: 'nope' })),
       },

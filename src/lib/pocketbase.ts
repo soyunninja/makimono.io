@@ -13,7 +13,7 @@ type PocketBaseAuthStorageData = {
 
 type PocketBaseRequestOptions = {
   body?: FormData | Record<string, unknown>
-  method?: 'GET' | 'POST' | 'PATCH'
+  method?: 'DELETE' | 'GET' | 'POST' | 'PATCH'
 }
 
 type PocketBaseListOptions = {
@@ -173,6 +173,9 @@ class MinimalPocketBaseClient {
       create: (data: Record<string, unknown>) => this.#request(`/api/collections/${encodeURIComponent(name)}/records`, {
         body: data,
         method: 'POST',
+      }),
+      delete: (id: string) => this.#request(`/api/collections/${encodeURIComponent(name)}/records/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
       }),
       getFullList: async (options?: PocketBaseListOptions): Promise<unknown[]> => {
         const items: unknown[] = []

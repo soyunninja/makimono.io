@@ -1,8 +1,8 @@
 [
   {
     "id": "_pb_users_auth_",
-    "listRule": "@request.auth.id != \"\" && id = @request.auth.id",
-    "viewRule": "@request.auth.id != \"\" && id = @request.auth.id",
+    "listRule": "username != \"\"",
+    "viewRule": "username != \"\"",
     "createRule": "",
     "updateRule": "@request.auth.id != \"\" && id = @request.auth.id",
     "deleteRule": null,
@@ -47,9 +47,10 @@
     ],
     "profileRuleRequirements": {
       "avatar": "Single file only; accept stored image/webp files up to 200 KB after client normalization.",
-      "privacy": "Do not expose raw users records as public profile data; public profile models may expose only username and avatarUrl.",
+      "privacy": "Public client models may expose only username and avatarUrl; verify PocketBase auth settings keep email/private auth fields hidden from unauthenticated responses before applying public users rules.",
       "update": "Only the authenticated owner may update username/avatar on their users record.",
-      "username": "Trim and lowercase before save; enforce uniqueness, 3-30 characters, and the text field pattern."
+      "username": "Trim and lowercase before save; enforce uniqueness, 3-30 characters, and the text field pattern.",
+      "publicRead": "Public profile pages require public users list/view by username to fetch the current avatar; client models must expose only username and avatarUrl."
     },
     "system": true
   },
@@ -262,20 +263,185 @@
     "name": "public_lists",
     "type": "base",
     "fields": [
-      { "autogeneratePattern": "[a-z0-9]{15}", "hidden": false, "id": "text_public_lists_id", "max": 15, "min": 15, "name": "id", "pattern": "^[a-z0-9]+$", "presentable": false, "primaryKey": true, "required": true, "system": true, "type": "text" },
-      { "cascadeDelete": false, "collectionId": "_pb_users_auth_", "help": "Owner authorization relation for authenticated writes only; public projections must not expose this raw relation.", "hidden": true, "id": "relation_public_lists_owner", "maxSelect": 1, "minSelect": 1, "name": "owner", "presentable": false, "required": true, "system": false, "type": "relation" },
-      { "autogeneratePattern": "", "help": "Normalized route namespace from username or email prefix only; never store a full email here.", "hidden": false, "id": "text_public_lists_owner_namespace", "max": 120, "min": 1, "name": "ownerNamespace", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "presentable": true, "primaryKey": false, "required": true, "system": false, "type": "text" },
-      { "autogeneratePattern": "", "help": "Public owner display name: username, safe name, or email prefix only.", "hidden": false, "id": "text_public_lists_owner_display_name", "max": 120, "min": 1, "name": "ownerDisplayName", "pattern": "", "presentable": true, "primaryKey": false, "required": true, "system": false, "type": "text" },
-      { "exceptDomains": null, "help": "Public avatar URL or file URL representation only; do not expose auth metadata.", "hidden": false, "id": "url_public_lists_owner_avatar", "name": "ownerAvatar", "onlyDomains": null, "presentable": false, "required": false, "system": false, "type": "url" },
-      { "autogeneratePattern": "", "help": "Normalized list slug scoped by ownerNamespace.", "hidden": false, "id": "text_public_lists_slug", "max": 120, "min": 1, "name": "slug", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "presentable": true, "primaryKey": false, "required": true, "system": false, "type": "text" },
-      { "autogeneratePattern": "", "hidden": false, "id": "text_public_lists_title", "max": 240, "min": 1, "name": "title", "pattern": "", "presentable": true, "primaryKey": false, "required": true, "system": false, "type": "text" },
-      { "help": "List date shown on the public page.", "hidden": false, "id": "date_public_lists_list_date", "max": "", "min": "", "name": "listDate", "presentable": true, "required": true, "system": false, "type": "date" },
-      { "autogeneratePattern": "", "help": "Optional public description copied from display-only source data.", "hidden": false, "id": "text_public_lists_description", "max": 0, "min": 0, "name": "description", "pattern": "", "presentable": true, "primaryKey": false, "required": false, "system": false, "type": "text" },
-      { "help": "Read-only item display data: title, category, optional notes, tags, and cover metadata. Optional at schema level so newly created empty lists can start with an empty array.", "hidden": false, "id": "json_public_lists_items", "maxSize": 0, "name": "items", "presentable": false, "required": false, "system": false, "type": "json" },
-      { "help": "Only published records are publicly readable.", "hidden": false, "id": "bool_public_lists_published", "name": "published", "presentable": false, "required": true, "system": false, "type": "bool" },
-      { "help": "Public publish timestamp.", "hidden": false, "id": "date_public_lists_published_at", "max": "", "min": "", "name": "publishedAt", "presentable": false, "required": true, "system": false, "type": "date" },
-      { "hidden": false, "id": "autodate_public_lists_created", "name": "created", "onCreate": true, "onUpdate": false, "presentable": false, "system": false, "type": "autodate" },
-      { "hidden": false, "id": "autodate_public_lists_updated", "name": "updated", "onCreate": true, "onUpdate": true, "presentable": false, "system": false, "type": "autodate" }
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text_public_lists_id",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "_pb_users_auth_",
+        "help": "Owner authorization relation for authenticated writes only; public projections must not expose this raw relation.",
+        "hidden": true,
+        "id": "relation_public_lists_owner",
+        "maxSelect": 1,
+        "minSelect": 1,
+        "name": "owner",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "Normalized route namespace from username or email prefix only; never store a full email here.",
+        "hidden": false,
+        "id": "text_public_lists_owner_namespace",
+        "max": 120,
+        "min": 1,
+        "name": "ownerNamespace",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "Public owner display name: username, safe name, or email prefix only.",
+        "hidden": false,
+        "id": "text_public_lists_owner_display_name",
+        "max": 120,
+        "min": 1,
+        "name": "ownerDisplayName",
+        "pattern": "",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "exceptDomains": null,
+        "help": "Deprecated snapshot field. Do not write or read it; public pages must fetch the current users.avatar file instead.",
+        "hidden": false,
+        "id": "url_public_lists_owner_avatar",
+        "name": "ownerAvatar",
+        "onlyDomains": null,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "url"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "Normalized list slug scoped by ownerNamespace.",
+        "hidden": false,
+        "id": "text_public_lists_slug",
+        "max": 120,
+        "min": 1,
+        "name": "slug",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text_public_lists_title",
+        "max": 240,
+        "min": 1,
+        "name": "title",
+        "pattern": "",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "help": "List date shown on the public page.",
+        "hidden": false,
+        "id": "date_public_lists_list_date",
+        "max": "",
+        "min": "",
+        "name": "listDate",
+        "presentable": true,
+        "required": true,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "Optional public description copied from display-only source data.",
+        "hidden": false,
+        "id": "text_public_lists_description",
+        "max": 0,
+        "min": 0,
+        "name": "description",
+        "pattern": "",
+        "presentable": true,
+        "primaryKey": false,
+        "required": false,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "help": "Read-only item display data: title, category, optional notes, tags, and cover metadata. Optional at schema level so newly created empty lists can start with an empty array.",
+        "hidden": false,
+        "id": "json_public_lists_items",
+        "maxSize": 0,
+        "name": "items",
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "json"
+      },
+      {
+        "help": "Only published records are publicly readable.",
+        "hidden": false,
+        "id": "bool_public_lists_published",
+        "name": "published",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "bool"
+      },
+      {
+        "help": "Public publish timestamp.",
+        "hidden": false,
+        "id": "date_public_lists_published_at",
+        "max": "",
+        "min": "",
+        "name": "publishedAt",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "date"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_public_lists_created",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_public_lists_updated",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
     ],
     "indexes": [
       "CREATE UNIQUE INDEX `idx_public_lists_owner_namespace_slug` ON `public_lists` (`ownerNamespace`, `slug`)",
@@ -286,6 +452,105 @@
       "read": "Unauthenticated list/view rules allow only records with published = true.",
       "slugCollision": "ownerNamespace + slug is unique for one owner namespace; the same slug may exist under different owner namespaces.",
       "write": "Only the authenticated owner may create, update, delete, or unpublish records. The owner relation cannot be changed to another user."
+    },
+    "system": false
+  },
+  {
+    "id": "pbc_public_item_saves",
+    "listRule": "publicList.published = true",
+    "viewRule": "publicList.published = true",
+    "createRule": "@request.auth.id != \"\" && @request.body.savedBy = @request.auth.id",
+    "updateRule": null,
+    "deleteRule": null,
+    "name": "public_list_item_saves",
+    "type": "base",
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text_public_list_item_saves_id",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "pbc_public_lists",
+        "help": "Published public list where the copied item came from.",
+        "hidden": false,
+        "id": "relation_public_list_item_saves_public_list",
+        "maxSelect": 1,
+        "minSelect": 1,
+        "name": "publicList",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "Stable id of the item inside public_lists.items.",
+        "hidden": false,
+        "id": "text_public_list_item_saves_item_id",
+        "max": 120,
+        "min": 1,
+        "name": "itemId",
+        "pattern": "",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "_pb_users_auth_",
+        "help": "Authenticated user who copied the public-list item into their private interests.",
+        "hidden": true,
+        "id": "relation_public_list_item_saves_saved_by",
+        "maxSelect": 1,
+        "minSelect": 1,
+        "name": "savedBy",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_public_list_item_saves_created",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_public_list_item_saves_updated",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX `idx_public_list_item_saves_public_list_item` ON `public_list_item_saves` (`publicList`, `itemId`)",
+      "CREATE INDEX `idx_public_list_item_saves_saved_by` ON `public_list_item_saves` (`savedBy`)"
+    ],
+    "requirements": {
+      "purpose": "Append-only analytics events for users copying public-list items into their private dashboard interests.",
+      "privacy": "Public consumers may aggregate counts by itemId only; do not expose savedBy in UI.",
+      "delete": "Events are append-only for analytics; remove only through admin/back-office tooling if needed."
     },
     "system": false
   },
@@ -338,13 +603,13 @@
         "required": true,
         "system": false,
         "type": "select",
-          "values": [
-            "makimono_create_interest",
-            "makimono_delete_interest",
-            "makimono_restore_interest",
-            "makimono_update_interest",
-            "makimono_update_interest_status"
-          ]
+        "values": [
+          "makimono_create_interest",
+          "makimono_delete_interest",
+          "makimono_restore_interest",
+          "makimono_update_interest",
+          "makimono_update_interest_status"
+        ]
       },
       {
         "help": "",
@@ -400,13 +665,13 @@
         "required": true,
         "system": false,
         "type": "select",
-          "values": [
-            "create",
-            "restore",
-            "soft_delete",
-            "update",
-            "update_status"
-          ]
+        "values": [
+          "create",
+          "restore",
+          "soft_delete",
+          "update",
+          "update_status"
+        ]
       },
       {
         "help": "Server-side event timestamp emitted by the MCP handler.",

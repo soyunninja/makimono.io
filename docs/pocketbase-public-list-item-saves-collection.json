@@ -1,0 +1,101 @@
+[
+  {
+    "id": "pbc_public_item_saves",
+    "listRule": "publicList.published = true",
+    "viewRule": "publicList.published = true",
+    "createRule": "@request.auth.id != \"\" && @request.body.savedBy = @request.auth.id",
+    "updateRule": null,
+    "deleteRule": null,
+    "name": "public_list_item_saves",
+    "type": "base",
+    "fields": [
+      {
+        "autogeneratePattern": "[a-z0-9]{15}",
+        "hidden": false,
+        "id": "text_public_list_item_saves_id",
+        "max": 15,
+        "min": 15,
+        "name": "id",
+        "pattern": "^[a-z0-9]+$",
+        "presentable": false,
+        "primaryKey": true,
+        "required": true,
+        "system": true,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": true,
+        "collectionId": "pbc_public_lists",
+        "help": "Published public list where the copied item came from.",
+        "hidden": false,
+        "id": "relation_public_list_item_saves_public_list",
+        "maxSelect": 1,
+        "minSelect": 1,
+        "name": "publicList",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "autogeneratePattern": "",
+        "help": "Stable id of the item inside public_lists.items.",
+        "hidden": false,
+        "id": "text_public_list_item_saves_item_id",
+        "max": 120,
+        "min": 1,
+        "name": "itemId",
+        "pattern": "",
+        "presentable": true,
+        "primaryKey": false,
+        "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "cascadeDelete": false,
+        "collectionId": "_pb_users_auth_",
+        "help": "Authenticated user who copied the public-list item into their private interests.",
+        "hidden": true,
+        "id": "relation_public_list_item_saves_saved_by",
+        "maxSelect": 1,
+        "minSelect": 1,
+        "name": "savedBy",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "relation"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_public_list_item_saves_created",
+        "name": "created",
+        "onCreate": true,
+        "onUpdate": false,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      },
+      {
+        "hidden": false,
+        "id": "autodate_public_list_item_saves_updated",
+        "name": "updated",
+        "onCreate": true,
+        "onUpdate": true,
+        "presentable": false,
+        "system": false,
+        "type": "autodate"
+      }
+    ],
+    "indexes": [
+      "CREATE INDEX `idx_public_list_item_saves_public_list_item` ON `public_list_item_saves` (`publicList`, `itemId`)",
+      "CREATE INDEX `idx_public_list_item_saves_saved_by` ON `public_list_item_saves` (`savedBy`)"
+    ],
+    "requirements": {
+      "purpose": "Append-only analytics events for users copying public-list items into their private dashboard interests.",
+      "privacy": "Public consumers may aggregate counts by itemId only; do not expose savedBy in UI.",
+      "delete": "Events are append-only for analytics; remove only through admin/back-office tooling if needed."
+    },
+    "system": false
+  }
+]

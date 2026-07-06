@@ -32,6 +32,7 @@ export type Dictionary = {
     loadingDescription: string
     loginMode: string
     registerMode: string
+    registerHeaderAction: string
     emailLabel: string
     emailPlaceholder: string
     passwordLabel: string
@@ -75,20 +76,6 @@ export type Dictionary = {
     starterError: string
     startAction: string
     addAction: string
-    publishAction: string
-    publishTitle: string
-    publishDescription: string
-    publishTitleLabel: string
-    publishSlugLabel: string
-    publishSlugPlaceholder: string
-    publishDateLabel: string
-    publishDescriptionLabel: string
-    publishSubmitAction: string
-    publishSubmittingAction: string
-    publishSuccess: string
-    publishErrorUnauthenticated: string
-    publishErrorSlugCollision: string
-    publishErrorInvalid: string
     suggestAction: string
     archiveAction: string
     auditAction: string
@@ -107,6 +94,16 @@ export type Dictionary = {
     searchLabel: string
     searchPlaceholder: string
   }
+  publicProfile: {
+    listsHeading: string
+    openListAction: string
+    openListTitle: string
+    descriptionFallback: string
+    notFoundTitle: string
+    notFoundDescription: string
+    avatarAlt: string
+    avatarFallbackLabel: string
+  }
   publicList: {
     ownerLabel: string
     listDateLabel: string
@@ -121,6 +118,14 @@ export type Dictionary = {
     notesLabel: string
     tagsLabel: string
     coverAlt: string
+    addToInterestsAction: string
+    addToInterestsPending: string
+    addToInterestsSuccess: string
+    addToInterestsError: string
+    addAllToInterestsAction: string
+    addAllToInterestsPending: string
+    addAllToInterestsSuccess: string
+    registerToAddAction: string
   }
   myPublicLists: {
     title: string
@@ -134,6 +139,12 @@ export type Dictionary = {
     descriptionFallback: string
     urlLabel: string
     urlAction: string
+    urlActionTitle: string
+    deleteAction: string
+    deleteConfirmMessage: string
+    deletePending: string
+    deleteSuccess: string
+    deleteError: string
     createTitle: string
     createDescription: string
     createTitleLabel: string
@@ -159,6 +170,8 @@ export type Dictionary = {
     editorItemsTitle: string
     editorItemsDescription: string
     editorSavedItemsLabel: string
+    editorSavedCountBadge: string
+    editorCategoryEmpty: string
     editorEmptyTitle: string
     editorEmptyDescription: string
     editorEligibleTitle: string
@@ -175,6 +188,17 @@ export type Dictionary = {
     editorRemovePending: string
     editorRemoveSuccess: string
     editorRemoveError: string
+    editorEditAction: string
+    editorEditListOnlyTitle: string
+    editorEditListOnlySubmitAction: string
+    editorEditListOnlyPending: string
+    editorEditListOnlySuccess: string
+    editorEditListOnlyError: string
+    editorMoveUpAction: string
+    editorMoveDownAction: string
+    editorMovePending: string
+    editorMoveSuccess: string
+    editorMoveError: string
     editorCreateListOnlyTitle: string
     editorCreateListOnlyDescription: string
     editorCreateListOnlyOpenAction: string
@@ -319,6 +343,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       loadingDescription: 'PocketBase is restoring the saved session.',
       loginMode: 'Sign in',
       registerMode: 'Create account',
+      registerHeaderAction: 'Register',
       emailLabel: 'Email',
       emailPlaceholder: 'you@example.com',
       passwordLabel: 'Password',
@@ -380,20 +405,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       starterError: 'We could not add the starter list. Try again in a moment.',
       startAction: 'Start now',
       addAction: 'Add interest',
-      publishAction: 'Publish list',
-      publishTitle: 'Publish public list',
-      publishDescription: 'Temporary bridge: publish the currently visible dashboard items as a read-only public list. Dedicated public-list management lives in My public lists.',
-      publishTitleLabel: 'Public list title',
-      publishSlugLabel: 'Public URL slug',
-      publishSlugPlaceholder: 'summer-books',
-      publishDateLabel: 'List date',
-      publishDescriptionLabel: 'Description',
-      publishSubmitAction: 'Publish read-only list',
-      publishSubmittingAction: 'Publishing…',
-      publishSuccess: 'Public list published.',
-      publishErrorUnauthenticated: 'Sign in before publishing a public list.',
-      publishErrorSlugCollision: 'That public URL slug is already used for your profile.',
-      publishErrorInvalid: 'Use a valid public profile namespace and slug.',
       suggestAction: 'Get suggestions',
       archiveAction: 'Archive',
       auditAction: 'Audit',
@@ -412,6 +423,16 @@ export const dictionaries: Record<Locale, Dictionary> = {
       searchLabel: 'Search by title, tag, or notes',
       searchPlaceholder: 'Search title, tag, or notes',
     },
+    publicProfile: {
+      listsHeading: 'Public lists',
+      openListAction: 'Open public list',
+      openListTitle: 'Open {title}',
+      descriptionFallback: 'No description',
+      notFoundTitle: 'Public profile not found',
+      notFoundDescription: 'This user has no public lists yet, or the profile may have moved.',
+      avatarAlt: '{owner} public profile avatar',
+      avatarFallbackLabel: '{owner} public profile avatar fallback',
+    },
     publicList: {
       ownerLabel: 'Published by',
       listDateLabel: 'List date',
@@ -426,6 +447,14 @@ export const dictionaries: Record<Locale, Dictionary> = {
       notesLabel: 'Notes',
       tagsLabel: 'Tags',
       coverAlt: '{title} cover',
+      addToInterestsAction: 'Add',
+      addToInterestsPending: 'Adding…',
+      addToInterestsSuccess: 'Added to your interests.',
+      addToInterestsError: 'We could not add that interest. Try again in a moment.',
+      addAllToInterestsAction: 'Export full list',
+      addAllToInterestsPending: 'Exporting list…',
+      addAllToInterestsSuccess: 'All list items were added to your interests.',
+      registerToAddAction: 'Register to add it to your interests',
     },
     myPublicLists: {
       title: 'My public lists',
@@ -439,6 +468,12 @@ export const dictionaries: Record<Locale, Dictionary> = {
       descriptionFallback: 'No description',
       urlLabel: 'Public route',
       urlAction: 'Open public URL',
+      urlActionTitle: 'Open {title}',
+      deleteAction: 'Delete list',
+      deleteConfirmMessage: 'Delete this public list? This also removes every item saved inside it.',
+      deletePending: 'Deleting the public list…',
+      deleteSuccess: 'Public list deleted.',
+      deleteError: 'We could not delete that public list. It was left unchanged.',
       createTitle: 'Create public list',
       createDescription: 'Start an owner-managed public list. You can add interests from the list editor after creation.',
       createTitleLabel: 'Public list title',
@@ -461,9 +496,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editorErrorDescription: 'Check your session and try again. Private diagnostic details are not shown here.',
       editorDeniedTitle: 'Public list editor unavailable',
       editorDeniedDescription: 'This list does not exist for your account, or you do not have owner access to edit it.',
-      editorItemsTitle: 'Saved interests',
+      editorItemsTitle: 'Add your makis to the list',
       editorItemsDescription: 'These interests are already committed to the read-only public list.',
       editorSavedItemsLabel: 'Saved public list interests',
+      editorSavedCountBadge: '{count} saves',
+      editorCategoryEmpty: 'No interests in this category yet.',
       editorEmptyTitle: 'No interests saved yet',
       editorEmptyDescription: 'Add an eligible interest from your account to start composing this public list.',
       editorEligibleTitle: 'Add from your interests',
@@ -480,6 +517,17 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editorRemovePending: 'Removing the selected item from this public list…',
       editorRemoveSuccess: 'Removed. The public list no longer shows that item.',
       editorRemoveError: 'We could not remove that item. The public list was left unchanged.',
+      editorEditAction: 'Edit interest',
+      editorEditListOnlyTitle: 'Edit list interest',
+      editorEditListOnlySubmitAction: 'Save list interest',
+      editorEditListOnlyPending: 'Saving the edited list interest…',
+      editorEditListOnlySuccess: 'Saved. The public list now shows the edited interest.',
+      editorEditListOnlyError: 'We could not save that edited interest. The public list was left unchanged.',
+      editorMoveUpAction: 'Move up',
+      editorMoveDownAction: 'Move down',
+      editorMovePending: 'Saving the new order…',
+      editorMoveSuccess: 'Order updated.',
+      editorMoveError: 'We could not save the new order. The public list was left unchanged.',
       editorCreateListOnlyTitle: 'Add a rich list-only interest',
       editorCreateListOnlyDescription: 'Use the full composer to save title, category, notes, tags, and cover metadata only inside this public list.',
       editorCreateListOnlyOpenAction: 'Open rich composer',
@@ -684,6 +732,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       loadingDescription: 'PocketBase está restaurando la sesión guardada.',
       loginMode: 'Entrar',
       registerMode: 'Crear cuenta',
+      registerHeaderAction: 'Registrarse',
       emailLabel: 'Correo electrónico',
       emailPlaceholder: 'tu@ejemplo.com',
       passwordLabel: 'Contraseña',
@@ -745,20 +794,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       starterError: 'No se ha podido añadir la lista inicial. Inténtalo de nuevo en un momento.',
       startAction: 'Empezar ahora',
       addAction: 'Añadir interés',
-      publishAction: 'Publicar lista',
-      publishTitle: 'Publicar lista pública',
-      publishDescription: 'Puente temporal: publica los elementos visibles del dashboard como una lista pública de solo lectura. La gestión dedicada está en Mis listas públicas.',
-      publishTitleLabel: 'Título de la lista pública',
-      publishSlugLabel: 'Slug de la URL pública',
-      publishSlugPlaceholder: 'libros-verano',
-      publishDateLabel: 'Fecha de la lista',
-      publishDescriptionLabel: 'Descripción',
-      publishSubmitAction: 'Publicar lista de solo lectura',
-      publishSubmittingAction: 'Publicando…',
-      publishSuccess: 'Lista pública publicada.',
-      publishErrorUnauthenticated: 'Inicia sesión antes de publicar una lista pública.',
-      publishErrorSlugCollision: 'Ese slug de URL pública ya está usado en tu perfil.',
-      publishErrorInvalid: 'Usa un namespace de perfil público y un slug válidos.',
       suggestAction: 'Pedir sugerencias',
       archiveAction: 'Archivo',
       auditAction: 'Auditoría',
@@ -777,6 +812,16 @@ export const dictionaries: Record<Locale, Dictionary> = {
       searchLabel: 'Buscar por título, etiqueta o notas',
       searchPlaceholder: 'Buscar por título, etiqueta o notas',
     },
+    publicProfile: {
+      listsHeading: 'Listas públicas',
+      openListAction: 'Abrir lista pública',
+      openListTitle: 'Abrir {title}',
+      descriptionFallback: 'Sin descripción',
+      notFoundTitle: 'Perfil público no encontrado',
+      notFoundDescription: 'Este usuario todavía no tiene listas públicas, o puede que el perfil se haya movido.',
+      avatarAlt: 'Avatar público del perfil de {owner}',
+      avatarFallbackLabel: 'Marcador de avatar público del perfil de {owner}',
+    },
     publicList: {
       ownerLabel: 'Publicada por',
       listDateLabel: 'Fecha de la lista',
@@ -791,6 +836,14 @@ export const dictionaries: Record<Locale, Dictionary> = {
       notesLabel: 'Notas',
       tagsLabel: 'Etiquetas',
       coverAlt: 'Portada de {title}',
+      addToInterestsAction: 'Añadir',
+      addToInterestsPending: 'Añadiendo…',
+      addToInterestsSuccess: 'Añadido a tus intereses.',
+      addToInterestsError: 'No hemos podido añadir ese interés. Inténtalo de nuevo en un momento.',
+      addAllToInterestsAction: 'Exportar toda la lista',
+      addAllToInterestsPending: 'Exportando lista…',
+      addAllToInterestsSuccess: 'Todos los elementos de la lista se han añadido a tus intereses.',
+      registerToAddAction: 'Regístrate para añadirlo a tus intereses',
     },
     myPublicLists: {
       title: 'Mis listas públicas',
@@ -804,6 +857,12 @@ export const dictionaries: Record<Locale, Dictionary> = {
       descriptionFallback: 'Sin descripción',
       urlLabel: 'Ruta pública',
       urlAction: 'Abrir URL pública',
+      urlActionTitle: 'Abrir {title}',
+      deleteAction: 'Eliminar lista',
+      deleteConfirmMessage: '¿Eliminar esta lista pública? También se eliminarán todos los elementos guardados dentro.',
+      deletePending: 'Eliminando la lista pública…',
+      deleteSuccess: 'Lista pública eliminada.',
+      deleteError: 'No hemos podido eliminar esa lista pública. No se ha cambiado.',
       createTitle: 'Crear lista pública',
       createDescription: 'Empieza una lista pública gestionada por ti. Podrás añadir intereses desde el editor después de crearla.',
       createTitleLabel: 'Título de la lista pública',
@@ -826,9 +885,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editorErrorDescription: 'Revisa tu sesión e inténtalo de nuevo. Aquí no se muestran detalles privados de diagnóstico.',
       editorDeniedTitle: 'Editor de lista pública no disponible',
       editorDeniedDescription: 'Esta lista no existe para tu cuenta, o no tienes acceso de propietario para editarla.',
-      editorItemsTitle: 'Intereses guardados',
-      editorItemsDescription: 'Estos intereses ya están guardados en la lista pública de solo lectura.',
+      editorItemsTitle: 'Añade tus makis a la lista',
+      editorItemsDescription: '',
       editorSavedItemsLabel: 'Intereses guardados en la lista pública',
+      editorSavedCountBadge: '{count} guardados',
+      editorCategoryEmpty: 'Todavía no hay intereses en esta categoría.',
       editorEmptyTitle: 'Todavía no hay intereses guardados',
       editorEmptyDescription: 'Añade un interés elegible de tu cuenta para empezar a componer esta lista pública.',
       editorEligibleTitle: 'Añadir desde tus intereses',
@@ -845,6 +906,17 @@ export const dictionaries: Record<Locale, Dictionary> = {
       editorRemovePending: 'Quitando el elemento seleccionado de esta lista pública…',
       editorRemoveSuccess: 'Quitado. La lista pública ya no muestra ese elemento.',
       editorRemoveError: 'No hemos podido quitar ese elemento. La lista pública no ha cambiado.',
+      editorEditAction: 'Editar interés',
+      editorEditListOnlyTitle: 'Editar interés de la lista',
+      editorEditListOnlySubmitAction: 'Guardar interés de la lista',
+      editorEditListOnlyPending: 'Guardando el interés editado de la lista…',
+      editorEditListOnlySuccess: 'Guardado. La lista pública ya muestra el interés editado.',
+      editorEditListOnlyError: 'No hemos podido guardar ese interés editado. La lista pública no ha cambiado.',
+      editorMoveUpAction: 'Subir',
+      editorMoveDownAction: 'Bajar',
+      editorMovePending: 'Guardando el nuevo orden…',
+      editorMoveSuccess: 'Orden actualizado.',
+      editorMoveError: 'No hemos podido guardar el nuevo orden. La lista pública no ha cambiado.',
       editorCreateListOnlyTitle: 'Añadir un interés enriquecido solo de lista',
       editorCreateListOnlyDescription: 'Usa el compositor completo para guardar título, categoría, notas, etiquetas y metadatos de portada solo dentro de esta lista pública.',
       editorCreateListOnlyOpenAction: 'Abrir compositor enriquecido',

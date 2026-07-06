@@ -31,6 +31,16 @@ export type PublicListManagementSummary = {
   updatedAt?: string
 }
 
+export type PublicOwnerListSummary = PublicListManagementSummary & {
+  owner: PublicOwnerProjection
+}
+
+export type PublicOwnerProfile = {
+  lists: PublicOwnerListSummary[]
+  owner: PublicOwnerProjection
+  ownerNamespace: string
+}
+
 export type PublicListPublishError =
   | { ownerNamespace: string, slug: string, type: 'slug_collision' }
   | { field: 'ownerNamespace' | 'slug', type: 'invalid_route_part' }
@@ -63,11 +73,17 @@ export type ManagedPublicListResult =
   | { list: PublicList, ok: true }
   | { error: ManagedPublicListError, ok: false }
 
+export type ManagedPublicListDeleteResult =
+  | { ok: true }
+  | { error: ManagedPublicListError, ok: false }
+
 export type PublicListRepository = {
   createManagedList: (input: ManagedPublicListCreateInput) => Promise<ManagedPublicListResult>
+  deleteManagedList: (authenticatedOwnerId: string, id: string) => Promise<ManagedPublicListDeleteResult>
   getManagedList: (authenticatedOwnerId: string, id: string) => Promise<PublicList | null>
   publishList: (input: PublishPublicListInput) => Promise<PublicListPublishResult>
   getByOwnerAndSlug: (ownerNamespace: string, slug: string) => Promise<PublicList | null>
+  listByOwner: (ownerNamespace: string) => Promise<PublicOwnerProfile | null>
   updateManagedList: (input: ManagedPublicListUpdateInput) => Promise<ManagedPublicListResult>
   listMine: () => Promise<PublicListManagementSummary[]>
 }
@@ -114,6 +130,21 @@ export function createInMemoryPublicListRepository(
 
       return createManagedListRecord(records, input, currentOwnerId)
     },
+    async deleteManagedList(authenticatedOwnerId, id) {
+      if (!currentOwnerId || authenticatedOwnerId.trim() !== currentOwnerId) {
+        return { error: { type: 'unauthenticated' }, ok: false }
+      }
+
+      const recordIndex = records.findIndex((record) => record.published && record.ownerId === currentOwnerId && record.list.id === id)
+
+      if (recordIndex < 0) {
+        return { error: { type: 'owner_mismatch' }, ok: false }
+      }
+
+      records.splice(recordIndex, 1)
+
+      return { ok: true }
+    },
     async getManagedList(authenticatedOwnerId, id) {
       if (!currentOwnerId || authenticatedOwnerId.trim() !== currentOwnerId) {
         return null
@@ -143,6 +174,28 @@ export function createInMemoryPublicListRepository(
         && record.list.slug === slug.value)
 
       return record ? clonePublicList(record.list) : null
+    },
+    async listByOwner(ownerNamespaceInput) {
+      const ownerNamespace = normalizePublicOwnerNamespace(ownerNamespaceInput)
+
+      if (!ownerNamespace.ok) {
+        return null
+      }
+
+      const lists = records
+        .filter((record) => record.published && record.list.ownerNamespace === ownerNamespace.value)
+        .sort((left, right) => right.list.publishedAt.localeCompare(left.list.publishedAt))
+        .map(({ list }) => mapPublicOwnerListSummary(list))
+
+      if (lists.length === 0) {
+        return null
+      }
+
+      return {
+        lists,
+        owner: { ...lists[0].owner },
+        ownerNamespace: ownerNamespace.value,
+      }
     },
     async updateManagedList(input) {
       if (!currentOwnerId || input.authenticatedOwnerId.trim() !== currentOwnerId) {
@@ -244,5 +297,12 @@ function mapPublicListManagementSummary(list: PublicList): PublicListManagementS
     ...(list.description !== undefined ? { description: list.description } : {}),
     publishedAt: list.publishedAt,
     ...(list.updatedAt !== undefined ? { updatedAt: list.updatedAt } : {}),
+  }
+}
+
+function mapPublicOwnerListSummary(list: PublicList): PublicOwnerListSummary {
+  return {
+    ...mapPublicListManagementSummary(list),
+    owner: { ...list.owner },
   }
 }

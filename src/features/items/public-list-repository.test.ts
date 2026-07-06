@@ -16,8 +16,10 @@ describe('PublicListRepository boundary', () => {
 
     expect(Object.keys(repository).sort()).toEqual([
       'createManagedList',
+      'deleteManagedList',
       'getByOwnerAndSlug',
       'getManagedList',
+      'listByOwner',
       'listMine',
       'publishList',
       'updateManagedList',
@@ -49,6 +51,19 @@ describe('PublicListRepository boundary', () => {
     ])
   })
 
+  it('deletes managed lists and their embedded items for the authenticated owner', async () => {
+    const repository = createInMemoryPublicListRepository([
+      createPublicListSeed({ id: 'current-list', ownerId: 'user-private' }),
+    ], { ownerId: 'user-private' })
+
+    await expect(repository.deleteManagedList('other-user', 'current-list')).resolves.toEqual({ error: { type: 'unauthenticated' }, ok: false })
+    await expect(repository.deleteManagedList('user-private', 'missing-list')).resolves.toEqual({ error: { type: 'owner_mismatch' }, ok: false })
+    await expect(repository.deleteManagedList('user-private', 'current-list')).resolves.toEqual({ ok: true })
+    await expect(repository.getManagedList('user-private', 'current-list')).resolves.toBeNull()
+    await expect(repository.getByOwnerAndSlug('ana', 'summer-books')).resolves.toBeNull()
+    await expect(repository.listMine()).resolves.toEqual([])
+  })
+
   it('excludes unpublished lists from owner management summaries', async () => {
     const repository = createInMemoryPublicListRepository([
       createPublicListSeed({ id: 'published-list', ownerId: 'user-private', published: true }),
@@ -58,6 +73,32 @@ describe('PublicListRepository boundary', () => {
     await expect(repository.listMine()).resolves.toEqual([
       expect.objectContaining({ id: 'published-list' }),
     ])
+  })
+
+  it('returns a public owner profile with published list summaries only', async () => {
+    const repository = createInMemoryPublicListRepository([
+      createPublicListSeed({ id: 'new-list', ownerNamespace: 'ana', publishedAt: '2026-07-04T10:00:00.000Z', slug: 'new-list', title: 'New List' }),
+      createPublicListSeed({ id: 'old-list', ownerNamespace: 'ana', publishedAt: '2026-07-03T10:00:00.000Z', slug: 'old-list', title: 'Old List' }),
+      createPublicListSeed({ id: 'draft-list', ownerNamespace: 'ana', published: false, slug: 'draft-list' }),
+      createPublicListSeed({ id: 'other-owner-list', ownerNamespace: 'sam', slug: 'sam-list' }),
+    ])
+
+    await expect(repository.listByOwner(' Ana ')).resolves.toEqual({
+      lists: [
+        expect.objectContaining({ id: 'new-list', owner: expect.objectContaining({ displayName: 'ana' }), slug: 'new-list' }),
+        expect.objectContaining({ id: 'old-list', owner: expect.objectContaining({ displayName: 'ana' }), slug: 'old-list' }),
+      ],
+      owner: expect.objectContaining({ displayName: 'ana' }),
+      ownerNamespace: 'ana',
+    })
+  })
+
+  it('returns null when a public owner profile has no published lists', async () => {
+    const repository = createInMemoryPublicListRepository([
+      createPublicListSeed({ ownerNamespace: 'ana', published: false }),
+    ])
+
+    await expect(repository.listByOwner('ana')).resolves.toBeNull()
   })
 
   it('returns null when public owner-plus-slug lookup matches an unpublished list', async () => {

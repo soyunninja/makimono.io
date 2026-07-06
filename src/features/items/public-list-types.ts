@@ -15,6 +15,7 @@ export type PublicListItem = {
   coverImageUrl?: string
   coverProvider?: CoverProvider
   coverMatchedTitle?: string
+  savedCount?: number
 }
 
 export type PublicList = {
@@ -88,6 +89,7 @@ export function clonePublicListItem(item: PublicListItem): PublicListItem {
     ...(item.coverImageUrl !== undefined ? { coverImageUrl: item.coverImageUrl } : {}),
     ...(item.coverProvider !== undefined ? { coverProvider: item.coverProvider } : {}),
     ...(item.coverMatchedTitle !== undefined ? { coverMatchedTitle: item.coverMatchedTitle } : {}),
+    ...(item.savedCount !== undefined ? { savedCount: item.savedCount } : {}),
   }
 }
 
@@ -104,4 +106,14 @@ export function clonePublicList(list: PublicList): PublicList {
     publishedAt: list.publishedAt,
     ...(list.updatedAt !== undefined ? { updatedAt: list.updatedAt } : {}),
   }
+}
+
+export function applyPublicListItemSaveCounts(list: PublicList, counts: Record<string, number>): PublicList {
+  return clonePublicList({
+    ...list,
+    items: list.items.map((item) => ({
+      ...item,
+      savedCount: counts[item.id] ?? 0,
+    })),
+  })
 }

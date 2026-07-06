@@ -1,7 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
-import { DashboardOverflowMenu } from '@/components/app/dashboard-overflow-menu'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,7 +12,7 @@ import { createPocketBasePublicListRepository } from '@/features/items/pocketbas
 import type { ManagedPublicListError, PublicListRepository } from '@/features/items/public-list-repository'
 import { derivePublicOwnerNamespace } from '@/features/items/public-list-types'
 import { useLocale } from '@/i18n/locale-provider'
-import { getPocketBaseFileUrl, type PocketBaseAuthRecord } from '@/lib/pocketbase'
+import type { PocketBaseAuthRecord } from '@/lib/pocketbase'
 
 type PublicListCreateScreenProps = {
   authenticatedUser?: PocketBaseAuthRecord | null
@@ -53,7 +52,6 @@ export function PublicListCreateScreen({
     return createPocketBasePublicListRepository({
       collection: client.collection('public_lists'),
       ownerId: user.id,
-      resolveOwnerAvatarUrl: (recordId, fileName) => getPocketBaseFileUrl('public_lists', recordId, fileName),
     })
   }, [client, repository, user])
 
@@ -95,9 +93,7 @@ export function PublicListCreateScreen({
       authenticatedOwnerId: user.id,
       ...(trimmedDescription.length > 0 ? { description: trimmedDescription } : {}),
       listDate: trimmedDate,
-      owner: mapPublicOwnerProjection(ownerProjectionSource, {
-        resolveAvatarUrl: (fileName) => getPocketBaseFileUrl('users', user.id, fileName),
-      }),
+      owner: mapPublicOwnerProjection(ownerProjectionSource),
       ownerNamespace: ownerNamespace.value,
       slug: trimmedSlug,
       title: trimmedTitle,
@@ -116,11 +112,7 @@ export function PublicListCreateScreen({
 
   return (
     <AppShell
-      actions={(
-        <div className={'flex flex-nowrap items-center justify-end gap-3'}>
-          <DashboardOverflowMenu currentView={'publicLists'} />
-        </div>
-      )}
+      appHeaderCurrentView={'publicLists'}
       contentVariant={'plain'}
       headerVariant={'plain'}
       title={t('myPublicLists.createTitle')}
