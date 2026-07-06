@@ -11,6 +11,7 @@ dist/
 
 # Local AI/tooling and design workspace files
 .atl/
+.pi/
 .gga
 .mcp.json
 opencode.json
