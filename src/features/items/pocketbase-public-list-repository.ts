@@ -53,7 +53,7 @@ export function buildPublicListPublishPayload(input: PublishPublicListInput, own
     slug: slug.value,
     title: input.title,
     listDate: input.listDate,
-    description: input.description ?? null,
+    ...(input.description !== undefined ? { description: input.description } : {}),
     items: input.items.map(mapPublicListItemToPayload),
     published: true,
     publishedAt: input.publishedAt ?? new Date().toISOString(),

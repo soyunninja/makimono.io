@@ -82,6 +82,8 @@ Standard mode. Strict TDD is disabled by `openspec/config.yaml` and `sdd-init/ma
 | `npx pnpm typecheck` | Passed after final readability helper verification |
 | `npx pnpm test` | Passed after final readability helper verification: 40 files, 335 tests |
 | `npx pnpm build` | Passed after final readability helper verification |
+| `npx pnpm test src/features/items/pocketbase-public-list-repository.test.ts` | Passed after PocketBase create payload null-description fix: 20 tests |
+| `npx pnpm typecheck` | Passed after PocketBase create payload null-description fix |
 
 ## Changed Files
 
@@ -97,8 +99,8 @@ Standard mode. Strict TDD is disabled by `openspec/config.yaml` and `sdd-init/ma
 - `src/test/routes/public-list-route.test.tsx` — extended route/page behavior coverage for public display preferences, copy gating, duplicate prevention, all-saved state, and partial-failure retry.
 - `src/features/items/public-list-types.ts` — added shared owner username resolution helper to keep managed public-list repository setup consistent.
 - `src/test/routes/dashboard-nested-routes.test.tsx` — updated managed public-list route coverage for owner namespace/auth behavior.
-- `src/features/items/pocketbase-public-list-repository.ts` — tightened managed-list queries to include authenticated owner ownership while preserving public DTO projections.
-- `src/features/items/pocketbase-public-list-repository.test.ts` — added/updated owner filtering coverage for managed public-list queries.
+- `src/features/items/pocketbase-public-list-repository.ts` — tightened managed-list queries to include authenticated owner ownership while preserving public DTO projections; create payloads omit absent optional text fields instead of sending `null`.
+- `src/features/items/pocketbase-public-list-repository.test.ts` — added/updated owner filtering coverage for managed public-list queries and create payload optional text regression coverage.
 - `docs/pocketbase-public-lists-collection.json` — documents `items` as non-required and empty public lists as `items: []`.
 - `openspec/changes/rich-public-list-composer/proposal.md` — documented public-list membership removal scope and dashboard mutation exclusion.
 - `openspec/changes/rich-public-list-composer/specs/public-list-composition/spec.md` — added removal success/failure scenarios and clarified exclusions.
@@ -125,3 +127,4 @@ Standard mode. Strict TDD is disabled by `openspec/config.yaml` and `sdd-init/ma
 - Unrelated archive deletion and broad PocketBase docs/import/schema changes were separated out of the working tree and preserved at `/tmp/meinteresa-archive-pocketbase-split.patch`; `git apply --check /tmp/meinteresa-archive-pocketbase-split.patch` passed.
 - A fresh resilience audit reported no findings after separation; the remaining `docs/pocketbase-public-lists-collection.json` diff is limited to the scoped `items: []` help text.
 - A pre-commit readability review found duplicated owner username fallback logic and a missing create-screen hook dependency; the shared helper fix was re-reviewed with no findings.
+- Live PocketBase create rejected a payload containing `description: null`; create payloads now omit absent optional text fields, matching PocketBase text field expectations.

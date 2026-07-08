@@ -27,6 +27,15 @@ describe('PocketBase public list mapper', () => {
     expect(JSON.stringify(publicList)).not.toContain('user-private')
   })
 
+  it('omits optional text fields from create payloads instead of sending null', () => {
+    const payload = buildPublicListPublishPayload({
+      ...createPublishInput(),
+      description: undefined,
+    }, 'user-private')
+
+    expect(payload).not.toHaveProperty('description')
+  })
+
   it('maps public lookup records to privacy-safe projections only', () => {
     const publicList = mapPocketBasePublicListRecord(createPocketBasePublicListRecord({
       authId: 'auth-secret-id',
