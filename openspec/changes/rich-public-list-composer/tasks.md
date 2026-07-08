@@ -42,20 +42,20 @@ Chain strategy: stacked-to-main
 
 ## Phase 3: Public Page Display Modes
 
-- [ ] 3.1 Update `src/features/items/public-list-page.tsx` to support `cards`, `list`, and `covers` with public read-only item renderers.
-- [ ] 3.2 Reuse `DashboardDisplayPreference` with a public-list storage key and default `cards` without changing server schema.
-- [ ] 3.3 Extend public page/route tests for switching all display modes and absence of editor/social controls.
+- [x] 3.1 Update `src/features/items/public-list-page.tsx` to support `cards`, `list`, and `covers` with public read-only item renderers.
+- [x] 3.2 Reuse `DashboardDisplayPreference` with a public-list storage key and default `cards` without changing server schema.
+- [x] 3.3 Extend public page/route tests for switching all display modes and absence of editor/social controls.
 
 ## Phase 4: Copy To Dashboard
 
-- [ ] 4.1 Wire optional auth/client in `src/routes/u.$username.lista.$slug.tsx` without making public reads require login.
-- [ ] 4.2 Add per-item copy action in `src/features/items/public-list-page.tsx`; unauthenticated users see login guidance and no dashboard write.
-- [ ] 4.3 For authenticated users, map public item fields to `CreateInterestItemInput` and create a personal interest with status `pending`.
-- [ ] 4.4 Add tests for authenticated copy, unauthenticated gate, copy failure preserving list membership, and duplicate prevention.
+- [x] 4.1 Wire optional auth/client through the public-list page/provider path without making public reads require login.
+- [x] 4.2 Add per-item copy action in `src/features/items/public-list-page.tsx`; unauthenticated users see login guidance and no dashboard write.
+- [x] 4.3 For authenticated users, map public item fields to `CreateInterestItemInput` and create a personal interest with status `pending`.
+- [x] 4.4 Add tests for authenticated copy, unauthenticated gate, copy failure preserving list membership, and duplicate prevention.
 
 ## Phase 5: Hardening And Verification
 
-- [ ] 5.1 Verify public projections omit raw owner ids, full emails, auth tokens, sessions, provider metadata, and private auth fields.
-- [ ] 5.2 Verify/update `docs/pocketbase-public-lists-collection.json` so `items` remains non-required and `items: []` is documented.
-- [ ] 5.3 Keep existing dirty AppShell/global header and PocketBase docs changes out of this change unless explicitly accepted.
-- [ ] 5.4 Run `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`; document manual responsive inspection limits.
+- [x] 5.1 Verify public projections omit raw owner ids, full emails, auth tokens, sessions, provider metadata, and private auth fields.
+- [x] 5.2 Verify/update `docs/pocketbase-public-lists-collection.json` so `items` remains non-required and `items: []` is documented.
+- [x] 5.3 Keep existing dirty AppShell/global header and PocketBase docs changes out of this change unless explicitly accepted.
+- [x] 5.4 Run `npx pnpm typecheck`, `npx pnpm test`, and `npx pnpm build`; document manual responsive inspection limits.

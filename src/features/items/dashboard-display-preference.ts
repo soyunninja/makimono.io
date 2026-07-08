@@ -5,19 +5,20 @@ export const dashboardDisplayPreferences = ['cards', 'list', 'covers'] as const
 export type DashboardDisplayPreference = (typeof dashboardDisplayPreferences)[number]
 
 const dashboardDisplayPreferenceStorageKey = 'meinteresa.dashboardDisplayPreference'
+export const publicListDisplayPreferenceStorageKey = 'meinteresa.publicListDisplayPreference'
 const defaultDashboardDisplayPreference: DashboardDisplayPreference = 'cards'
 
 export function isDashboardDisplayPreference(value: string): value is DashboardDisplayPreference {
   return dashboardDisplayPreferences.includes(value as DashboardDisplayPreference)
 }
 
-export function readDashboardDisplayPreference(): DashboardDisplayPreference {
+export function readDashboardDisplayPreference(storageKey = dashboardDisplayPreferenceStorageKey): DashboardDisplayPreference {
   if (typeof window === 'undefined') {
     return defaultDashboardDisplayPreference
   }
 
   try {
-    const storedPreference = window.localStorage.getItem(dashboardDisplayPreferenceStorageKey)
+    const storedPreference = window.localStorage.getItem(storageKey)
 
     return storedPreference && isDashboardDisplayPreference(storedPreference)
       ? storedPreference
@@ -28,42 +29,42 @@ export function readDashboardDisplayPreference(): DashboardDisplayPreference {
   }
 }
 
-export function writeDashboardDisplayPreference(preference: DashboardDisplayPreference) {
+export function writeDashboardDisplayPreference(preference: DashboardDisplayPreference, storageKey = dashboardDisplayPreferenceStorageKey) {
   if (typeof window === 'undefined') {
     return
   }
 
   try {
-    window.localStorage.setItem(dashboardDisplayPreferenceStorageKey, preference)
+    window.localStorage.setItem(storageKey, preference)
   }
   catch {
     // Ignore unavailable storage so the in-memory UI state remains usable.
   }
 }
 
-export function useDashboardDisplayPreference() {
+export function useDashboardDisplayPreference(storageKey = dashboardDisplayPreferenceStorageKey) {
   const [preference, setPreferenceState] = useState<DashboardDisplayPreference>(defaultDashboardDisplayPreference)
 
   useEffect(() => {
-    setPreferenceState(readDashboardDisplayPreference())
+    setPreferenceState(readDashboardDisplayPreference(storageKey))
 
     function handleStorageChange(event: StorageEvent) {
-      if (event.key !== dashboardDisplayPreferenceStorageKey) {
+      if (event.key !== storageKey) {
         return
       }
 
-      setPreferenceState(readDashboardDisplayPreference())
+      setPreferenceState(readDashboardDisplayPreference(storageKey))
     }
 
     window.addEventListener('storage', handleStorageChange)
 
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [])
+  }, [storageKey])
 
   const setPreference = useCallback((nextPreference: DashboardDisplayPreference) => {
-    writeDashboardDisplayPreference(nextPreference)
+    writeDashboardDisplayPreference(nextPreference, storageKey)
     setPreferenceState(nextPreference)
-  }, [])
+  }, [storageKey])
 
   return [preference, setPreference] as const
 }

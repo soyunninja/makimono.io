@@ -80,6 +80,18 @@ describe('PublicListCreateScreen', () => {
     expect(await repository.getManagedList('other-user', 'mariano-summer-books')).toBeNull()
   })
 
+  it('requires an authenticated username before creating a public list', async () => {
+    const repository = createInMemoryPublicListRepository([], { ownerId: ownerUser.id })
+    const createManagedList = vi.spyOn(repository, 'createManagedList')
+
+    renderCreateScreen({ repository, user: { email: 'owner@example.com', id: ownerUser.id } })
+
+    submitCreateForm({ slug: 'summer-books', title: 'Summer Books' })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Use a valid public profile namespace and slug.')
+    expect(createManagedList).not.toHaveBeenCalled()
+  })
+
   it('shows a recoverable failure state without navigating to a failed list', async () => {
     const repository: PublicListRepository = {
       createManagedList: vi.fn<PublicListRepository['createManagedList']>(async () => ({ error: { type: 'operation_failed' }, ok: false })),

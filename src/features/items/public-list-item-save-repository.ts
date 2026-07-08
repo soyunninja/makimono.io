@@ -10,6 +10,24 @@ export type PublicListItemSaveRepository = {
   recordItemSave: (input: PublicListItemSaveInput) => Promise<void>
 }
 
+export async function recordPublicListItemSaveBestEffort(
+  repository: PublicListItemSaveRepository | null | undefined,
+  input: PublicListItemSaveInput,
+) {
+  if (!repository) {
+    return false
+  }
+
+  try {
+    await repository.recordItemSave(input)
+
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
 type PocketBasePublicListItemSaveCollection = {
   create: (data: Record<string, unknown>) => Promise<unknown>
   getFullList: (options?: { filter?: string, sort?: string }) => Promise<unknown[]>

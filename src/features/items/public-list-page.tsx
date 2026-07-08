@@ -1,5 +1,5 @@
-import { Check, Image, Plus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { BookmarkCheck, Check, Image, Plus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { AppShell } from '@/components/app/app-shell'
 import { Badge } from '@/components/ui/badge'
@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription } from '@/components/ui/card'
 import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provider'
 import { DashboardDisplayPreferenceControl } from '@/features/items/dashboard-display-preference-control'
+import { publicListDisplayPreferenceStorageKey, useDashboardDisplayPreference } from '@/features/items/dashboard-display-preference'
 import type { DashboardDisplayPreference } from '@/features/items/dashboard-display-preference'
 import { useAppInterestRepository } from '@/features/items/app-interest-repository'
-import { createPocketBasePublicListItemSaveRepository } from '@/features/items/public-list-item-save-repository'
+import { createPocketBasePublicListItemSaveRepository, recordPublicListItemSaveBestEffort } from '@/features/items/public-list-item-save-repository'
 import type { PublicList, PublicListItem } from '@/features/items/public-list-types'
 import { getCategoryMetadata, listCategoryMetadata } from '@/features/items/metadata'
-import type { CreateInterestItemInput } from '@/features/items/types'
+import type { CreateInterestItemInput, InterestItem } from '@/features/items/types'
 import { useLocale } from '@/i18n/locale-provider'
 import { cn } from '@/lib/utils'
 
@@ -23,8 +24,9 @@ export function PublicListPage({ list }: PublicListPageProps) {
   const { dictionary, locale } = useLocale()
   const { client, isAuthenticated, user } = useOptionalPocketBaseAuth()
   const interestRepository = useAppInterestRepository()
-  const [displayPreference, setDisplayPreference] = useState<DashboardDisplayPreference>('covers')
+  const [displayPreference, setDisplayPreference] = useDashboardDisplayPreference(publicListDisplayPreferenceStorageKey)
   const [saveState, setSaveState] = useState<PublicListSaveState>({ message: null, pendingItemId: null })
+  const [savedItemIds, setSavedItemIds] = useState<Set<string>>(() => new Set())
   const publicListItemSaveRepository = useMemo(() => {
     if (!client || !user) {
       return null
@@ -35,6 +37,36 @@ export function PublicListPage({ list }: PublicListPageProps) {
       savedByUserId: user.id,
     })
   }, [client, user])
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadSavedItemIds() {
+      if (!list || !isAuthenticated) {
+        setSavedItemIds(new Set())
+        return
+      }
+
+      try {
+        const privateItems = await interestRepository.listItems()
+
+        if (isMounted) {
+          setSavedItemIds(findSavedPublicListItemIds(list.items, privateItems))
+        }
+      }
+      catch {
+        if (isMounted) {
+          setSavedItemIds(new Set())
+        }
+      }
+    }
+
+    void loadSavedItemIds()
+
+    return () => {
+      isMounted = false
+    }
+  }, [interestRepository, isAuthenticated, list])
 
   if (!list) {
     return (
@@ -63,7 +95,8 @@ export function PublicListPage({ list }: PublicListPageProps) {
 
     try {
       await interestRepository.createItem(mapPublicListItemToInterestInput(item))
-      await publicListItemSaveRepository?.recordItemSave({ itemId: item.id, publicListId: publicList.id })
+      await recordPublicListItemSaveBestEffort(publicListItemSaveRepository, { itemId: item.id, publicListId: publicList.id })
+      setSavedItemIds((currentIds) => new Set([...currentIds, item.id]))
       setSaveState({ message: dictionary.publicList.addToInterestsSuccess, pendingItemId: null })
     }
     catch {
@@ -72,16 +105,19 @@ export function PublicListPage({ list }: PublicListPageProps) {
   }
 
   async function handleSaveAllItems() {
-    if (!isAuthenticated || publicList.items.length === 0) {
+    const unsavedItems = publicList.items.filter((item) => !savedItemIds.has(item.id))
+
+    if (!isAuthenticated || unsavedItems.length === 0) {
       return
     }
 
     setSaveState({ message: dictionary.publicList.addAllToInterestsPending, pendingItemId: 'all' })
 
     try {
-      for (const item of publicList.items) {
+      for (const item of unsavedItems) {
         await interestRepository.createItem(mapPublicListItemToInterestInput(item))
-        await publicListItemSaveRepository?.recordItemSave({ itemId: item.id, publicListId: publicList.id })
+        await recordPublicListItemSaveBestEffort(publicListItemSaveRepository, { itemId: item.id, publicListId: publicList.id })
+        setSavedItemIds((currentIds) => new Set([...currentIds, item.id]))
       }
 
       setSaveState({ message: dictionary.publicList.addAllToInterestsSuccess, pendingItemId: null })
@@ -110,6 +146,7 @@ export function PublicListPage({ list }: PublicListPageProps) {
             </div>
             {list.items.length ? (
               <PublicListSaveAllAction
+                allItemsSaved={publicList.items.every((item) => savedItemIds.has(item.id))}
                 isAuthenticated={isAuthenticated}
                 isPending={saveState.pendingItemId === 'all'}
                 onSaveAll={() => void handleSaveAllItems()}
@@ -149,6 +186,7 @@ export function PublicListPage({ list }: PublicListPageProps) {
               items={list.items}
               onSaveItem={(item) => void handleSaveItem(item)}
               pendingItemId={saveState.pendingItemId}
+              savedItemIds={savedItemIds}
             />
           ) : null}
           {list.items.length && displayPreference !== 'list' ? (
@@ -164,6 +202,7 @@ export function PublicListPage({ list }: PublicListPageProps) {
                   key={item.id}
                   onSaveItem={(item) => void handleSaveItem(item)}
                   pendingItemId={saveState.pendingItemId}
+                  savedItemIds={savedItemIds}
                 />
               ))}
             </ul>
@@ -186,18 +225,20 @@ function PublicListDisplayItemCard({
   item,
   onSaveItem,
   pendingItemId,
+  savedItemIds,
 }: {
   displayPreference: DashboardDisplayPreference
   isAuthenticated: boolean
   item: PublicListItem
   onSaveItem: (item: PublicListItem) => void
   pendingItemId: 'all' | string | null
+  savedItemIds: Set<string>
 }) {
   if (displayPreference === 'cards') {
-    return <PublicListCardItemCard isAuthenticated={isAuthenticated} item={item} onSaveItem={onSaveItem} pendingItemId={pendingItemId} />
+    return <PublicListCardItemCard isAuthenticated={isAuthenticated} isSaved={savedItemIds.has(item.id)} item={item} onSaveItem={onSaveItem} pendingItemId={pendingItemId} />
   }
 
-  return <PublicListCoverItemCard isAuthenticated={isAuthenticated} item={item} onSaveItem={onSaveItem} pendingItemId={pendingItemId} />
+  return <PublicListCoverItemCard isAuthenticated={isAuthenticated} isSaved={savedItemIds.has(item.id)} item={item} onSaveItem={onSaveItem} pendingItemId={pendingItemId} />
 }
 
 function PublicOwnerAvatar({ list }: { list: PublicList }) {
@@ -238,11 +279,13 @@ function PublicListCategoryBadge({ item }: { item: PublicListItem }) {
 
 function PublicListCardItemCard({
   isAuthenticated,
+  isSaved,
   item,
   onSaveItem,
   pendingItemId,
 }: {
   isAuthenticated: boolean
+  isSaved: boolean
   item: PublicListItem
   onSaveItem: (item: PublicListItem) => void
   pendingItemId: 'all' | string | null
@@ -264,6 +307,7 @@ function PublicListCardItemCard({
                 iconOnly
                 isAuthenticated={isAuthenticated}
                 isPending={pendingItemId === item.id}
+                isSaved={isSaved}
                 item={item}
                 onSaveItem={onSaveItem}
               />
@@ -292,6 +336,7 @@ function PublicListCardItemCard({
               <PublicListItemSaveAction
                 isAuthenticated={isAuthenticated}
                 isPending={pendingItemId === item.id}
+                isSaved={isSaved}
                 item={item}
                 onSaveItem={onSaveItem}
               />
@@ -308,11 +353,13 @@ function PublicListGroupedListItems({
   items,
   onSaveItem,
   pendingItemId,
+  savedItemIds,
 }: {
   isAuthenticated: boolean
   items: PublicListItem[]
   onSaveItem: (item: PublicListItem) => void
   pendingItemId: 'all' | string | null
+  savedItemIds: Set<string>
 }) {
   const { dictionary, locale } = useLocale()
   const sections = listCategoryMetadata(locale)
@@ -329,7 +376,7 @@ function PublicListGroupedListItems({
           <h3 className={cn('text-xl font-semibold tracking-tight', metadata.textClassName)}>{metadata.label}</h3>
           <ul aria-label={`${metadata.label} ${dictionary.publicList.itemsHeading}`} className="grid gap-x-6 gap-y-0 md:grid-cols-2 md:gap-y-3 xl:grid-cols-3">
             {sectionItems.map((item) => (
-              <PublicListRowItemCard isAuthenticated={isAuthenticated} item={item} key={item.id} onSaveItem={onSaveItem} pendingItemId={pendingItemId} />
+              <PublicListRowItemCard isAuthenticated={isAuthenticated} isSaved={savedItemIds.has(item.id)} item={item} key={item.id} onSaveItem={onSaveItem} pendingItemId={pendingItemId} />
             ))}
           </ul>
         </section>
@@ -340,11 +387,13 @@ function PublicListGroupedListItems({
 
 function PublicListRowItemCard({
   isAuthenticated,
+  isSaved,
   item,
   onSaveItem,
   pendingItemId,
 }: {
   isAuthenticated: boolean
+  isSaved: boolean
   item: PublicListItem
   onSaveItem: (item: PublicListItem) => void
   pendingItemId: 'all' | string | null
@@ -360,6 +409,7 @@ function PublicListRowItemCard({
             iconOnly
             isAuthenticated={isAuthenticated}
             isPending={pendingItemId === item.id}
+            isSaved={isSaved}
             item={item}
             onSaveItem={onSaveItem}
             size="sm"
@@ -395,11 +445,13 @@ function PublicListCardCoverBackground({ item }: { item: PublicListItem }) {
 
 function PublicListCoverItemCard({
   isAuthenticated,
+  isSaved,
   item,
   onSaveItem,
   pendingItemId,
 }: {
   isAuthenticated: boolean
+  isSaved: boolean
   item: PublicListItem
   onSaveItem: (item: PublicListItem) => void
   pendingItemId: 'all' | string | null
@@ -412,6 +464,16 @@ function PublicListCoverItemCard({
     <li className="mb-4 break-inside-avoid">
       <article className="relative overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
         <h3 className="sr-only">{item.title}</h3>
+        <div className="absolute left-3 top-3 z-20">
+          <PublicListItemSaveAction
+            iconOnly
+            isAuthenticated={isAuthenticated}
+            isPending={pendingItemId === item.id}
+            isSaved={isSaved}
+            item={item}
+            onSaveItem={onSaveItem}
+          />
+        </div>
         <Badge className={cn('absolute right-3 top-3 z-10 bg-background/85 shadow-sm backdrop-blur', metadata.accentClassName)} variant="outline">
           {metadata.label}
         </Badge>
@@ -422,24 +484,19 @@ function PublicListCoverItemCard({
             <Image aria-hidden="true" className={cn('size-12 opacity-70', metadata.textClassName)} />
           </div>
         )}
-        <div className="absolute bottom-3 left-3 right-3 z-10">
-          <PublicListItemSaveAction
-            isAuthenticated={isAuthenticated}
-            isPending={pendingItemId === item.id}
-            item={item}
-            onSaveItem={onSaveItem}
-          />
-        </div>
+
       </article>
     </li>
   )
 }
 
 function PublicListSaveAllAction({
+  allItemsSaved,
   isAuthenticated,
   isPending,
   onSaveAll,
 }: {
+  allItemsSaved: boolean
   isAuthenticated: boolean
   isPending: boolean
   onSaveAll: () => void
@@ -455,9 +512,9 @@ function PublicListSaveAllAction({
   }
 
   return (
-    <Button disabled={isPending} onClick={onSaveAll} type="button">
-      {isPending ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}
-      {isPending ? dictionary.publicList.addAllToInterestsPending : dictionary.publicList.addAllToInterestsAction}
+    <Button disabled={isPending || allItemsSaved} onClick={onSaveAll} type="button">
+      {isPending || allItemsSaved ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}
+      {allItemsSaved ? dictionary.publicList.addAllToInterestsSuccess : isPending ? dictionary.publicList.addAllToInterestsPending : dictionary.publicList.addAllToInterestsAction}
     </Button>
   )
 }
@@ -466,6 +523,7 @@ function PublicListItemSaveAction({
   iconOnly = false,
   isAuthenticated,
   isPending,
+  isSaved,
   item,
   onSaveItem,
   size,
@@ -473,13 +531,27 @@ function PublicListItemSaveAction({
   iconOnly?: boolean
   isAuthenticated: boolean
   isPending: boolean
+  isSaved: boolean
   item: PublicListItem
   onSaveItem: (item: PublicListItem) => void
   size?: 'sm'
 }) {
   const { dictionary } = useLocale()
 
+  const savedLabel = dictionary.publicList.addToInterestsSuccess.replace(/\.$/, '')
+  const label = `${isSaved ? savedLabel : isPending ? dictionary.publicList.addToInterestsPending : dictionary.publicList.addToInterestsAction}: ${item.title}`
+
   if (!isAuthenticated) {
+    if (iconOnly) {
+      return (
+        <Button asChild className="size-8 shrink-0 bg-background/85 shadow-sm backdrop-blur [&_svg]:size-4" size="icon" title={dictionary.publicList.registerToAddAction} variant="outline">
+          <a aria-label={dictionary.publicList.registerToAddAction} href="/?auth=register">
+            <Plus aria-hidden="true" />
+          </a>
+        </Button>
+      )
+    }
+
     return (
       <Button asChild className="w-full" size={size} variant="outline">
         <a href="/?auth=register">{dictionary.publicList.registerToAddAction}</a>
@@ -488,30 +560,63 @@ function PublicListItemSaveAction({
   }
 
   if (iconOnly) {
-    const label = `${isPending ? dictionary.publicList.addToInterestsPending : dictionary.publicList.addToInterestsAction}: ${item.title}`
-
     return (
       <Button
         aria-label={label}
-        className="size-8 shrink-0 [&_svg]:size-4"
-        disabled={isPending}
+        className={cn(
+          'size-8 shrink-0 shadow-sm backdrop-blur [&_svg]:size-4',
+          isSaved ? 'border-emerald-500 bg-emerald-600 text-white shadow-emerald-900/20 disabled:opacity-100' : 'bg-background/85',
+        )}
+        disabled={isPending || isSaved}
         onClick={() => onSaveItem(item)}
         size="icon"
         title={label}
         type="button"
         variant="outline"
       >
-        {isPending ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}
+        {isSaved ? <BookmarkCheck aria-hidden="true" /> : isPending ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}
       </Button>
     )
   }
 
   return (
-    <Button className="w-full" disabled={isPending} onClick={() => onSaveItem(item)} size={size} type="button" variant="outline">
-      {isPending ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}
-      {isPending ? dictionary.publicList.addToInterestsPending : dictionary.publicList.addToInterestsAction}
+    <Button
+      className={cn(
+        'w-full',
+        isSaved ? 'border-emerald-500 bg-emerald-600 text-white shadow-emerald-900/20 disabled:opacity-100' : undefined,
+      )}
+      disabled={isPending || isSaved}
+      onClick={() => onSaveItem(item)}
+      size={size}
+      type="button"
+      variant="outline"
+    >
+      {isSaved ? <BookmarkCheck aria-hidden="true" /> : isPending ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}
+      {isSaved ? dictionary.publicList.addToInterestsSuccess : isPending ? dictionary.publicList.addToInterestsPending : dictionary.publicList.addToInterestsAction}
     </Button>
   )
+}
+
+export function findSavedPublicListItemIds(publicItems: PublicListItem[], privateItems: InterestItem[]): Set<string> {
+  const privateItemFingerprints = new Set(privateItems.map(getInterestItemFingerprint))
+
+  return new Set(
+    publicItems
+      .filter((item) => privateItemFingerprints.has(getPublicListItemFingerprint(item)))
+      .map((item) => item.id),
+  )
+}
+
+function getPublicListItemFingerprint(item: PublicListItem) {
+  return `${item.category}:${normalizeItemTitle(item.title)}`
+}
+
+function getInterestItemFingerprint(item: InterestItem) {
+  return `${item.category}:${normalizeItemTitle(item.title)}`
+}
+
+function normalizeItemTitle(title: string) {
+  return title.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
 }
 
 function mapPublicListItemToInterestInput(item: PublicListItem): CreateInterestItemInput {

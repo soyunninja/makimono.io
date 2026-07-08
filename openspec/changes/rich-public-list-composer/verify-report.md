@@ -1,121 +1,103 @@
-# Verification Report: rich-public-list-composer — PR 2 / Slice 2
+# Verify Report: Rich Public List Composer
 
-## Verification Report
+## Status
 
-**Change**: `rich-public-list-composer`
-**Slice**: PR 2 / Phase 2 — public-list editor rich snapshots, including saved-item removal
-**Version**: N/A
-**Mode**: Standard
-**Verifier**: `sdd-verify` executor
-**Date**: 2026-07-03
+PASS — functional verification is green, task checkboxes are complete, and the mixed-scope separation checks pass. Strict TDD evidence is not required for this change because `openspec/config.yaml` sets `strict_tdd: false` and `apply-progress.md` records Standard mode.
 
-### Scope Verified
+## Structured Status and Action Context
 
-- Public-list editor uses the extracted `RichInterestComposer` drawer for list-only snapshots.
-- New rich list-only snapshots persist only through `updateManagedList({ items })` and do not create private dashboard interests.
-- Saved public-list items can be removed through `updateManagedList({ items: nextItems })` only.
-- Removal does not delete or mutate private dashboard interests.
-- Add/remove/create failure states preserve the prior committed public-list membership.
-- Existing current-user interest add flow still works.
-- Later-slice public display modes and copy-to-dashboard action remain unimplemented.
-
-### Completeness
-
-| Metric | Value |
-|--------|-------|
-| PR 2 tasks total | 5 |
-| PR 2 tasks complete | 5 |
-| PR 2 tasks incomplete | 0 |
-| Later-slice tasks intentionally excluded | Phase 3, Phase 4, Phase 5 |
-
-### Build & Tests Execution
-
-**Focused editor/composer/mapper tests**: ✅ Passed
-
-```text
-Command: npx pnpm test src/features/items/public-list-editor-screen.test.tsx src/features/items/add-flow.test.tsx src/features/items/public-list-item-mapper.test.ts
-Result: 3 test files passed, 33 tests passed.
-Evidence: public-list editor screen 8 tests, add-flow 20 tests, public-list item mapper 5 tests.
+```yaml
+schemaName: spec-driven
+changeName: rich-public-list-composer
+artifactStore: both
+planningHome:
+  root: /Users/baldboy/desarrollo/soyun.ninja/meinteresa
+  changesDir: openspec/changes
+changeRoot: openspec/changes/rich-public-list-composer
+artifactPaths:
+  proposal: [openspec/changes/rich-public-list-composer/proposal.md]
+  specs: [openspec/changes/rich-public-list-composer/specs/public-list-composition/spec.md]
+  design: [openspec/changes/rich-public-list-composer/design.md]
+  tasks: [openspec/changes/rich-public-list-composer/tasks.md]
+  applyProgress: [openspec/changes/rich-public-list-composer/apply-progress.md]
+  verifyReport: [openspec/changes/rich-public-list-composer/verify-report.md]
+artifacts:
+  proposal: done
+  specs: done
+  design: done
+  tasks: done
+  applyProgress: done
+  verifyReport: done
+taskProgress:
+  total: 19
+  complete: 19
+  remaining: 0
+  unchecked: []
+applyState: all_done
+dependencies:
+  verify: ready
+  archive: ready
+nextRecommended: archive
+actionContext:
+  mode: repo-local
+  workspaceRoot: /Users/baldboy/desarrollo/soyun.ninja/meinteresa
+  allowedEditRoots:
+    - /Users/baldboy/desarrollo/soyun.ninja/meinteresa
+  warnings: []
+isNonAuthoritative: false
 ```
 
-**Public-list test suite**: ✅ Passed
+## Spec Coverage
 
-```text
-Command: npx pnpm test public-list
-Result: 8 test files passed, 57 tests passed.
-Evidence: includes public-list editor, create screen, my public lists, route, repository, PocketBase repository, mapper, and types tests.
-```
+- Rich list-only item snapshots: covered by `public-list-editor-screen` and mapper tests recorded in apply progress.
+- Public list display modes: covered by public route/page tests for cards, list, covers, default/persistence, and no editor/social controls.
+- Copy public item to dashboard: covered by route/page tests for authenticated copy, unauthenticated gate, duplicate prevention, all-saved state, and partial failure retry.
+- Privacy and empty items: covered by repository DTO/projection audit and tests; `docs/pocketbase-public-lists-collection.json` documents `items` as non-required and `items: []`.
+- Copy failure safety and membership removal: covered by editor/route tests and apply-progress notes.
+- Explicit slice exclusions: no social/collaboration controls reported in public-page tests; archive deletion/import schema work separated out of the working tree.
 
-**Typecheck**: ✅ Passed
+## Task Completion Status
 
-```text
-Command: npx pnpm typecheck
-Result: Passed; tsc --noEmit exited 0.
-```
+- Checked task markers: 19/19 complete.
+- Unchecked implementation task lines: none found with `^\s*- \[ \]`.
 
-**Build**: ✅ Passed
+## Test and Validation Commands
 
-```text
-Command: npx pnpm build
-Result: Passed; vite client, SSR, and Nitro production build completed successfully.
-```
+| Command | Result |
+|---------|--------|
+| `npx pnpm typecheck` | PASS — `tsc --noEmit` completed successfully. |
+| `npx pnpm test` | PASS — 40 files, 335 tests passed. Vitest emitted Node experimental `localStorage` warnings only. |
+| `npx pnpm build` | PASS — client, SSR, and Nitro builds completed successfully. |
+| `git diff --check` | PASS after readability helper fix. |
+| `npx pnpm typecheck` | PASS after readability helper fix. |
+| `npx pnpm test` | PASS after readability helper fix — 40 files, 335 tests. |
+| `npx pnpm build` | PASS after readability helper fix. |
+| `git apply --check /tmp/meinteresa-archive-pocketbase-split.patch` | PASS. |
+| `git status --short \| grep -E 'archive\|import\|schema'` | PASS — no matching archive deletion/import schema files present in status output. |
+| `grep -c '^\s*- \[x\]' openspec/changes/rich-public-list-composer/tasks.md` | PASS — 19 complete task markers. |
+| `grep -c '^\s*- \[[ x]\]' openspec/changes/rich-public-list-composer/tasks.md` | PASS — 19 total task markers. |
 
-**Full test suite**: ✅ Passed
+## Scope Evidence
 
-```text
-Command: npx pnpm test
-Result: 36 test files passed, 305 tests passed.
-```
+- `/tmp/meinteresa-archive-pocketbase-split.patch` exists.
+- `git apply --check /tmp/meinteresa-archive-pocketbase-split.patch` passed.
+- `git status --short` shows scoped public-list/source/docs/OpenSpec files only; no archive deletion/import schema paths matched.
+- Remaining `docs/pocketbase-public-lists-collection.json` change is in-scope for task 5.2 per apply-progress notes.
 
-**Coverage**: ➖ Not available; no coverage command was requested or configured for this verification run.
+## Strict TDD Compliance
 
-### Spec Compliance Matrix
+Strict TDD is inactive for this change. `openspec/config.yaml` sets `strict_tdd: false`, and `apply-progress.md` records Standard mode. Therefore no `TDD Cycle Evidence` table is required. Full GREEN verification still passed via `npx pnpm test`.
 
-| Requirement | Scenario | Test | Result |
-|-------------|----------|------|--------|
-| Rich List-Only Item Snapshots | Create rich list-only item | `src/features/items/public-list-editor-screen.test.tsx` > `creates a rich list-only snapshot through the public list repository without creating a private interest` | ✅ COMPLIANT |
-| Interest Membership Composition | Add owned or available interest through editor | `src/features/items/public-list-editor-screen.test.tsx` > `persists an added interest and renders the saved update returned by the repository` | ✅ COMPLIANT |
-| Interest Membership Composition | Add interest failure preserves state | `src/features/items/public-list-editor-screen.test.tsx` > `preserves the prior committed membership when add-interest persistence fails` | ✅ COMPLIANT |
-| Interest Membership Composition | Remove saved public-list item | `src/features/items/public-list-editor-screen.test.tsx` > `removes a saved public-list snapshot without deleting or mutating the private interest` | ✅ COMPLIANT |
-| Interest Membership Composition | Remove saved public-list item failure preserves state | `src/features/items/public-list-editor-screen.test.tsx` > `preserves the prior committed membership when saved public-list snapshot removal fails` | ✅ COMPLIANT |
-| Explicit Slice Exclusions | No later-slice public display modes or copy-to-dashboard action in PR 2 | Static inspection of `src/features/items/public-list-page.tsx` and symbol search for copy/display-mode wiring | ✅ COMPLIANT |
+## Review Workload / PR Boundary Findings
 
-**Compliance summary**: 6/6 PR 2 scenarios compliant.
+- `tasks.md` forecasted high review workload and recommended chained PRs.
+- Apply progress records `auto-chain` with `stacked-to-main` and PR slice boundaries.
+- Scope separation for task 5.3 is verified by the preserved patch and clean patch check.
 
-### Correctness (Static Evidence)
+## Blockers
 
-| Requirement | Status | Notes |
-|------------|--------|-------|
-| Extracted composer/drawer is used by public-list editor | ✅ Implemented | `PublicListEditorScreen` renders `RichInterestComposer` with public editor labels and `handleCreateListOnlyItem` submit handling. |
-| New rich list-only items persist via `updateManagedList` only | ✅ Implemented | `handleCreateListOnlyItem` maps form values to `PublicListItem`, appends to `committedList.items`, then calls `runtimePublicListRepository.updateManagedList`; no private repository write is present in this path. |
-| New rich list-only items do not create private dashboard interests | ✅ Implemented | Runtime test spies assert `interestRepository.createItem` is not called during rich list-only creation. |
-| Saved public-list items can be removed from membership | ✅ Implemented | `handleRemovePublicListItem` filters the item out and calls `updateManagedList` with the next items array. |
-| Removal does not delete or mutate private dashboard interests | ✅ Implemented | Runtime tests spy on `createItem`, `updateItem`, and `deleteItem`; all remain uncalled, and private item listing still contains the original private interest. |
-| Failure states preserve committed membership | ✅ Implemented | Add, create, and remove failure tests keep the prior list visible and verify repository state remains committed. |
-| Existing current-user interest add flow still works | ✅ Implemented | Existing add-interest test passes and verifies saved update returned by repository is rendered. |
-| No public display modes implemented in PR 2 | ✅ Confirmed | `PublicListPage` remains a single read-only card/list rendering without `DashboardDisplayPreferenceControl` or cards/list/covers switch. |
-| No copy-to-dashboard action implemented in PR 2 | ✅ Confirmed | `PublicListPage` has no copy action, auth gate, or dashboard repository create wiring; copy mapper helpers remain covered foundation code only. |
+None.
 
-### Coherence (Design)
+## Review Readiness
 
-| Decision | Followed? | Notes |
-|----------|-----------|-------|
-| Composer seam uses shared rich composer while dashboard remains a private-interest wrapper | ✅ Yes | `RichInterestComposer` is shared; `AdaptiveAddFlow` still calls `repository.createItem(values)`. |
-| Snapshot mapping stays centralized | ✅ Yes | Public-list editor uses `mapRichInterestFormValuesToPublicListItem`; existing interest add uses `appendPublicListItemSnapshot`. |
-| Editor save/remove failures restore prior committed list state | ✅ Yes | Handlers hold `committedList`; failure branches restore `list: committedList` and show error messages. |
-| Removing public-list membership never calls private dashboard delete/update | ✅ Yes | Removal handler only calls public-list repository update; tests assert private repository mutation methods are not called. |
-| Later public display/copy work remains outside PR 2 | ✅ Yes | Static inspection confirms public display modes and copy-to-dashboard UI/action are not added in this slice. |
-
-### Issues Found
-
-**CRITICAL**: None.
-
-**WARNING**: None.
-
-**SUGGESTION**: None.
-
-### Verdict
-
-PASS
-
-PR 2 / Slice 2 satisfies the requested public-list editor rich snapshot and saved-item removal requirements with passing focused tests, public-list suite, full test suite, typecheck, and production build evidence.
+Ready for review/archive from typecheck/test/build and scope separation evidence.

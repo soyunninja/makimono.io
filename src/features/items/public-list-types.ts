@@ -42,6 +42,11 @@ export type PublicOwnerNamespaceInput = {
   username?: string | null
 }
 
+export type PublicOwnerUsernameInput = {
+  profileUsername?: string | null
+  userUsername?: unknown
+}
+
 export function normalizePublicRoutePart(value: string): PublicRoutePartNormalizationResult {
   const normalizedValue = value
     .trim()
@@ -65,6 +70,10 @@ export function normalizePublicListSlug(slug: string) {
 
 export function normalizePublicOwnerNamespace(ownerNamespace: string) {
   return normalizePublicRoutePart(ownerNamespace)
+}
+
+export function resolvePublicOwnerUsername(input: PublicOwnerUsernameInput) {
+  return input.profileUsername ?? (typeof input.userUsername === 'string' ? input.userUsername : null)
 }
 
 export function derivePublicOwnerNamespace(input: PublicOwnerNamespaceInput): PublicRoutePartNormalizationResult {

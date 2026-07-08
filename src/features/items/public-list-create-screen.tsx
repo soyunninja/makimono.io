@@ -10,7 +10,7 @@ import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provi
 import { mapPublicOwnerProjection } from '@/features/auth/public-profile'
 import { createPocketBasePublicListRepository } from '@/features/items/pocketbase-public-list-repository'
 import type { ManagedPublicListError, PublicListRepository } from '@/features/items/public-list-repository'
-import { derivePublicOwnerNamespace } from '@/features/items/public-list-types'
+import { derivePublicOwnerNamespace, resolvePublicOwnerUsername } from '@/features/items/public-list-types'
 import { useLocale } from '@/i18n/locale-provider'
 import type { PocketBaseAuthRecord } from '@/lib/pocketbase'
 
@@ -40,6 +40,10 @@ export function PublicListCreateScreen({
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState<CreateStatus>('idle')
   const [message, setMessage] = useState<string | null>(null)
+  const ownerUsername = resolvePublicOwnerUsername({
+    profileUsername: publicProfile?.username,
+    userUsername: user?.username,
+  })
   const runtimeRepository = useMemo(() => {
     if (repository) {
       return repository
@@ -52,8 +56,9 @@ export function PublicListCreateScreen({
     return createPocketBasePublicListRepository({
       collection: client.collection('public_lists'),
       ownerId: user.id,
+      ownerNamespace: ownerUsername,
     })
-  }, [client, repository, user])
+  }, [client, ownerUsername, repository, user])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -74,8 +79,8 @@ export function PublicListCreateScreen({
     }
 
     const ownerNamespace = derivePublicOwnerNamespace({
-      email: typeof user.email === 'string' ? user.email : null,
-      username: publicProfile?.username ?? (typeof user.username === 'string' ? user.username : null),
+      email: null,
+      username: ownerUsername,
     })
 
     if (!ownerNamespace.ok) {

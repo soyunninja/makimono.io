@@ -29,6 +29,7 @@ type PocketBasePublicListCollection = {
 type CreatePocketBasePublicListRepositoryOptions = {
   collection: PocketBasePublicListCollection
   ownerId: string
+  ownerNamespace?: string | null
 }
 
 export type PocketBasePublicListRecordInput = Record<string, unknown>
@@ -106,7 +107,6 @@ export function mapPocketBasePublicListRecord(
   }
 
   const id = readRequiredString(record, 'id')
-  readRequiredString(record, 'owner')
   const ownerDisplayName = readRequiredString(record, 'ownerDisplayName')
   const owner: PublicOwnerProjection = {
     avatarUrl: null,
@@ -177,8 +177,11 @@ export function mapPocketBasePublicListManagementSummary(record: unknown): Publi
 export function createPocketBasePublicListRepository({
   collection,
   ownerId,
+  ownerNamespace,
 }: CreatePocketBasePublicListRepositoryOptions): PublicListRepository {
   const normalizedOwnerId = ownerId.trim()
+  const normalizedOwnerNamespace = ownerNamespace ? normalizePublicOwnerNamespace(ownerNamespace) : null
+  const ownerNamespaceFilter = normalizedOwnerNamespace?.ok ? `ownerNamespace = ${quotePocketBaseFilterValue(normalizedOwnerNamespace.value)}` : null
 
   return {
     async createManagedList(input) {
@@ -220,7 +223,7 @@ export function createPocketBasePublicListRepository({
         return { error: { type: 'unauthenticated' }, ok: false }
       }
 
-      const currentRecord = await getManagedPublicListRecord(collection, normalizedOwnerId, id)
+      const currentRecord = await getManagedPublicListRecord(collection, normalizedOwnerId, id, ownerNamespaceFilter)
 
       if (!currentRecord) {
         return { error: { type: 'owner_mismatch' }, ok: false }
@@ -244,7 +247,7 @@ export function createPocketBasePublicListRepository({
         return null
       }
 
-      const record = await getManagedPublicListRecord(collection, normalizedOwnerId, id)
+      const record = await getManagedPublicListRecord(collection, normalizedOwnerId, id, ownerNamespaceFilter)
 
       return record ? mapPocketBasePublicListRecord(record) : null
     },
@@ -323,7 +326,7 @@ export function createPocketBasePublicListRepository({
         return { error: { type: 'unauthenticated' }, ok: false }
       }
 
-      const currentRecord = await getManagedPublicListRecord(collection, normalizedOwnerId, input.id)
+      const currentRecord = await getManagedPublicListRecord(collection, normalizedOwnerId, input.id, ownerNamespaceFilter)
 
       if (!currentRecord) {
         return { error: { type: 'owner_mismatch' }, ok: false }
@@ -358,8 +361,12 @@ export function createPocketBasePublicListRepository({
         return []
       }
 
+      if (!ownerNamespaceFilter) {
+        return []
+      }
+
       const records = await collection.getFullList({
-        filter: `published = true && owner = ${quotePocketBaseFilterValue(normalizedOwnerId)}`,
+        filter: `published = true && owner = ${quotePocketBaseFilterValue(normalizedOwnerId)} && ${ownerNamespaceFilter}`,
         sort: '-publishedAt',
       })
 
@@ -385,9 +392,14 @@ async function getManagedPublicListRecord(
   collection: PocketBasePublicListCollection,
   ownerId: string,
   id: string,
+  ownerNamespaceFilter: string | null,
 ) {
+  if (!ownerNamespaceFilter) {
+    return null
+  }
+
   const records = await collection.getFullList({
-    filter: `published = true && owner = ${quotePocketBaseFilterValue(ownerId)} && id = ${quotePocketBaseFilterValue(id)}`,
+    filter: `published = true && owner = ${quotePocketBaseFilterValue(ownerId)} && ${ownerNamespaceFilter} && id = ${quotePocketBaseFilterValue(id)}`,
     perPage: 1,
   })
 

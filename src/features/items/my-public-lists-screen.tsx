@@ -8,6 +8,7 @@ import { useOptionalPocketBaseAuth } from '@/features/auth/pocketbase-auth-provi
 import { formatPublicListDisplayDate } from '@/features/items/public-list-date-format'
 import { createPocketBasePublicListRepository } from '@/features/items/pocketbase-public-list-repository'
 import type { PublicListManagementSummary, PublicListRepository } from '@/features/items/public-list-repository'
+import { resolvePublicOwnerUsername } from '@/features/items/public-list-types'
 import { useLocale } from '@/i18n/locale-provider'
 
 type MyPublicListsScreenProps = { authenticatedOwnerId?: string, repository?: PublicListRepository }
@@ -22,10 +23,14 @@ function getManagedPublicListHref(list: PublicListManagementSummary) {
 }
 
 export function MyPublicListsScreen({ authenticatedOwnerId, repository }: MyPublicListsScreenProps = {}) {
-  const { client, user } = useOptionalPocketBaseAuth()
+  const { client, publicProfile, user } = useOptionalPocketBaseAuth()
   const { locale, t } = useLocale()
   const ownerId = authenticatedOwnerId ?? user?.id ?? ''
   const [state, setState] = useState<MyPublicListsState>({ status: 'loading' })
+  const ownerUsername = resolvePublicOwnerUsername({
+    profileUsername: publicProfile?.username,
+    userUsername: user?.username,
+  })
   const runtimeRepository = useMemo(() => {
     if (repository) {
       return repository
@@ -36,8 +41,9 @@ export function MyPublicListsScreen({ authenticatedOwnerId, repository }: MyPubl
     return createPocketBasePublicListRepository({
       collection: client.collection('public_lists'),
       ownerId: user.id,
+      ownerNamespace: ownerUsername,
     })
-  }, [client, repository, user])
+  }, [client, ownerUsername, repository, user])
 
   useEffect(() => {
     let isMounted = true

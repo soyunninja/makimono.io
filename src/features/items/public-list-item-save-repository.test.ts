@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   countPublicListItemSaves,
   createPocketBasePublicListItemSaveRepository,
+  recordPublicListItemSaveBestEffort,
 } from '@/features/items/public-list-item-save-repository'
 
 describe('public list item save repository', () => {
@@ -35,6 +36,18 @@ describe('public list item save repository', () => {
       publicList: 'list-1',
       savedBy: 'user-reader',
     })
+  })
+
+  it('does not fail the primary save flow when analytics recording fails', async () => {
+    const repository = {
+      getItemSaveCounts: vi.fn(),
+      recordItemSave: vi.fn(async () => {
+        throw new Error('Failed to create record.')
+      }),
+    }
+
+    await expect(recordPublicListItemSaveBestEffort(repository, { itemId: 'item-1', publicListId: 'list-1' })).resolves.toBe(false)
+    expect(repository.recordItemSave).toHaveBeenCalledWith({ itemId: 'item-1', publicListId: 'list-1' })
   })
 
   it('loads save counts through a public-list scoped filter', async () => {

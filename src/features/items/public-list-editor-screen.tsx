@@ -12,7 +12,7 @@ import { listCategoryMetadata } from '@/features/items/metadata'
 import { createPocketBasePublicListItemSaveRepository, type PublicListItemSaveRepository } from '@/features/items/public-list-item-save-repository'
 import { createPocketBasePublicListRepository } from '@/features/items/pocketbase-public-list-repository'
 import { mapRichInterestFormValuesToPublicListItem } from '@/features/items/public-list-item-mapper'
-import { applyPublicListItemSaveCounts, type PublicList, type PublicListItem } from '@/features/items/public-list-types'
+import { applyPublicListItemSaveCounts, resolvePublicOwnerUsername, type PublicList, type PublicListItem } from '@/features/items/public-list-types'
 import type { PublicListRepository } from '@/features/items/public-list-repository'
 import { useLocale } from '@/i18n/locale-provider'
 import { cn } from '@/lib/utils'
@@ -39,9 +39,13 @@ export function PublicListEditorScreen({
   publicListItemSaveRepository,
   publicListRepository,
 }: PublicListEditorScreenProps) {
-  const { client, user: authUser } = useOptionalPocketBaseAuth()
+  const { client, publicProfile, user: authUser } = useOptionalPocketBaseAuth()
   const { dictionary, locale, t } = useLocale()
   const user = authenticatedUser ?? authUser
+  const ownerUsername = resolvePublicOwnerUsername({
+    profileUsername: publicProfile?.username,
+    userUsername: user?.username,
+  })
   const runtimePublicListRepository = useMemo(() => {
     if (publicListRepository) {
       return publicListRepository
@@ -54,8 +58,9 @@ export function PublicListEditorScreen({
     return createPocketBasePublicListRepository({
       collection: client.collection('public_lists'),
       ownerId: user.id,
+      ownerNamespace: ownerUsername,
     })
-  }, [client, publicListRepository, user])
+  }, [client, ownerUsername, publicListRepository, user])
   const runtimePublicListItemSaveRepository = useMemo(() => {
     if (publicListItemSaveRepository) {
       return publicListItemSaveRepository

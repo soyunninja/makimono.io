@@ -136,7 +136,7 @@
         "type": "text"
       },
       {
-        "help": "Read-only item display data: title, category, optional notes, tags, and cover metadata.",
+        "help": "Read-only item display data: title, category, optional notes, tags, and cover metadata. Keep non-required; empty public lists are represented as items: [].",
         "hidden": false,
         "id": "json_public_lists_items",
         "maxSize": 0,

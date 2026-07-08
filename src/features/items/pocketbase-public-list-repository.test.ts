@@ -75,6 +75,16 @@ describe('PocketBase public list mapper', () => {
     expect(serializedPublicList).not.toContain('Only the owner should see this.')
   })
 
+  it('maps public records without exposing or requiring the hidden owner relation', () => {
+    const { owner: _owner, ...recordWithoutOwner } = createPocketBasePublicListRecord()
+
+    expect(mapPocketBasePublicListRecord(recordWithoutOwner)).toMatchObject({
+      id: 'public-list-1',
+      ownerNamespace: 'ana',
+      slug: 'summer-books',
+    })
+  })
+
   it('ignores list-level owner avatar snapshots', () => {
     const publicList = mapPocketBasePublicListRecord(createPocketBasePublicListRecord({
       owner: 'user-owner',
@@ -107,11 +117,32 @@ describe('PocketBase public list mapper', () => {
     })
   })
 
-  it('lists current-owner published management summaries by stored owner relation only', async () => {
+  it('lists current-owner published management summaries by owner namespace when available', async () => {
     const getFullList = vi.fn().mockResolvedValue([
       createPocketBasePublicListRecord({ id: 'new-list', publishedAt: '2026-07-04T10:00:00.000Z' }),
-      createPocketBasePublicListRecord({ id: 'old-list', publishedAt: '2026-07-03T10:00:00.000Z' }),
     ])
+    const repository = createPocketBasePublicListRepository({
+      collection: {
+        create: vi.fn(),
+        delete: vi.fn(),
+        getFullList,
+        update: vi.fn(),
+      },
+      ownerId: 'user-private',
+      ownerNamespace: ' Ana ',
+    })
+
+    await expect(repository.listMine()).resolves.toEqual([
+      expect.objectContaining({ id: 'new-list' }),
+    ])
+    expect(getFullList).toHaveBeenCalledWith({
+      filter: 'published = true && owner = "user-private" && ownerNamespace = "ana"',
+      sort: '-publishedAt',
+    })
+  })
+
+  it('does not list current-owner summaries without a public owner namespace', async () => {
+    const getFullList = vi.fn()
     const repository = createPocketBasePublicListRepository({
       collection: {
         create: vi.fn(),
@@ -122,16 +153,8 @@ describe('PocketBase public list mapper', () => {
       ownerId: 'user-private',
     })
 
-    await expect(repository.listMine()).resolves.toEqual([
-      expect.objectContaining({ id: 'new-list' }),
-      expect.objectContaining({ id: 'old-list' }),
-    ])
-    expect(getFullList).toHaveBeenCalledWith({
-      filter: 'published = true && owner = "user-private"',
-      sort: '-publishedAt',
-    })
-    const [options] = getFullList.mock.calls[0]
-    expect(options?.filter).not.toContain('ownerNamespace')
+    await expect(repository.listMine()).resolves.toEqual([])
+    expect(getFullList).not.toHaveBeenCalled()
   })
 
   it('lists public owner profile summaries by owner namespace', async () => {
@@ -268,8 +291,28 @@ describe('PocketBase public list mapper', () => {
     }))
   })
 
-  it('loads managed lists by owner relation and id only', async () => {
+  it('loads managed lists by owner relation, owner namespace, and id when namespace is available', async () => {
     const getFullList = vi.fn().mockResolvedValue([createPocketBasePublicListRecord()])
+    const repository = createPocketBasePublicListRepository({
+      collection: {
+        create: vi.fn(),
+        delete: vi.fn(),
+        getFullList,
+        update: vi.fn(),
+      },
+      ownerId: 'user-private',
+      ownerNamespace: 'ana',
+    })
+
+    await expect(repository.getManagedList('user-private', 'public-list-1')).resolves.toMatchObject({ id: 'public-list-1' })
+    expect(getFullList).toHaveBeenCalledWith({
+      filter: 'published = true && owner = "user-private" && ownerNamespace = "ana" && id = "public-list-1"',
+      perPage: 1,
+    })
+  })
+
+  it('does not load managed lists without a public owner namespace', async () => {
+    const getFullList = vi.fn()
     const repository = createPocketBasePublicListRepository({
       collection: {
         create: vi.fn(),
@@ -280,11 +323,8 @@ describe('PocketBase public list mapper', () => {
       ownerId: 'user-private',
     })
 
-    await expect(repository.getManagedList('user-private', 'public-list-1')).resolves.toMatchObject({ id: 'public-list-1' })
-    expect(getFullList).toHaveBeenCalledWith({
-      filter: 'published = true && owner = "user-private" && id = "public-list-1"',
-      perPage: 1,
-    })
+    await expect(repository.getManagedList('user-private', 'public-list-1')).resolves.toBeNull()
+    expect(getFullList).not.toHaveBeenCalled()
   })
 
   it('updates managed lists only after an owner-scoped load', async () => {
@@ -298,6 +338,7 @@ describe('PocketBase public list mapper', () => {
         update,
       },
       ownerId: 'user-private',
+      ownerNamespace: 'ana',
     })
 
     await expect(repository.updateManagedList({
@@ -318,6 +359,7 @@ describe('PocketBase public list mapper', () => {
         update,
       },
       ownerId: 'user-private',
+      ownerNamespace: 'ana',
     })
 
     await expect(repository.updateManagedList({
@@ -338,6 +380,7 @@ describe('PocketBase public list mapper', () => {
         update: vi.fn().mockRejectedValueOnce(collision),
       },
       ownerId: 'user-private',
+      ownerNamespace: 'ana',
     })
 
     await expect(repository.createManagedList(createManagedInput())).resolves.toEqual({
@@ -364,6 +407,7 @@ describe('PocketBase public list mapper', () => {
         update: vi.fn().mockRejectedValue(new PocketBaseClientResponseError(500, { message: 'nope' })),
       },
       ownerId: 'user-private',
+      ownerNamespace: 'ana',
     })
 
     await expect(repository.updateManagedList({

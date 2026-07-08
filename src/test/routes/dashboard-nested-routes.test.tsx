@@ -25,7 +25,7 @@ import { DashboardSuggestRoutePage } from '@/routes/-route-components'
 import { DashboardRoutePage } from '@/routes/-route-components'
 import { installMockLocalStorage } from '@/test/mock-local-storage'
 
-type AuthRecord = { email: string, id: string }
+type AuthRecord = { email: string, id: string, username?: string }
 type AuthChangeCallback = (token: string, record: AuthRecord | null) => void
 
 const pocketBaseMock = vi.hoisted(() => ({
@@ -186,6 +186,7 @@ function authenticatePocketBaseMock() {
   client.authStore.model = {
     email: 'reader@example.com',
     id: 'user-reader',
+    username: 'reader',
   }
   client.authStore.record = client.authStore.model
   client.authStore.token = 'test-token'
@@ -714,7 +715,7 @@ function matchesPublicListFilter(record: unknown, filter?: string) {
 
   const fields = record as Record<string, unknown>
 
-  for (const key of ['owner', 'id'] as const) {
+  for (const key of ['owner', 'ownerNamespace', 'id'] as const) {
     const match = filter.match(new RegExp(`${key} = "([^"]+)"`))
 
     if (match && fields[key] !== match[1]) {
