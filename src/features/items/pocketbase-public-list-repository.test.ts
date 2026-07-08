@@ -20,11 +20,26 @@ describe('PocketBase public list mapper', () => {
       owner: 'user-private',
       ownerNamespace: 'ana',
       slug: 'summer-books',
+      listDate: '2026-07-03 00:00:00.000Z',
       published: true,
+      publishedAt: '2026-07-03 10:00:00.000Z',
     })
     expect(payload).not.toHaveProperty('ownerAvatar')
     expect(publicList).not.toHaveProperty('ownerId')
     expect(JSON.stringify(publicList)).not.toContain('user-private')
+  })
+
+  it('formats PocketBase date fields with a time component in create payloads', () => {
+    const payload = buildPublicListPublishPayload({
+      ...createPublishInput(),
+      listDate: '2026-07-08',
+      publishedAt: '2026-07-08T20:54:33.155Z',
+    }, 'user-private')
+
+    expect(payload).toMatchObject({
+      listDate: '2026-07-08 00:00:00.000Z',
+      publishedAt: '2026-07-08 20:54:33.155Z',
+    })
   })
 
   it('omits optional text fields from create payloads instead of sending null', () => {

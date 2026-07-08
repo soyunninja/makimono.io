@@ -52,11 +52,11 @@ export function buildPublicListPublishPayload(input: PublishPublicListInput, own
     ownerDisplayName: input.owner.displayName,
     slug: slug.value,
     title: input.title,
-    listDate: input.listDate,
+    listDate: formatPocketBaseDateField(input.listDate),
     ...(input.description !== undefined ? { description: input.description } : {}),
     items: input.items.map(mapPublicListItemToPayload),
     published: true,
-    publishedAt: input.publishedAt ?? new Date().toISOString(),
+    publishedAt: formatPocketBaseDateField(input.publishedAt ?? new Date().toISOString()),
   }
 }
 
@@ -75,7 +75,7 @@ export function buildManagedPublicListUpdatePayload(input: ManagedPublicListUpda
   }
 
   if (input.listDate !== undefined) {
-    payload.listDate = input.listDate
+    payload.listDate = formatPocketBaseDateField(input.listDate)
   }
 
   if (hasOwn.call(input, 'description')) {
@@ -373,6 +373,20 @@ export function createPocketBasePublicListRepository({
       return records.map(mapPocketBasePublicListManagementSummary)
     },
   }
+}
+
+function formatPocketBaseDateField(value: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return `${value} 00:00:00.000Z`
+  }
+
+  const parsedDate = new Date(value)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value
+  }
+
+  return parsedDate.toISOString().replace('T', ' ')
 }
 
 function mapPublicListManagementSummaryFromList(list: PublicList): PublicListManagementSummary {
