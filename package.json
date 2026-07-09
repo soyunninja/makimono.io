@@ -1,6 +1,6 @@
 {
   "name": "meinteresa",
-  "version": "0.7.1",
+  "version": "0.7.15",
   "private": true,
   "description": "Tu dojo personal para guardar series, pelis, juegos, libros y música antes de que se escapen entre las sombras.",
   "packageManager": "pnpm@11.9.0",
