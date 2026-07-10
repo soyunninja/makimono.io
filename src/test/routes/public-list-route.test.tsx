@@ -124,10 +124,10 @@ describe('public list route', () => {
     expect(screen.getByText('Books for the summer break.')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'ana public avatar' })).toHaveAttribute('src', 'https://cdn.example.com/current-avatar.webp')
     expect(screen.getByRole('img', { name: 'ana public avatar' })).toHaveClass('h-[25px]', 'w-[25px]')
-    const coverAddAction = screen.getAllByRole('link', { name: 'Register to add it to your interests' })[0]
+    const coverAddAction = screen.getAllByRole('link', { name: '+ Add' })[0]
 
     expect(coverAddAction).toHaveAttribute('href', '/?auth=register')
-    expect(coverAddAction).toHaveTextContent('Register to add it to your interests')
+    expect(coverAddAction).toHaveTextContent('+ Add')
   })
 
   it('shows a not-found state when no public list matches the username and slug', async () => {

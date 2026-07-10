@@ -454,7 +454,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addAllToInterestsAction: 'Export full list',
       addAllToInterestsPending: 'Exporting list…',
       addAllToInterestsSuccess: 'All list items were added to your interests.',
-      registerToAddAction: 'Register to add it to your interests',
+      registerToAddAction: '+ Add',
     },
     myPublicLists: {
       title: 'My public lists',
@@ -843,7 +843,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       addAllToInterestsAction: 'Exportar toda la lista',
       addAllToInterestsPending: 'Exportando lista…',
       addAllToInterestsSuccess: 'Todos los elementos de la lista se han añadido a tus intereses.',
-      registerToAddAction: 'Regístrate para añadirlo a tus intereses',
+      registerToAddAction: '+ Añadir',
     },
     myPublicLists: {
       title: 'Mis listas públicas',

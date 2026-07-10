@@ -69,8 +69,8 @@ export function AppShell({
             )}
             data-variant={headerVariant}
           >
-            <div className={cn(headerVariant === 'card' ? 'flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between' : 'flex items-center justify-between gap-3')}>
-              <div className={cn(headerVariant === 'card' ? 'space-y-4' : 'space-y-3')}>
+            <div className={cn(headerVariant === 'card' ? 'flex items-start justify-between gap-6' : 'flex items-center justify-between gap-3')}>
+              <div className={cn(headerVariant === 'card' ? 'min-w-0 space-y-4' : 'space-y-3')}>
                 {eyebrow ? (
                   <span className="inline-flex w-fit items-center rounded-full border border-accent-purple/30 bg-accent-purple/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-accent-purple">
                     {eyebrow}
@@ -90,7 +90,7 @@ export function AppShell({
                   ) : null}
                 </div>
               </div>
-              {actions ? <div className="flex shrink-0 items-center gap-3">{actions}</div> : null}
+              {actions ? <div className={cn('flex shrink-0 items-center gap-3', headerVariant === 'card' ? 'pt-1' : undefined)}>{actions}</div> : null}
             </div>
           </section>
         ) : null}
